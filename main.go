@@ -1,9 +1,9 @@
 package main
 
-import "fmt"
-
 func main() {
-	res := BuildIOI("thistag.that[1].other.5", CIPTypeDINT)
 
-	fmt.Printf("result: %v\n", res)
+	plc := PLC{IPAddress: "192.168.2.241"}
+	plc.Connect()
+	plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
+
 }

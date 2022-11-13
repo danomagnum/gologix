@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type TagDescriptor struct {
+type TagPartDescriptor struct {
 	FullPath    string
 	BasePath    string
 	Array_Order []int
@@ -16,10 +16,10 @@ type TagDescriptor struct {
 	BitAccess   bool
 }
 
-var bit_access_regex, _ = regexp.Compile("\\.\\d+$")
-var array_access_regex, _ = regexp.Compile("\\[([\\d]|[,]|[\\s])*\\]$")
+var bit_access_regex, _ = regexp.Compile(`\.\d+$`)
+var array_access_regex, _ = regexp.Compile(`\[([\d]|[,]|[\s])*\]$`)
 
-func (tag *TagDescriptor) Parse(tagpath string) error {
+func (tag *TagPartDescriptor) Parse(tagpath string) error {
 	var err error
 	tag.FullPath = tagpath
 	tag.BasePath = tagpath
@@ -69,13 +69,15 @@ func (tag *TagDescriptor) Parse(tagpath string) error {
 }
 
 // parse the tag name into its base tag (remove array index or bit) and get the array index if it exists
-func parse_tag_name(tagpath string) (tag TagDescriptor) {
+func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
 	tag.Parse(tagpath)
 	return
 
 }
 
 type IOI struct {
+	Path   string
+	Type   CIPType
 	Buffer []byte
 }
 
@@ -93,6 +95,8 @@ func BuildIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 	tag_array := strings.Split(tagpath, ".")
 
 	ioi = new(IOI)
+	ioi.Path = tagpath
+	ioi.Type = datatype
 	// we'll build this byte structure up as we go.
 	ioi.Buffer = make([]byte, 0, DEFAULT_BUFFER_SIZE)
 
