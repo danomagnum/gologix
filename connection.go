@@ -25,7 +25,7 @@ type Connection struct {
 // Send takes the command followed by all the structures that need
 // concatenated together.  It builds the header, puts the packet together,
 // and then sends it.
-func (conn *Connection) Send(cmd CIPService, msgs ...any) error {
+func (conn *Connection) Send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -108,7 +108,7 @@ type HeaderFrame2 struct {
 	Sequence        uint16
 }
 
-func (conn *Connection) BuildHeader(cmd CIPService, size int) (hdr EIPHeader) {
+func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	conn.SequenceCounter++
 	conn.ContextIndex++
@@ -159,7 +159,7 @@ func (conn *Connection) Connect(ip string) error {
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
-	err = conn.Send(0x65, reg_msg) // 0x65 is register session
+	err = conn.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send connect req %v", err)
 	}
@@ -176,7 +176,7 @@ func (conn *Connection) Connect(ip string) error {
 	// we have to do something different for small connection sizes.
 	fwd_open := conn.build_forward_open_large()
 	fwd_open_hdr := BuildRRHeader(binary.Size(fwd_open))
-	err = conn.Send(0x6F, fwd_open_hdr, fwd_open)
+	err = conn.Send(CIPCommandSendRRData, fwd_open_hdr, fwd_open)
 	if err != nil {
 		return err
 	}
