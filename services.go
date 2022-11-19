@@ -1,5 +1,7 @@
 package main
 
+import "encoding/binary"
+
 type CIPService byte
 
 /*
@@ -13,12 +15,13 @@ type CIPService byte
  */
 
 const (
-	CIPService_Read            CIPService = 0x4C
-	CIPService_FragRead        CIPService = 0x52 // Fragmented Read
-	CIPService_Write           CIPService = 0x4D
-	CIPService_ReadModWrite    CIPService = 0x4E // Read Modify Write
-	CIPService_FragWrite       CIPService = 0x53 // Fragmented Write
-	CIPService_MultipleService CIPService = 0x0A
+	CIPService_Read               CIPService = 0x4C
+	CIPService_FragRead           CIPService = 0x52 // Fragmented Read
+	CIPService_Write              CIPService = 0x4D
+	CIPService_ReadModWrite       CIPService = 0x4E // Read Modify Write
+	CIPService_FragWrite          CIPService = 0x53 // Fragmented Write
+	CIPService_MultipleService    CIPService = 0x0A
+	CIPService_GetAttributeSingle CIPService = 0x0E
 )
 
 type CIPCommand byte
@@ -37,3 +40,24 @@ const (
 	CIPPCCCConnectedExplicit    CIPCommand = 0x0A
 	CIPPCCCUnconnectedExplicit  CIPCommand = 0x0B
 )
+
+type CIPClass byte
+
+const (
+	CIPClass_Identiy        CIPClass = 0x01
+	CIPClass_AssemblyObject CIPClass = 0x04
+)
+
+type CIPAttribute byte
+
+const (
+	CIPAttribute_Data CIPAttribute = 0x03
+)
+
+func SizeOf(strs ...any) int {
+	t := 0 // total
+	for _, str := range strs {
+		t += binary.Size(str)
+	}
+	return t
+}

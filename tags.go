@@ -75,6 +75,7 @@ func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
 
 }
 
+// Internal Object Identifier. Used to specify a tag name in the controller
 type IOI struct {
 	Path   string
 	Type   CIPType

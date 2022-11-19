@@ -18,8 +18,8 @@ type Connection struct {
 	SequenceCounter        uint16
 	Connected              bool
 	ConnectionSize         int
-	ContextIndex           int
 	ConnectionSerialNumber uint16
+	Context                uint64
 }
 
 // Send takes the command followed by all the structures that need
@@ -61,7 +61,7 @@ func (conn *Connection) Send(cmd CIPCommand, msgs ...any) error {
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (conn *Connection) recv_data() (EIPHeader, *bytes.Buffer, error) {
+func (conn *Connection) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 	hdr := EIPHeader{}
 	var err error
@@ -77,7 +77,7 @@ func (conn *Connection) recv_data() (EIPHeader, *bytes.Buffer, error) {
 		err = binary.Read(conn.Conn, binary.LittleEndian, &data)
 	}
 	log.Printf("Buffer: %v", data)
-	buf := bytes.NewBuffer(data)
+	buf := bytes.NewReader(data)
 	return hdr, buf, err
 
 }
@@ -92,9 +92,10 @@ type EIPHeader struct {
 	Length        uint16
 	SessionHandle uint32
 	Status        uint32
-	Context       uint64
+	Context       uint64 // 8 bytes you can do whatever you want with. They'll be echoed back.
 	Options       uint32
 }
+
 type HeaderFrame2 struct {
 	Header          EIPHeader
 	InterfaceHandle uint32
@@ -111,17 +112,13 @@ type HeaderFrame2 struct {
 func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	conn.SequenceCounter++
-	conn.ContextIndex++
-	if conn.ContextIndex == 155 {
-		conn.ContextIndex = 0
-	}
 
 	hdr.Command = uint16(cmd)
 	//hdr.Command = 0x0070
 	hdr.Length = uint16(size)
 	hdr.SessionHandle = conn.SessionHandle
 	hdr.Status = 0
-	hdr.Context = CIPcontext[conn.ContextIndex]
+	hdr.Context = conn.Context
 	hdr.Options = 0
 	//hdr.InterfaceHandle = 0
 	//hdr.Timeout = 0
@@ -140,11 +137,6 @@ func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 const CIP_Port = ":44818"
 const CIP_VendorID = 0x1776
 
-type RegisterDetails struct {
-	ProtocolVersion uint16
-	OptionFlag      uint16
-}
-
 func (conn *Connection) Connect(ip string) error {
 	if conn.Connected {
 		return nil
@@ -155,7 +147,7 @@ func (conn *Connection) Connect(ip string) error {
 		return err
 	}
 
-	reg_msg := RegisterDetails{}
+	reg_msg := CIPMessage_Register{}
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
@@ -185,11 +177,25 @@ func (conn *Connection) Connect(ip string) error {
 		return err
 	}
 	_ = hdr
-	_ = dat
+	forwardopenresp := EIPForwardOpen_Reply{}
+	log.Printf("size of str: %v", binary.Size(forwardopenresp))
+	err = binary.Read(dat, binary.LittleEndian, &forwardopenresp)
+	if err != nil {
+		log.Printf("Error Reading. %v", err)
+	}
+	log.Printf("ForwardOpen: %+v", forwardopenresp)
+	conn.OTNetworkConnectionID = forwardopenresp.OTConnectionID
 
 	conn.Connected = true
 	return nil
 
+}
+
+type EIPForwardOpen_Reply struct {
+	Unknown        [20]byte
+	OTConnectionID uint32
+	TOConnectionID uint32
+	Unknown2       uint16
 }
 
 // in this message T is for target and O is for originator so
