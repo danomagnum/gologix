@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net"
@@ -19,7 +21,7 @@ type Connection struct {
 	Connected              bool
 	ConnectionSize         int
 	ConnectionSerialNumber uint16
-	Context                uint64
+	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
 }
 
 // Send takes the command followed by all the structures that need
@@ -318,4 +320,56 @@ func BuildRRHeader(size int) RR_Header {
 
 	return rr
 
+}
+
+func ReadItems(r io.Reader) ([]CIPItem, error) {
+
+	var count uint16
+
+	err := binary.Read(r, binary.LittleEndian, &count)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read item count. %w", err)
+	}
+
+	items := make([]CIPItem, 0, 2) // usually have 2 items.
+
+	for i := 0; i < int(count); i++ {
+		var hdr CIPItemHeader
+		err := binary.Read(r, binary.LittleEndian, &hdr)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read item %d header. %w", i, err)
+		}
+		var item CIPItem
+		item.Data = make([]byte, hdr.Length)
+		err = binary.Read(r, binary.LittleEndian, &item.Data)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read item %d (hdr: %+v) data. %w", i, hdr, err)
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+type CIPItem struct {
+	Header CIPItemHeader
+	Data   []byte
+	Pos    int
+}
+
+func (item *CIPItem) Read(p []byte) (n int, err error) {
+	if item.Pos >= len(item.Data) {
+		return 0, io.EOF
+	}
+	n = copy(p, item.Data[item.Pos:])
+	item.Pos += n
+	return
+}
+
+func (item *CIPItem) Reset() {
+	item.Pos = 0
+}
+
+type CIPItemHeader struct {
+	ID     uint16
+	Length uint16
 }
