@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -137,6 +138,8 @@ func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 const CIP_Port = ":44818"
 const CIP_VendorID = 0x1776
 
+// To connect we first send a register session command.
+// based on the reply we get from that we send a forward open command.
 func (conn *Connection) Connect(ip string) error {
 	if conn.Connected {
 		return nil
@@ -177,9 +180,21 @@ func (conn *Connection) Connect(ip string) error {
 		return err
 	}
 	_ = hdr
-	forwardopenresp := EIPForwardOpen_Reply{}
-	log.Printf("size of str: %v", binary.Size(forwardopenresp))
-	err = binary.Read(dat, binary.LittleEndian, &forwardopenresp)
+	// header before items
+	preitem := PreItemData{}
+	err = binary.Read(dat, binary.LittleEndian, &preitem)
+	if err != nil {
+		return fmt.Errorf("problem reading items header from forward open req. %w", err)
+	}
+
+	items, err := ReadItems(dat)
+	if err != nil {
+		return fmt.Errorf("problem reading items from forward open req. %w", err)
+	}
+
+	forwardopenresp := EIPForwardOpen_Reply2{}
+	err = binary.Read(&items[1], binary.LittleEndian, &forwardopenresp)
+	//err = binary.Read(dat, binary.LittleEndian, &forwardopenresp)
 	if err != nil {
 		log.Printf("Error Reading. %v", err)
 	}
@@ -228,11 +243,26 @@ func (conn *Connection) Disconnect() error {
 
 }
 
-type EIPForwardOpen_Reply struct {
-	Unknown        [20]byte
+type PreItemData struct {
+	Handle  uint32
+	Timeout uint16
+}
+
+type EIPForwardOpen_Reply2 struct {
+	Service        CIPService
+	Unknown2       [3]byte
 	OTConnectionID uint32
 	TOConnectionID uint32
-	Unknown2       uint16
+	Unknown3       uint16
+}
+
+type EIPForwardOpen_Reply struct {
+	Unknown        [16]byte
+	Service        CIPService
+	Unknown2       [3]byte
+	OTConnectionID uint32
+	TOConnectionID uint32
+	Unknown3       uint16
 }
 
 // in this message T is for target and O is for originator so

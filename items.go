@@ -23,21 +23,19 @@ func ReadItems(r io.Reader) ([]CIPItem, error) {
 		return nil, fmt.Errorf("couldn't read item count. %w", err)
 	}
 
-	items := make([]CIPItem, 0, 2) // usually have 2 items.
+	items := make([]CIPItem, count) // usually have 2 items.
 
 	for i := 0; i < int(count); i++ {
-		var hdr CIPItemHeader
-		err := binary.Read(r, binary.LittleEndian, &hdr)
+		//var hdr CIPItemHeader
+		err := binary.Read(r, binary.LittleEndian, &(items[i].Header))
 		if err != nil {
 			return nil, fmt.Errorf("couldn't read item %d header. %w", i, err)
 		}
-		var item CIPItem
-		item.Data = make([]byte, hdr.Length)
-		err = binary.Read(r, binary.LittleEndian, &item.Data)
+		items[i].Data = make([]byte, items[i].Header.Length)
+		err = binary.Read(r, binary.LittleEndian, &(items[i].Data))
 		if err != nil {
-			return nil, fmt.Errorf("couldn't read item %d (hdr: %+v) data. %w", i, hdr, err)
+			return nil, fmt.Errorf("couldn't read item %d (hdr: %+v) data. %w", i, items[i].Header, err)
 		}
-		items = append(items, item)
 	}
 	return items, nil
 }
