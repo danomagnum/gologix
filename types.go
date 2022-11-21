@@ -93,7 +93,7 @@ func (c CIPType) NewBuffer() *[]byte {
 	return &buf
 }
 
-// return the size in bytes of the data structure
+// human readable version of the cip type for printing.
 func (c CIPType) String() string {
 	switch c {
 	case CIPTypeUnknown:

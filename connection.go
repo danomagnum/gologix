@@ -121,15 +121,6 @@ func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 	hdr.Status = 0
 	hdr.Context = conn.Context
 	hdr.Options = 0
-	//hdr.InterfaceHandle = 0
-	//hdr.Timeout = 0
-	//hdr.ItemCount = 0x02
-	//hdr.Item1ID = 0xA1
-	//hdr.Item1Length = 0x04
-	//hdr.Item1 = conn.OTNetworkConnectionID
-	//hdr.Item2ID = 0xB1
-	//hdr.Item2Length = uint16(len(msg) + 2)
-	//hdr.Sequence = conn.SequenceCounter
 
 	return
 
@@ -218,7 +209,7 @@ func (conn *Connection) Disconnect() error {
 	items[0] = CIPItem{} // null item
 
 	reg_msg := CIPMessage_UnRegister{
-		Service:                CIPService_ReadModWrite,
+		Service:                CIPService_ForwardClose,
 		CipPathSize:            0x02,
 		ClassType:              0x20,
 		Class:                  0x06,
@@ -290,7 +281,7 @@ type EIPForwardOpen_Standard struct {
 }
 
 type EIPForwardOpen_Large struct {
-	Service   byte
+	Service   CIPService
 	PathSize  byte
 	ClassType byte
 	Class     byte
@@ -326,7 +317,7 @@ func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
 	ConnectionParams = ConnectionParams << 16 // for long packet
 	ConnectionParams += uint32(conn.ConnectionSize)
 
-	msg.Service = 0x5b
+	msg.Service = CIPService_LargeForwardOpen
 	msg.PathSize = 0x02
 	msg.ClassType = 0x20
 	msg.Class = 0x06
@@ -366,6 +357,7 @@ func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
 	return msg
 }
 
+// RR stands for Read Response
 type RR_Header struct {
 	InterfaceHandle uint32
 	Timeout         uint16

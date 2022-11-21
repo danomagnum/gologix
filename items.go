@@ -10,8 +10,15 @@ import (
 type CIPItemID uint16
 
 const (
-	CIPItem_Null            CIPItemID = 0
-	CIPItem_UnconnectedData CIPItemID = 0xB2
+	CIPItem_Null                CIPItemID = 0x0000
+	CIPItem_ListIdentityReponse CIPItemID = 0x000C
+	CIPItem_ConnectionAddress   CIPItemID = 0x00A1
+	CIPItem_ConnectedData       CIPItemID = 0x00B1
+	CIPItem_UnconnectedData     CIPItemID = 0x00B2
+	CIPItem_ListServiceResponse CIPItemID = 0x0100
+	CIPItem_SockAddrInfo_OT     CIPItemID = 0x8000 // socket address info
+	CIPItem_SockAddrInfo_TO     CIPItemID = 0x8001 // socket address info
+	CIPItem_SequenceAddress     CIPItemID = 0x8002
 )
 
 func ReadItems(r io.Reader) ([]CIPItem, error) {
