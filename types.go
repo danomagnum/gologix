@@ -4,7 +4,7 @@ type CIPType byte
 
 // Go native types that correspond to logix types
 type GoLogixTypes interface {
-	byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
+	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
 }
 
 func GoTypeToLogixType(T any) CIPType {

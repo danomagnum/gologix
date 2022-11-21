@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net"
@@ -57,7 +55,7 @@ func (conn *Connection) Send(cmd CIPCommand, msgs ...any) error {
 		}
 		written += n
 	}
-	log.Printf("Sent: %v", b)
+	//log.Printf("Sent: %v", b)
 	return nil
 
 }
@@ -71,14 +69,14 @@ func (conn *Connection) recv_data() (EIPHeader, *bytes.Reader, error) {
 	if err != nil {
 		return hdr, nil, err
 	}
-	log.Printf("Header: %v", hdr)
+	//log.Printf("Header: %v", hdr)
 	//data_size := hdr.Length * 2
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {
 		err = binary.Read(conn.Conn, binary.LittleEndian, &data)
 	}
-	log.Printf("Buffer: %v", data)
+	//log.Printf("Buffer: %v", data)
 	buf := bytes.NewReader(data)
 	return hdr, buf, err
 
@@ -189,6 +187,55 @@ func (conn *Connection) Connect(ip string) error {
 	conn.OTNetworkConnectionID = forwardopenresp.OTConnectionID
 
 	conn.Connected = true
+	return nil
+
+}
+
+func (conn *Connection) Disconnect() error {
+	if !conn.Connected {
+		return nil
+	}
+	conn.Connected = false
+	var err error
+
+	items := make([]CIPItem, 2)
+	// null address item
+	items[0] = CIPItem{
+		Header: CIPItemHeader{
+			ID:     0,
+			Length: 0,
+		},
+		Data: []byte{},
+	}
+
+	reg_msg := CIPMessage_UnRegister{
+		Service:                CIPService_ReadModWrite,
+		CipPathSize:            0x02,
+		ClassType:              0x20,
+		Class:                  0x06,
+		InstanceType:           0x24,
+		Instance:               0x01,
+		Priority:               0x0A,
+		TimeoutTicks:           0x0E,
+		ConnectionSerialNumber: conn.ConnectionSerialNumber,
+		VendorID:               CIP_VendorID,
+		OriginatorSerialNumber: CIP_SerialNumber,
+		PathSize:               3, // 16 bit words
+		Path:                   [7]byte{0x03, 0x01, 0x00, 0x20, 0x02, 0x24, 0x01},
+	}
+
+	items[1] = NewItem(0xb2, reg_msg)
+
+	item_hdr := CIPItemsHeader{
+		InterfaceHandle: 0,
+		SequenceCounter: 0,
+		Count:           2,
+	}
+
+	err = conn.Send(CIPCommandSendRRData, item_hdr, items[0].Bytes(), items[1].Bytes()) // 0x65 is register session
+	if err != nil {
+		log.Panicf("Couldn't send unconnect req %v", err)
+	}
 	return nil
 
 }
@@ -320,56 +367,4 @@ func BuildRRHeader(size int) RR_Header {
 
 	return rr
 
-}
-
-func ReadItems(r io.Reader) ([]CIPItem, error) {
-
-	var count uint16
-
-	err := binary.Read(r, binary.LittleEndian, &count)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't read item count. %w", err)
-	}
-
-	items := make([]CIPItem, 0, 2) // usually have 2 items.
-
-	for i := 0; i < int(count); i++ {
-		var hdr CIPItemHeader
-		err := binary.Read(r, binary.LittleEndian, &hdr)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't read item %d header. %w", i, err)
-		}
-		var item CIPItem
-		item.Data = make([]byte, hdr.Length)
-		err = binary.Read(r, binary.LittleEndian, &item.Data)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't read item %d (hdr: %+v) data. %w", i, hdr, err)
-		}
-		items = append(items, item)
-	}
-	return items, nil
-}
-
-type CIPItem struct {
-	Header CIPItemHeader
-	Data   []byte
-	Pos    int
-}
-
-func (item *CIPItem) Read(p []byte) (n int, err error) {
-	if item.Pos >= len(item.Data) {
-		return 0, io.EOF
-	}
-	n = copy(p, item.Data[item.Pos:])
-	item.Pos += n
-	return
-}
-
-func (item *CIPItem) Reset() {
-	item.Pos = 0
-}
-
-type CIPItemHeader struct {
-	ID     uint16
-	Length uint16
 }

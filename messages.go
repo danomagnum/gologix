@@ -4,6 +4,21 @@ type CIPMessage_Register struct {
 	ProtocolVersion uint16
 	OptionFlag      uint16
 }
+type CIPMessage_UnRegister struct {
+	Service                CIPService
+	CipPathSize            byte
+	ClassType              byte
+	Class                  byte
+	InstanceType           byte
+	Instance               byte
+	Priority               byte
+	TimeoutTicks           byte
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	PathSize               uint16
+	Path                   [7]byte
+}
 
 type CIPMessage_IOI struct {
 	Header CIPCommonPacketConnected
