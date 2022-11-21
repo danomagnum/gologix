@@ -27,7 +27,7 @@ func (plc *PLC) Connect() error {
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	var t T
-	ct := GoTypeToCIPType(t)
+	ct := GoVarToCIPType(t)
 	val, err := plc.read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
@@ -51,22 +51,6 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		Elements: 1,
 		Offset:   0,
 	}
-	// I think the read message consists of two items because item 1 says
-	// "the next item has the details" and item 2 says "the details are
-	// an ioi of this size". This is just speculation though.
-	/*
-		cip_header := CIPCommonPacketConnected{}
-		cip_header.InterfaceHandle = 0
-		cip_header.Timeout = 0
-		cip_header.ItemCount = 2
-		cip_header.Item1ID = 0xA1
-		cip_header.Item1Length = 0x04
-		cip_header.Item1 = plc.conn.OTNetworkConnectionID
-		cip_header.Item2ID = 0xB1
-		cip_header.Item2Length = uint16(SizeOf(ioi_header, ioi.Buffer, ioi_footer)) + 2
-		log.Printf("item 2 length %v", cip_header.Item2Length)
-		cip_header.Sequence = plc.conn.SequenceCounter
-	*/
 
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
@@ -81,11 +65,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		return nil, err
 	}
 	_ = hdr
-	//response_header := CIPCommonPacketConnected{}
-	//err = binary.Read(data, binary.LittleEndian, &response_header)
-	//if err != nil {
-	//log.Printf("Problem reading read result header. %v", err)
-	//}
+
 	read_result_header := CIPReadResultHeader2{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
@@ -100,8 +80,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	var hdr2 CIPReadResultData
-	//err = binary.Read(&items[1], binary.LittleEndian, &hdr2)
-	err = items[1].UnMarshal(&hdr2)
+	err = items[1].Unmarshal(&hdr2)
 	if err != nil {
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}
@@ -123,22 +102,9 @@ type CIPReadResultData struct {
 	Unknown         byte
 }
 
-type CIPReadResultHeader struct {
-	InterfaceHandle uint32
-	Timeout         uint16
-	ItemCount       uint16
-	Item1Type       uint16
-	Item1Length     uint16
-	Item1           uint32
-	Item2Type       uint16
-	Item2Length     uint16
-	SequenceCounter uint16
-	Service         CIPService
-	Status          [3]byte
-	Type            CIPType
-	Unknown         byte
-}
-
+// readValue reads one unit of cip data type t into the correct go type.
+// To do this it reads the needed number of bytes from r.
+// It returns the value as an any so the caller will have to do a cast to get it back
 func readValue(t CIPType, r io.Reader) any {
 
 	var value any
@@ -201,10 +167,11 @@ func readValue(t CIPType, r io.Reader) any {
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
 	default:
+		panic("Default type.")
 
 	}
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		log.Printf("Problem reading %s as one unit of %T. %v", t, value, err)
 	}
 	log.Printf("type %v. value %v", t, value)
 	return value

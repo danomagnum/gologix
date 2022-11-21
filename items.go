@@ -91,13 +91,13 @@ func (item *CIPItem) Marshal(str any) {
 	binary.Write(item, binary.LittleEndian, str)
 }
 
-// UnMarshal deserializes a sturcture into the item's data.
+// Unmarshal deserializes a sturcture into the item's data.
 //
 // If called more than once the []byte data for the additional structures is appended to the
 // end of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
-func (item *CIPItem) UnMarshal(str any) error {
+func (item *CIPItem) Unmarshal(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }
 

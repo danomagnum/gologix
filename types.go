@@ -4,10 +4,16 @@ type CIPType byte
 
 // Go native types that correspond to logix types
 type GoLogixTypes interface {
-	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
+	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64 | string
 }
 
-func GoTypeToCIPType(T any) CIPType {
+func GoTypeToCIPType[T GoLogixTypes]() CIPType {
+	var t T
+	return GoVarToCIPType(t)
+}
+
+// return the CIPType that corresponds to go type of variable T
+func GoVarToCIPType(T any) CIPType {
 	switch T.(type) {
 	case byte:
 		return CIPTypeBOOL
@@ -97,35 +103,35 @@ func (c CIPType) NewBuffer() *[]byte {
 func (c CIPType) String() string {
 	switch c {
 	case CIPTypeUnknown:
-		return "0 - Unknown"
+		return "0x00 - Unknown"
 	case CIPTypeStruct:
-		return "88 - Struct"
+		return "0xA0 - Struct"
 	case CIPTypeBOOL:
-		return "1 - BOOL"
+		return "0xC1 - BOOL"
 	case CIPTypeSINT:
-		return "1 - SINT"
+		return "0xC2 - SINT"
 	case CIPTypeINT:
-		return "2 - INT"
+		return "0xC3 - INT"
 	case CIPTypeDINT:
-		return "4 - DINT"
+		return "0xC4 - DINT"
 	case CIPTypeLINT:
-		return "8 - LINT"
+		return "0xC5 - LINT"
 	case CIPTypeUSINT:
-		return "1 - USINT"
+		return "0xC6 - USINT"
 	case CIPTypeUINT:
-		return "2 - UINT"
+		return "0xC7 - UINT"
 	case CIPTypeUDINT:
-		return "4 - UDINT"
+		return "0xC8 - UDINT"
 	case CIPTypeLWORD:
-		return "8 - LWORD"
+		return "0xC9 - LWORD"
 	case CIPTypeREAL:
-		return "4 - REAL"
+		return "0xCA - REAL"
 	case CIPTypeLREAL:
-		return "8 - LREAL"
+		return "0xCB - LREAL"
 	case CIPTypeDWORD:
-		return "4 - DWORD"
+		return "0xD3 - DWORD"
 	case CIPTypeSTRING:
-		return "1 - String"
+		return "0xDA - String"
 	default:
 		return "0 - Unknown"
 	}
