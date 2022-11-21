@@ -21,6 +21,8 @@ const (
 	CIPItem_SequenceAddress     CIPItemID = 0x8002
 )
 
+// ReadItems takes an io.Reader positioned at the count of items in the data stream.
+// It then reads each item from the data stream into an Item structure and returns a slice of all items.
 func ReadItems(r io.Reader) ([]CIPItem, error) {
 
 	var count uint16
@@ -75,12 +77,17 @@ func NewItem(id CIPItemID, str any) CIPItem {
 			ID: id,
 		},
 	}
-	c.Pack(str)
+	c.Marshal(str)
 	return c
 }
 
-// serialize a sturcture into the item's data.  Updates the header accordingly
-func (item *CIPItem) Pack(str any) {
+// Marshal serializes a sturcture into the item's data.
+//
+// If called more than once the []byte data for the additional structures is appended to the
+// end of the item's data buffer.
+//
+// The data length in the item's header is updated to match.
+func (item *CIPItem) Marshal(str any) {
 	binary.Write(item, binary.LittleEndian, str)
 }
 
@@ -95,17 +102,41 @@ func (item *CIPItem) Reset() {
 	item.Pos = 0
 }
 
+// This is the header for a single item in an item list.
 type CIPItemHeader struct {
 	ID     CIPItemID
-	Length uint16
+	Length uint16 // bytes of data to follow
 }
 
+// This is the header for multiple items
 type CIPItemsHeader struct {
 	InterfaceHandle uint32
 	SequenceCounter uint16
 	Count           uint16
 }
 
+// BuildItemsBytes takes a slice of items and generates the appropriate byte pattern for the packet
+//
+// A typical item structure will look like this:
+// byte		info          	Field
+// 0		Items Header	InterfaceHandle
+// 1
+// 2
+// 3
+// 4	             		SequenceCounter
+// 5
+// 6	               		ItemCount
+// 7		Item0 Header	Item ID
+// 8
+// 9 	            		Length (bytes) = N0
+// 10
+// 11 		Item0 Data   	Byte 0
+// ...
+// 11+N0	Item1 Header	Item ID
+// 12+N0
+// 13+N0	           		Length (bytes) = N1
+// 14+N0	Item1 Data   	Byte 0
+// ...  repeat for all items...
 func BuildItemsBytes(items []CIPItem) *[]byte {
 
 	b := new(bytes.Buffer)
