@@ -7,10 +7,10 @@ func main() {
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	plc.Connect()
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
-	//ReadAndPrint[int32](plc, "TestDint")
-	//ReadAndPrint[int16](plc, "TestInt")
-	//ReadAndPrint[bool](plc, "TestBool")
-	//ReadAndPrint[float32](plc, "TestReal")
+	ReadAndPrint[int32](plc, "TestDint")
+	ReadAndPrint[int16](plc, "TestInt")
+	ReadAndPrint[bool](plc, "TestBool")
+	ReadAndPrint[float32](plc, "TestReal")
 	plc.conn.Disconnect()
 	/*
 		TestDint, err := Read[float32](plc, "TestDint")

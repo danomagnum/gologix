@@ -7,6 +7,13 @@ import (
 	"io"
 )
 
+type CIPItemID uint16
+
+const (
+	CIPItem_Null            CIPItemID = 0
+	CIPItem_UnconnectedData CIPItemID = 0xB2
+)
+
 func ReadItems(r io.Reader) ([]CIPItem, error) {
 
 	var count uint16
@@ -57,7 +64,7 @@ func (item *CIPItem) Write(p []byte) (n int, err error) {
 }
 
 // create an item given an item id and data structure
-func NewItem(id uint16, str any) CIPItem {
+func NewItem(id CIPItemID, str any) CIPItem {
 	c := CIPItem{
 		Header: CIPItemHeader{
 			ID: id,
@@ -84,7 +91,7 @@ func (item *CIPItem) Reset() {
 }
 
 type CIPItemHeader struct {
-	ID     uint16 // TODO: make this its own type with enumeration
+	ID     CIPItemID
 	Length uint16
 }
 
@@ -94,7 +101,7 @@ type CIPItemsHeader struct {
 	Count           uint16
 }
 
-func BuildItemsBytes(items []CIPItem) *bytes.Buffer {
+func BuildItemsBytes(items []CIPItem) *[]byte {
 
 	b := new(bytes.Buffer)
 
@@ -109,5 +116,7 @@ func BuildItemsBytes(items []CIPItem) *bytes.Buffer {
 		b.Write(item.Bytes())
 	}
 
-	return b
+	out := b.Bytes()
+
+	return &out
 }

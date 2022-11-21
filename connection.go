@@ -191,6 +191,7 @@ func (conn *Connection) Connect(ip string) error {
 
 }
 
+// to disconect we send two items - a null item and an unconnected data item for the unregister service
 func (conn *Connection) Disconnect() error {
 	if !conn.Connected {
 		return nil
@@ -199,14 +200,7 @@ func (conn *Connection) Disconnect() error {
 	var err error
 
 	items := make([]CIPItem, 2)
-	// null address item
-	items[0] = CIPItem{
-		Header: CIPItemHeader{
-			ID:     0,
-			Length: 0,
-		},
-		Data: []byte{},
-	}
+	items[0] = CIPItem{} // null item
 
 	reg_msg := CIPMessage_UnRegister{
 		Service:                CIPService_ReadModWrite,
@@ -220,19 +214,13 @@ func (conn *Connection) Disconnect() error {
 		ConnectionSerialNumber: conn.ConnectionSerialNumber,
 		VendorID:               CIP_VendorID,
 		OriginatorSerialNumber: CIP_SerialNumber,
-		PathSize:               3, // 16 bit words
-		Path:                   [7]byte{0x03, 0x01, 0x00, 0x20, 0x02, 0x24, 0x01},
+		PathSize:               3,                                           // 16 bit words
+		Path:                   [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}, // TODO: generate paths automatically
 	}
 
-	items[1] = NewItem(0xb2, reg_msg)
+	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
 
-	item_hdr := CIPItemsHeader{
-		InterfaceHandle: 0,
-		SequenceCounter: 0,
-		Count:           2,
-	}
-
-	err = conn.Send(CIPCommandSendRRData, item_hdr, items[0].Bytes(), items[1].Bytes()) // 0x65 is register session
+	err = conn.Send(CIPCommandSendRRData, BuildItemsBytes(items)) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send unconnect req %v", err)
 	}
@@ -295,7 +283,8 @@ type EIPForwardOpen_Large struct {
 	TORPI               uint32
 	TONetworkConnParams uint32
 	TransportTrigger    byte
-	Path                [7]byte
+	PathLen             byte
+	Path                [6]byte
 }
 
 const CIP_SerialNumber = 42
@@ -315,6 +304,7 @@ func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
 	msg.Instance = 0x01
 	msg.Priority = 0x0A
 	msg.TimeoutTicks = 0x0E
+	//msg.OTConnectionID = 0x05318008
 	msg.OTConnectionID = 0x20000002
 	msg.TOConnectionID = rand.Uint32()
 	msg.ConnectionSerialNumber = conn.ConnectionSerialNumber
@@ -340,7 +330,8 @@ func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
 	// byte 5: ...0 01.. logical segment type: Instance ID = 1
 	// byte 5: .... ..00 logical segment format: 8-bit (0)
 	// byte 6: path segment instance 0x01
-	msg.Path = [7]byte{0x03, 0x01, 0x00, 0x20, 0x02, 0x24, 0x01}
+	msg.PathLen = 3
+	msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
 
 	return msg
 }

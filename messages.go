@@ -17,7 +17,7 @@ type CIPMessage_UnRegister struct {
 	VendorID               uint16
 	OriginatorSerialNumber uint32
 	PathSize               uint16
-	Path                   [7]byte
+	Path                   [6]byte
 }
 
 type CIPMessage_IOI struct {
