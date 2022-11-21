@@ -91,6 +91,16 @@ func (item *CIPItem) Marshal(str any) {
 	binary.Write(item, binary.LittleEndian, str)
 }
 
+// UnMarshal deserializes a sturcture into the item's data.
+//
+// If called more than once the []byte data for the additional structures is appended to the
+// end of the item's data buffer.
+//
+// The data length in the item's header is updated to match.
+func (item *CIPItem) UnMarshal(str any) error {
+	return binary.Read(item, binary.LittleEndian, str)
+}
+
 func (item *CIPItem) Bytes() []byte {
 	b := bytes.Buffer{}
 	binary.Write(&b, binary.LittleEndian, item.Header)
@@ -117,6 +127,8 @@ type CIPItemsHeader struct {
 
 // BuildItemsBytes takes a slice of items and generates the appropriate byte pattern for the packet
 //
+// A lot of the time, item0 ends up being the "null" item with no Data section.
+//
 // A typical item structure will look like this:
 // byte		info          	Field
 // 0		Items Header	InterfaceHandle
@@ -135,7 +147,8 @@ type CIPItemsHeader struct {
 // 11+N0	Item1 Header	Item ID
 // 12+N0
 // 13+N0	           		Length (bytes) = N1
-// 14+N0	Item1 Data   	Byte 0
+// 14+N0
+// 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
 func BuildItemsBytes(items []CIPItem) *[]byte {
 

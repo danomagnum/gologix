@@ -27,7 +27,7 @@ func (plc *PLC) Connect() error {
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	var t T
-	ct := GoTypeToLogixType(t)
+	ct := GoTypeToCIPType(t)
 	val, err := plc.read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
@@ -38,9 +38,6 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	}
 	return cast, nil
 
-}
-func (plc *PLC) read_single_float32(tag string, datatype CIPType, elements uint16) (float32, error) {
-	return Read[float32](plc, tag)
 }
 
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
@@ -57,19 +54,28 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	// I think the read message consists of two items because item 1 says
 	// "the next item has the details" and item 2 says "the details are
 	// an ioi of this size". This is just speculation though.
-	cip_header := CIPCommonPacketConnected{}
-	cip_header.InterfaceHandle = 0
-	cip_header.Timeout = 0
-	cip_header.ItemCount = 2
-	cip_header.Item1ID = 0xA1
-	cip_header.Item1Length = 0x04
-	cip_header.Item1 = plc.conn.OTNetworkConnectionID
-	cip_header.Item2ID = 0xB1
-	cip_header.Item2Length = uint16(SizeOf(ioi_header, ioi.Buffer, ioi_footer)) + 2
-	log.Printf("item 2 length %v", cip_header.Item2Length)
-	cip_header.Sequence = plc.conn.SequenceCounter
+	/*
+		cip_header := CIPCommonPacketConnected{}
+		cip_header.InterfaceHandle = 0
+		cip_header.Timeout = 0
+		cip_header.ItemCount = 2
+		cip_header.Item1ID = 0xA1
+		cip_header.Item1Length = 0x04
+		cip_header.Item1 = plc.conn.OTNetworkConnectionID
+		cip_header.Item2ID = 0xB1
+		cip_header.Item2Length = uint16(SizeOf(ioi_header, ioi.Buffer, ioi_footer)) + 2
+		log.Printf("item 2 length %v", cip_header.Item2Length)
+		cip_header.Sequence = plc.conn.SequenceCounter
+	*/
 
-	plc.conn.Send(CIPCommandSendUnitData, cip_header, ioi_header, ioi.Buffer, ioi_footer)
+	reqitems := make([]CIPItem, 2)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
+	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
+	reqitems[1].Marshal(ioi_header)
+	reqitems[1].Marshal(ioi.Buffer)
+	reqitems[1].Marshal(ioi_footer)
+
+	plc.conn.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
 	hdr, data, err := plc.conn.recv_data()
 	if err != nil {
 		return nil, err
@@ -91,10 +97,11 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		return 0, nil
 	}
 	if len(items) != 2 {
-		return 0, fmt.Errorf("Wrong Number of Items Expected 2 but got %v", len(items))
+		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	var hdr2 CIPReadResultData
-	err = binary.Read(&items[1], binary.LittleEndian, &hdr2)
+	//err = binary.Read(&items[1], binary.LittleEndian, &hdr2)
+	err = items[1].UnMarshal(&hdr2)
 	if err != nil {
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}

@@ -7,7 +7,7 @@ type GoLogixTypes interface {
 	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
 }
 
-func GoTypeToLogixType(T any) CIPType {
+func GoTypeToCIPType(T any) CIPType {
 	switch T.(type) {
 	case byte:
 		return CIPTypeBOOL
