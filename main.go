@@ -12,6 +12,7 @@ func main() {
 	ReadAndPrint[bool](plc, "TestBool")
 	ReadAndPrint[float32](plc, "TestReal")
 	plc.conn.Disconnect()
+
 	/*
 		TestDint, err := Read[float32](plc, "TestDint")
 		if err != nil {

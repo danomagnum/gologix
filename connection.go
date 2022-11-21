@@ -88,28 +88,6 @@ func NewConnection() (conn Connection) {
 	return
 }
 
-type EIPHeader struct {
-	Command       uint16
-	Length        uint16
-	SessionHandle uint32
-	Status        uint32
-	Context       uint64 // 8 bytes you can do whatever you want with. They'll be echoed back.
-	Options       uint32
-}
-
-type HeaderFrame2 struct {
-	Header          EIPHeader
-	InterfaceHandle uint32
-	Timeout         uint16
-	ItemCount       uint16
-	Item1ID         uint16
-	Item1Length     uint16
-	Item1           uint32
-	Item2ID         uint16
-	Item2Length     uint16
-	Sequence        uint16
-}
-
 func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	conn.SequenceCounter++
@@ -211,9 +189,9 @@ func (conn *Connection) Disconnect() error {
 	reg_msg := CIPMessage_UnRegister{
 		Service:                CIPService_ForwardClose,
 		CipPathSize:            0x02,
-		ClassType:              0x20,
+		ClassType:              CIPClass_8bit,
 		Class:                  0x06,
-		InstanceType:           0x24,
+		InstanceType:           CIPInstance_8bit,
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,

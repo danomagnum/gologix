@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"time"
 )
@@ -66,7 +65,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	}
 	_ = hdr
 
-	read_result_header := CIPReadResultHeader2{}
+	read_result_header := CIPReadResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		log.Printf("Problem reading read result header. %v", err)
@@ -88,91 +87,4 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	value := readValue(hdr2.Type, &items[1])
 	_ = value
 	return value, nil
-}
-
-type CIPReadResultHeader2 struct {
-	InterfaceHandle uint32
-	Timeout         uint16
-}
-type CIPReadResultData struct {
-	SequenceCounter uint16
-	Service         CIPService
-	Status          [3]byte
-	Type            CIPType
-	Unknown         byte
-}
-
-// readValue reads one unit of cip data type t into the correct go type.
-// To do this it reads the needed number of bytes from r.
-// It returns the value as an any so the caller will have to do a cast to get it back
-func readValue(t CIPType, r io.Reader) any {
-
-	var value any
-	var err error
-	switch t {
-	case CIPTypeUnknown:
-		panic("Unknown type.")
-	case CIPTypeStruct:
-		panic("Struct!")
-	case CIPTypeBOOL:
-		var trueval bool
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeSINT:
-		var trueval byte
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeINT:
-		var trueval int16
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeDINT:
-		var trueval int32
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeLINT:
-		var trueval int64
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeUSINT:
-		var trueval uint8
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeUINT:
-		var trueval uint16
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeUDINT:
-		var trueval uint32
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeLWORD:
-		var trueval uint64
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeREAL:
-		var trueval float32
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeLREAL:
-		var trueval float64
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeDWORD:
-		var trueval uint32
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	case CIPTypeSTRING:
-		var trueval [86]byte
-		err = binary.Read(r, binary.LittleEndian, &trueval)
-		value = trueval
-	default:
-		panic("Default type.")
-
-	}
-	if err != nil {
-		log.Printf("Problem reading %s as one unit of %T. %v", t, value, err)
-	}
-	log.Printf("type %v. value %v", t, value)
-	return value
 }
