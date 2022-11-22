@@ -34,6 +34,10 @@ type CIPIOIHeader struct {
 	Service  CIPService
 	Size     byte
 }
+type CIPWriteIOIFooter struct {
+	DataType uint16
+	Elements uint16
+}
 type CIPIOIFooter struct {
 	Elements uint16
 }

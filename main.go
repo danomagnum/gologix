@@ -1,25 +1,49 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	"log"
+	"time"
+)
 
 func main() {
 
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	plc.Connect()
+	defer plc.conn.Disconnect()
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
-	ReadAndPrint[int32](plc, "TestDint")
-	ReadAndPrint[int16](plc, "TestInt")
-	ReadAndPrint[bool](plc, "TestBool")
-	ReadAndPrint[float32](plc, "TestReal")
-	plc.conn.Disconnect()
+	i := int16(0)
+	t0 := time.Now()
+	count := int16(1000)
+	for {
+		//ReadAndPrint[int32](plc, "TestDint")
+		//ReadAndPrint[int16](plc, "TestInt")
+		//ReadAndPrint[bool](plc, "TestBool")
+		//ReadAndPrint[float32](plc, "TestReal")
 
-	/*
-		TestDint, err := Read[float32](plc, "TestDint")
+		err := plc.Write_single("TestInt", i)
 		if err != nil {
-			log.Printf("Problem reading ShedTemp. %v", err)
+			log.Printf("error writing. %v", err)
 		}
-		log.Printf("Dint: %v", TestDint)
-	*/
+		/*
+			compare, err := Read[int16](plc, "TestInt")
+			if err != nil {
+				fmt.Printf("Error with read of TestInt. %v", err)
+				panic("Dag, yo.")
+			}
+			if compare != i {
+				fmt.Printf("Read didn't match write!. Expected %v. Got %v", i, compare)
+				panic("woops!")
+			}
+			//fmt.Printf("TestInt: %v", compare)
+		*/
+		i += 1
+		if i == count {
+
+			fmt.Printf("Done in %v. \n", time.Since(t0))
+			break
+		}
+	}
 
 }
 

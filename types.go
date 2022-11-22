@@ -238,7 +238,7 @@ func readValue(t CIPType, r io.Reader) any {
 	if err != nil {
 		log.Printf("Problem reading %s as one unit of %T. %v", t, value, err)
 	}
-	log.Printf("type %v. value %v", t, value)
+	//log.Printf("type %v. value %v", t, value)
 	return value
 }
 

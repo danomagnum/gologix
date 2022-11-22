@@ -27,7 +27,7 @@ func (plc *PLC) Connect() error {
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	var t T
-	fmt.Printf("reading type %T", t)
+	//fmt.Printf("reading type %T", t)
 	ct := GoVarToCIPType(t)
 	val, err := plc.read_single(tag, ct, 1)
 	if err != nil {
@@ -39,6 +39,43 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	}
 	return cast, nil
 
+}
+
+func (plc *PLC) Write_single(tag string, value any) error {
+	//service = 0x4D // CIPService_Write
+	datatype := GoVarToCIPType(value)
+	ioi := BuildIOI(tag, datatype)
+	plc.readSequencer += 1
+	ioi_header := CIPIOIHeader{
+		Sequence: plc.readSequencer,
+		Service:  CIPService_Write,
+		Size:     byte(len(ioi.Buffer) / 2),
+	}
+	ioi_footer := CIPWriteIOIFooter{
+		DataType: uint16(datatype),
+		Elements: 1,
+	}
+
+	reqitems := make([]CIPItem, 2)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
+	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
+	reqitems[1].Marshal(ioi_header)
+	reqitems[1].Marshal(ioi.Buffer)
+	reqitems[1].Marshal(ioi_footer)
+	reqitems[1].Marshal(value)
+
+	err := plc.conn.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	if err != nil {
+		return err
+	}
+
+	hdr, data, err := plc.conn.recv_data()
+	if err != nil {
+		return err
+	}
+	_ = hdr
+	_ = data
+	return err
 }
 
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
