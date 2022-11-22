@@ -43,6 +43,9 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi := BuildIOI(tag, datatype)
+	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
+	// won't get an error but it will return the last value you requested again.
+	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
 	plc.readSequencer += 1
 
 	ioi_header := CIPIOIHeader{
