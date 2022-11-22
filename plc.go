@@ -12,6 +12,7 @@ type PLC struct {
 	IPAddress     string
 	ProcessorSlot int
 	SocketTimeout time.Duration
+	readSequencer uint16
 	// Route
 	conn Connection
 }
@@ -26,6 +27,7 @@ func (plc *PLC) Connect() error {
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	var t T
+	fmt.Printf("reading type %T", t)
 	ct := GoVarToCIPType(t)
 	val, err := plc.read_single(tag, ct, 1)
 	if err != nil {
@@ -41,14 +43,15 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi := BuildIOI(tag, datatype)
+	plc.readSequencer += 1
 
 	ioi_header := CIPIOIHeader{
-		Service: CIPService_FragRead,
-		Size:    byte(len(ioi.Buffer) / 2),
+		Sequence: plc.readSequencer,
+		Service:  CIPService_Read,
+		Size:     byte(len(ioi.Buffer) / 2),
 	}
 	ioi_footer := CIPIOIFooter{
 		Elements: 1,
-		Offset:   0,
 	}
 
 	reqitems := make([]CIPItem, 2)

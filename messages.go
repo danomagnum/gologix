@@ -30,12 +30,12 @@ type CIPMessage_UnRegister struct {
 }
 
 type CIPIOIHeader struct {
-	Service CIPService
-	Size    byte
+	Sequence uint16
+	Service  CIPService
+	Size     byte
 }
 type CIPIOIFooter struct {
 	Elements uint16
-	Offset   uint32
 }
 
 type CIPReadResultHeader struct {

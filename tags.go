@@ -150,11 +150,16 @@ func BuildIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 func buildIOI_Part(tagpath string) []byte {
 	t := parse_tag_name(tagpath)
 	tag_size := len(t.BasePath)
+	need_extend := false
+	if tag_size%2 == 1 {
+		need_extend = true
+		//tag_size += 1
+	}
 
 	tag_name_header := [2]byte{0x91, byte(tag_size)}
 	tag_name_msg := append(tag_name_header[:], []byte(t.BasePath)...)
 	// has to be an even number of bytes.
-	if tag_size%2 == 1 {
+	if need_extend {
 		tag_name_msg = append(tag_name_msg, []byte{0x00}...)
 	}
 	return tag_name_msg
