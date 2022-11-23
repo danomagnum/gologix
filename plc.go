@@ -101,6 +101,10 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
+
+	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
+	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
+	// the total data so maybe not.
 	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
 	reqitems[1].Marshal(ioi_header)
 	reqitems[1].Marshal(ioi.Buffer)

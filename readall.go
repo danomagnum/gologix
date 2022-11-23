@@ -1,5 +1,11 @@
 package main
 
+import (
+	"bytes"
+	"encoding/binary"
+	"log"
+)
+
 type EmbeddedMessage struct {
 	Size          uint16
 	Service       CIPService
@@ -18,6 +24,23 @@ type ReaddAllData struct {
 	RequestPath [4]byte
 	Timeout     uint16
 	Message     EmbeddedMessage
+}
+
+type tagResultDataHeader struct {
+	InstanceID uint32
+	NameLength uint16
+}
+
+type tagResultDataFooter struct {
+	Type       CIPType
+	Dimension1 uint32
+	Dimension2 uint32
+	Dimension3 uint32
+}
+
+type ListInstanceHeader struct {
+	Unknown uint16
+	Status  uint16
 }
 
 func (plc *PLC) ReadAll(start_instance byte) error {
@@ -58,6 +81,50 @@ func (plc *PLC) ReadAll(start_instance byte) error {
 	}
 	_ = hdr
 	_ = data
+	//data_hdr := ListInstanceHeader{}
+	//binary.Read(data, binary.LittleEndian, &data_hdr)
+	padding := make([]byte, 6)
+	data.Read(padding)
+
+	resp_items, err := ReadItems(data)
+	if err != nil {
+		log.Panic("Couldn't parse items")
+	}
+	data2 := bytes.NewBuffer(resp_items[1].Data)
+	//data2.Next(4)
+	data_hdr := ListInstanceHeader{}
+	binary.Read(data2, binary.LittleEndian, &data_hdr)
+
+	tag_hdr := new(tagResultDataHeader)
+	tag_ftr := new(tagResultDataFooter)
+	for data2.Len() > 0 {
+		binary.Read(data2, binary.LittleEndian, tag_hdr)
+		tag_name := make([]byte, tag_hdr.NameLength)
+		binary.Read(data2, binary.LittleEndian, &tag_name)
+		if tag_hdr.NameLength%2 == 1 {
+			data2.Next(1)
+		}
+		binary.Read(data2, binary.LittleEndian, tag_ftr)
+
+		log.Printf("Tag: '%s' Instance: %d Type: %s[%d,%d,%d]",
+			tag_name,
+			tag_hdr.InstanceID,
+			tag_ftr.Type,
+			tag_ftr.Dimension1,
+			tag_ftr.Dimension2,
+			tag_ftr.Dimension3,
+		)
+		start_instance = byte(tag_hdr.InstanceID)
+
+	}
+	log.Printf("Status: %v", hdr.Status)
+	log.Printf("item1 Status: %v", data_hdr.Status)
+	// eventually keep going past 200
+	if data_hdr.Status == 6 && start_instance < 200 {
+		// continue
+		//plc.ReadAll(start_instance)
+
+	}
 
 	return nil
 }
