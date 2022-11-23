@@ -1,16 +1,31 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"runtime/pprof"
 	"time"
 )
 
-func main() {
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
+func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	plc.Connect()
 	defer plc.conn.Disconnect()
+	plc.ReadAll(1)
+	log.Fatal("Done")
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 	i := int16(0)
 	t0 := time.Now()
@@ -25,6 +40,7 @@ func main() {
 		if err != nil {
 			log.Printf("error writing. %v", err)
 		}
+		Read[int16](plc, "TestInt")
 		/*
 			compare, err := Read[int16](plc, "TestInt")
 			if err != nil {

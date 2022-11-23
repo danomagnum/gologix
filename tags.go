@@ -93,6 +93,11 @@ const DEFAULT_BUFFER_SIZE = 256
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
 func BuildIOI(tagpath string, datatype CIPType) (ioi *IOI) {
+	extant, exists := ioi_cache[tagpath]
+	if exists {
+		ioi = extant
+		return
+	}
 	tag_array := strings.Split(tagpath, ".")
 
 	ioi = new(IOI)
@@ -144,6 +149,7 @@ func BuildIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 
 	}
 
+	ioi_cache[tagpath] = ioi
 	return ioi
 }
 

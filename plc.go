@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var ioi_cache map[string]*IOI
+
 type PLC struct {
 	IPAddress     string
 	ProcessorSlot int
@@ -22,6 +24,9 @@ func (plc *PLC) Read_Single(tag string) []byte {
 }
 
 func (plc *PLC) Connect() error {
+	if ioi_cache == nil {
+		ioi_cache = make(map[string]*IOI)
+	}
 	return plc.conn.Connect(plc.IPAddress)
 }
 

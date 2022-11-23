@@ -30,14 +30,15 @@ const (
 	CIPService_GroupSync              CIPService = 0x1C
 	CIPService_GetMemberList          CIPService = 0x1D
 	// cip object services
-	CIPService_Read               CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
-	CIPService_Write              CIPService = 0x4D
-	CIPService_ForwardClose       CIPService = 0x4E // Also seen this called "read modify write" //CIPService_ReadModWrite     CIPService = 0x4E // Read Modify Write
-	CIPService_GetConnectionOwner CIPService = 0x5A
-	CIPService_LargeForwardOpen   CIPService = 0x5B
-	CIPService_FragRead           CIPService = 0x52 // Fragmented Read
-	CIPService_FragWrite          CIPService = 0x53 // Fragmented Write
-	CIPService_GetConnectionData  CIPService = 0x57
+	CIPService_Read                     CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
+	CIPService_Write                    CIPService = 0x4D
+	CIPService_ForwardClose             CIPService = 0x4E // Also seen this called "read modify write" //CIPService_ReadModWrite     CIPService = 0x4E // Read Modify Write
+	CIPService_GetConnectionOwner       CIPService = 0x5A
+	CIPService_LargeForwardOpen         CIPService = 0x5B
+	CIPService_FragRead                 CIPService = 0x52 // Fragmented Read
+	CIPService_FragWrite                CIPService = 0x53 // Fragmented Write
+	CIPService_GetInstanceAttributeList CIPService = 0x55
+	CIPService_GetConnectionData        CIPService = 0x57
 )
 
 type CIPCommand byte
