@@ -5,6 +5,9 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
 // bits 5,6,7 (counting from 0) are the segment type
@@ -152,4 +155,52 @@ func PathPortBuild(link []byte, portID uint16, padded bool) []byte {
 	}
 
 	return io
+}
+
+func sized_pathgen(path string) (int, []byte, error) {
+	res, err := pathgen(path)
+	if err != nil {
+		return 0, nil, err
+	}
+	return len(res), res, nil
+}
+
+// this function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
+func pathgen(path string) ([]byte, error) {
+	// get rid of any spaces and square brackets
+	path = strings.ReplaceAll(path, " ", "")
+	path = strings.ReplaceAll(path, "[", "")
+	path = strings.ReplaceAll(path, "]", "")
+	// split on commas
+	parts := strings.Split(path, ",")
+
+	byte_path := make([]byte, 0, len(parts))
+
+	for _, part := range parts {
+		// first see if this looks like an IP address.
+		is_ip := strings.Contains(part, ".")
+		if is_ip {
+			// for some god forsaken reason the path doesn't use the ip address as actual bytes but as an ascii string.
+			// we first have to set bit 5 in the previous byte to say we're using an extended address for this part.
+			last_pos := len(byte_path) - 1
+			last_byte := byte_path[last_pos]
+			byte_path[last_pos] = last_byte | 1<<4
+			l := len(part)
+			byte_path = append(byte_path, byte(l))
+			string_bytes := []byte(part)
+			byte_path = append(byte_path, string_bytes...)
+			continue
+		}
+		// not an IP address
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			return nil, fmt.Errorf("problem converting %v to number. %w", part, err)
+		}
+		if val < 0 || val > 255 {
+			return nil, fmt.Errorf("number out of range. %v", part)
+		}
+		byte_path = append(byte_path, byte(val))
+	}
+
+	return byte_path, nil
 }

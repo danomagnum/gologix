@@ -98,8 +98,6 @@ func (item *CIPItem) Marshal(str any) {
 //
 // If called more than once the []byte data for the additional structures is continuously
 // raed from the current position of the item's data buffer.
-//
-// The data length in the item's header is updated to match.
 func (item *CIPItem) Unmarshal(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }

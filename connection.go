@@ -89,6 +89,27 @@ func (plc *PLC) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 const CIP_Port = ":44818"
 const CIP_VendorID = 0x1776
 
+func (plc *PLC) register_session() error {
+	reg_msg := CIPMessage_Register{}
+	reg_msg.ProtocolVersion = 1
+	reg_msg.OptionFlag = 0
+
+	err := plc.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
+	if err != nil {
+		return fmt.Errorf("couldn't send connect req %w", err)
+	}
+	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
+	resp_hdr, resp_data, err := plc.recv_data()
+	if err != nil {
+		return fmt.Errorf("couldn't get connect response %w", err)
+	}
+	plc.SessionHandle = resp_hdr.SessionHandle
+	log.Printf("Session Handle %v", plc.SessionHandle)
+	_ = resp_data
+	return nil
+
+}
+
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
 func (plc *PLC) connect(ip string) error {
@@ -101,22 +122,10 @@ func (plc *PLC) connect(ip string) error {
 		return err
 	}
 
-	reg_msg := CIPMessage_Register{}
-	reg_msg.ProtocolVersion = 1
-	reg_msg.OptionFlag = 0
-
-	err = plc.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
-	if err != nil {
-		log.Panicf("Couldn't send connect req %v", err)
-	}
-	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	resp_hdr, resp_data, err := plc.recv_data()
+	err = plc.register_session()
 	if err != nil {
 		return err
 	}
-	plc.SessionHandle = resp_hdr.SessionHandle
-	log.Printf("Session Handle %v", plc.SessionHandle)
-	_ = resp_data
 
 	plc.ConnectionSize = 4002
 	// we have to do something different for small connection sizes.
@@ -135,7 +144,7 @@ func (plc *PLC) connect(ip string) error {
 		return err
 	}
 	_ = hdr
-	if hdr.Status == 0x01 {
+	if hdr.Status != 0x00 {
 		return fmt.Errorf("large Forward Open Failed. code %v", hdr.Status)
 	}
 	// header before items
@@ -151,13 +160,13 @@ func (plc *PLC) connect(ip string) error {
 	}
 
 	forwardopenresp := EIPForwardOpen_Reply{}
-	err = binary.Read(&items[1], binary.LittleEndian, &forwardopenresp)
-	//err = binary.Read(dat, binary.LittleEndian, &forwardopenresp)
+	err = items[1].Unmarshal(&forwardopenresp)
 	if err != nil {
-		log.Printf("Error Reading. %v", err)
+		return fmt.Errorf("error unmarshaling forward open response. %w", err)
 	}
 	log.Printf("ForwardOpen: %+v", forwardopenresp)
 	plc.OTNetworkConnectionID = forwardopenresp.OTConnectionID
+	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 
 	plc.Connected = true
 	return nil
