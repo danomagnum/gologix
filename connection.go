@@ -13,14 +13,14 @@ import (
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (conn *PLC) Send(cmd CIPCommand, msgs ...any) error {
+func (plc *PLC) Send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
 		size += binary.Size(msg)
 	}
 	// build header based on size
-	hdr := conn.BuildHeader(cmd, size)
+	hdr := plc.BuildHeader(cmd, size)
 
 	// initialize a buffer and add the header to it.
 	// the 24 is from the header size
@@ -37,7 +37,7 @@ func (conn *PLC) Send(cmd CIPCommand, msgs ...any) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
-		n, err := conn.Conn.Write(b[written:])
+		n, err := plc.Conn.Write(b[written:])
 		if err != nil {
 			return err
 		}
@@ -49,11 +49,11 @@ func (conn *PLC) Send(cmd CIPCommand, msgs ...any) error {
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (conn *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
+func (plc *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 	hdr := EIPHeader{}
 	var err error
-	err = binary.Read(conn.Conn, binary.LittleEndian, &hdr)
+	err = binary.Read(plc.Conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		return hdr, nil, err
 	}
@@ -62,7 +62,7 @@ func (conn *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {
-		err = binary.Read(conn.Conn, binary.LittleEndian, &data)
+		err = binary.Read(plc.Conn, binary.LittleEndian, &data)
 	}
 	//log.Printf("Buffer: %v", data)
 	buf := bytes.NewReader(data)
@@ -70,16 +70,16 @@ func (conn *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 }
 
-func (conn *PLC) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (plc *PLC) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
-	conn.SequenceCounter++
+	plc.SequenceCounter++
 
 	hdr.Command = uint16(cmd)
 	//hdr.Command = 0x0070
 	hdr.Length = uint16(size)
-	hdr.SessionHandle = conn.SessionHandle
+	hdr.SessionHandle = plc.SessionHandle
 	hdr.Status = 0
-	hdr.Context = conn.Context
+	hdr.Context = plc.Context
 	hdr.Options = 0
 
 	return
@@ -91,12 +91,12 @@ const CIP_VendorID = 0x1776
 
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
-func (conn *PLC) connect(ip string) error {
-	if conn.Connected {
+func (plc *PLC) connect(ip string) error {
+	if plc.Connected {
 		return nil
 	}
 	var err error
-	conn.Conn, err = net.Dial("tcp", ip+CIP_Port)
+	plc.Conn, err = net.Dial("tcp", ip+CIP_Port)
 	if err != nil {
 		return err
 	}
@@ -105,32 +105,32 @@ func (conn *PLC) connect(ip string) error {
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
-	err = conn.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
+	err = plc.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send connect req %v", err)
 	}
 	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	resp_hdr, resp_data, err := conn.recv_data()
+	resp_hdr, resp_data, err := plc.recv_data()
 	if err != nil {
 		return err
 	}
-	conn.SessionHandle = resp_hdr.SessionHandle
-	log.Printf("Session Handle %v", conn.SessionHandle)
+	plc.SessionHandle = resp_hdr.SessionHandle
+	log.Printf("Session Handle %v", plc.SessionHandle)
 	_ = resp_data
 
-	conn.ConnectionSize = 4002
+	plc.ConnectionSize = 4002
 	// we have to do something different for small connection sizes.
-	fwd_open := conn.build_forward_open_large()
+	fwd_open := plc.build_forward_open_large()
 	s := binary.Size(fwd_open)
 	_ = s
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 	items0[1] = fwd_open
-	err = conn.Send(CIPCommandSendRRData, BuildItemsBytes(items0))
+	err = plc.Send(CIPCommandSendRRData, BuildItemsBytes(items0))
 	if err != nil {
 		return err
 	}
-	hdr, dat, err := conn.recv_data()
+	hdr, dat, err := plc.recv_data()
 	if err != nil {
 		return err
 	}
@@ -157,19 +157,19 @@ func (conn *PLC) connect(ip string) error {
 		log.Printf("Error Reading. %v", err)
 	}
 	log.Printf("ForwardOpen: %+v", forwardopenresp)
-	conn.OTNetworkConnectionID = forwardopenresp.OTConnectionID
+	plc.OTNetworkConnectionID = forwardopenresp.OTConnectionID
 
-	conn.Connected = true
+	plc.Connected = true
 	return nil
 
 }
 
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
-func (conn *PLC) Disconnect() error {
-	if !conn.Connected {
+func (plc *PLC) Disconnect() error {
+	if !plc.Connected {
 		return nil
 	}
-	conn.Connected = false
+	plc.Connected = false
 	var err error
 
 	items := make([]CIPItem, 2)
@@ -184,7 +184,7 @@ func (conn *PLC) Disconnect() error {
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
-		ConnectionSerialNumber: conn.ConnectionSerialNumber,
+		ConnectionSerialNumber: plc.ConnectionSerialNumber,
 		VendorID:               CIP_VendorID,
 		OriginatorSerialNumber: CIP_SerialNumber,
 		PathSize:               3,                                           // 16 bit words
@@ -193,7 +193,7 @@ func (conn *PLC) Disconnect() error {
 
 	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
 
-	err = conn.Send(CIPCommandSendRRData, BuildItemsBytes(items)) // 0x65 is register session
+	err = plc.Send(CIPCommandSendRRData, BuildItemsBytes(items)) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send unconnect req %v", err)
 	}
@@ -267,7 +267,7 @@ type EIPForwardOpen_Large struct {
 
 const CIP_SerialNumber = 42
 
-func (conn *PLC) build_forward_open_large() CIPItem {
+func (plc *PLC) build_forward_open_large() CIPItem {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 
@@ -277,10 +277,10 @@ func (conn *PLC) build_forward_open_large() CIPItem {
 		PathLogicalBuild(LogicalTypeInstanceID, 0x01, true),
 	)
 
-	conn.ConnectionSerialNumber = uint16(rand.Uint32())
+	plc.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint32(0x4200)
 	ConnectionParams = ConnectionParams << 16 // for long packet
-	ConnectionParams += uint32(conn.ConnectionSize)
+	ConnectionParams += uint32(plc.ConnectionSize)
 
 	msg.Service = CIPService_LargeForwardOpen
 	msg.PathSize = 0x02
@@ -293,7 +293,7 @@ func (conn *PLC) build_forward_open_large() CIPItem {
 	//msg.OTConnectionID = 0x05318008
 	msg.OTConnectionID = rand.Uint32() //0x20000002
 	msg.TOConnectionID = rand.Uint32()
-	msg.ConnectionSerialNumber = conn.ConnectionSerialNumber
+	msg.ConnectionSerialNumber = plc.ConnectionSerialNumber
 	msg.VendorID = CIP_VendorID
 	msg.OriginatorSerialNumber = CIP_SerialNumber
 	msg.Multiplier = 0x03
