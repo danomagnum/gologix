@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
+	"sync"
 	"time"
 )
 
@@ -16,7 +18,17 @@ type PLC struct {
 	SocketTimeout time.Duration
 	readSequencer uint16
 	// Route
-	conn Connection
+
+	Size                   int // 508 is the default
+	Mutex                  sync.Mutex
+	Conn                   net.Conn
+	SessionHandle          uint32
+	OTNetworkConnectionID  uint32
+	SequenceCounter        uint16
+	Connected              bool
+	ConnectionSize         int
+	ConnectionSerialNumber uint16
+	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
 }
 
 func (plc *PLC) Read_Single(tag string) []byte {
@@ -24,10 +36,14 @@ func (plc *PLC) Read_Single(tag string) []byte {
 }
 
 func (plc *PLC) Connect() error {
+	if plc.Size == 0 {
+		plc.Size = 508
+	}
+
 	if ioi_cache == nil {
 		ioi_cache = make(map[string]*IOI)
 	}
-	return plc.conn.Connect(plc.IPAddress)
+	return plc.connect(plc.IPAddress)
 }
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
@@ -62,19 +78,19 @@ func (plc *PLC) Write_single(tag string, value any) error {
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
 	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
 	reqitems[1].Marshal(ioi_header)
 	reqitems[1].Marshal(ioi.Buffer)
 	reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(value)
 
-	err := plc.conn.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	err := plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
 	if err != nil {
 		return err
 	}
 
-	hdr, data, err := plc.conn.recv_data()
+	hdr, data, err := plc.recv_data()
 	if err != nil {
 		return err
 	}
@@ -100,7 +116,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.conn.OTNetworkConnectionID)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
 
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
@@ -110,8 +126,8 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	reqitems[1].Marshal(ioi.Buffer)
 	reqitems[1].Marshal(ioi_footer)
 
-	plc.conn.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
-	hdr, data, err := plc.conn.recv_data()
+	plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	hdr, data, err := plc.recv_data()
 	if err != nil {
 		return nil, err
 	}

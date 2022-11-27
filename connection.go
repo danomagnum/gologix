@@ -7,26 +7,12 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"sync"
 )
-
-type Connection struct {
-	Size                   int // 508 is the default
-	Mutex                  sync.Mutex
-	Conn                   net.Conn
-	SessionHandle          uint32
-	OTNetworkConnectionID  uint32
-	SequenceCounter        uint16
-	Connected              bool
-	ConnectionSize         int
-	ConnectionSerialNumber uint16
-	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
-}
 
 // Send takes the command followed by all the structures that need
 // concatenated together.  It builds the header, puts the packet together,
 // and then sends it.
-func (conn *Connection) Send(cmd CIPCommand, msgs ...any) error {
+func (conn *PLC) Send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -62,7 +48,7 @@ func (conn *Connection) Send(cmd CIPCommand, msgs ...any) error {
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (conn *Connection) recv_data() (EIPHeader, *bytes.Reader, error) {
+func (conn *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 	hdr := EIPHeader{}
 	var err error
@@ -83,12 +69,7 @@ func (conn *Connection) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 }
 
-func NewConnection() (conn Connection) {
-	conn.Size = 508
-	return
-}
-
-func (conn *Connection) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (conn *PLC) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	conn.SequenceCounter++
 
@@ -109,7 +90,7 @@ const CIP_VendorID = 0x1776
 
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
-func (conn *Connection) Connect(ip string) error {
+func (conn *PLC) connect(ip string) error {
 	if conn.Connected {
 		return nil
 	}
@@ -183,7 +164,7 @@ func (conn *Connection) Connect(ip string) error {
 }
 
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
-func (conn *Connection) Disconnect() error {
+func (conn *PLC) Disconnect() error {
 	if !conn.Connected {
 		return nil
 	}
@@ -285,7 +266,7 @@ type EIPForwardOpen_Large struct {
 
 const CIP_SerialNumber = 42
 
-func (conn *Connection) build_forward_open_large() CIPItem {
+func (conn *PLC) build_forward_open_large() CIPItem {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 

@@ -90,8 +90,8 @@ func (plc *PLC) ReadAll(start_instance uint32) error {
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	plc.conn.Send(CIPCommandSendRRData, BuildItemsBytes(reqitems))
-	hdr, data, err := plc.conn.recv_data()
+	plc.Send(CIPCommandSendRRData, BuildItemsBytes(reqitems))
+	hdr, data, err := plc.recv_data()
 	if err != nil {
 		return err
 	}
