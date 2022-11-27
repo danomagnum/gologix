@@ -88,7 +88,10 @@ func NewItem(id CIPItemID, str any) CIPItem {
 //
 // The data length in the item's header is updated to match.
 func (item *CIPItem) Marshal(str any) {
-	binary.Write(item, binary.LittleEndian, str)
+	err := binary.Write(item, binary.LittleEndian, str)
+	if err != nil {
+		fmt.Printf("Problem writing. %v", err)
+	}
 }
 
 // Unmarshal deserializes a sturcture into the item's data.

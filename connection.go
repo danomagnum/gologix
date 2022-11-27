@@ -149,6 +149,9 @@ func (conn *Connection) Connect(ip string) error {
 		return err
 	}
 	_ = hdr
+	if hdr.Status == 0x01 {
+		return fmt.Errorf("large Forward Open Failed. code %v", hdr.Status)
+	}
 	// header before items
 	preitem := PreItemData{}
 	err = binary.Read(dat, binary.LittleEndian, &preitem)
