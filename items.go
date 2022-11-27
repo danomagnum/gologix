@@ -94,10 +94,10 @@ func (item *CIPItem) Marshal(str any) {
 	}
 }
 
-// Unmarshal deserializes a sturcture into the item's data.
+// Unmarshal deserializes an item's data into the given sturcture.
 //
-// If called more than once the []byte data for the additional structures is appended to the
-// end of the item's data buffer.
+// If called more than once the []byte data for the additional structures is continuously
+// raed from the current position of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
 func (item *CIPItem) Unmarshal(str any) error {
@@ -111,6 +111,7 @@ func (item *CIPItem) Bytes() []byte {
 	return b.Bytes()
 }
 
+// Sets the items data position back to zero.  Can be used to overrite the item's internal data or to re-read the item's data
 func (item *CIPItem) Reset() {
 	item.Pos = 0
 }

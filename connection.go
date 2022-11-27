@@ -10,8 +10,9 @@ import (
 )
 
 // Send takes the command followed by all the structures that need
-// concatenated together.  It builds the header, puts the packet together,
-// and then sends it.
+// concatenated together.
+//
+// It builds the appropriate header for all the data, puts the packet together, and then sends it.
 func (conn *PLC) Send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
@@ -124,7 +125,7 @@ func (conn *PLC) connect(ip string) error {
 	_ = s
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
-	items0[1] = NewItem(CIPItem_UnconnectedData, fwd_open)
+	items0[1] = fwd_open
 	err = conn.Send(CIPCommandSendRRData, BuildItemsBytes(items0))
 	if err != nil {
 		return err
@@ -290,7 +291,7 @@ func (conn *PLC) build_forward_open_large() CIPItem {
 	msg.Priority = 0x0A
 	msg.TimeoutTicks = 0x0E
 	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = 0x20000002
+	msg.OTConnectionID = rand.Uint32() //0x20000002
 	msg.TOConnectionID = rand.Uint32()
 	msg.ConnectionSerialNumber = conn.ConnectionSerialNumber
 	msg.VendorID = CIP_VendorID
