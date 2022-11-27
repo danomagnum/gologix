@@ -47,8 +47,6 @@ type ListInstanceHeader struct {
 	Status  uint16
 }
 
-var tries = 0
-
 func (plc *PLC) ReadAll(start_instance uint32) error {
 	plc.readSequencer += 1
 	fmt.Printf("readall for %v", start_instance)

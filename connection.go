@@ -139,8 +139,12 @@ func (conn *Connection) Connect(ip string) error {
 	conn.ConnectionSize = 4002
 	// we have to do something different for small connection sizes.
 	fwd_open := conn.build_forward_open_large()
-	fwd_open_hdr := BuildRRHeader(binary.Size(fwd_open))
-	err = conn.Send(CIPCommandSendRRData, fwd_open_hdr, fwd_open)
+	s := binary.Size(fwd_open)
+	_ = s
+	items0 := make([]CIPItem, 2)
+	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
+	items0[1] = NewItem(CIPItem_UnconnectedData, fwd_open)
+	err = conn.Send(CIPCommandSendRRData, BuildItemsBytes(items0))
 	if err != nil {
 		return err
 	}
@@ -164,7 +168,7 @@ func (conn *Connection) Connect(ip string) error {
 		return fmt.Errorf("problem reading items from forward open req. %w", err)
 	}
 
-	forwardopenresp := EIPForwardOpen_Reply2{}
+	forwardopenresp := EIPForwardOpen_Reply{}
 	err = binary.Read(&items[1], binary.LittleEndian, &forwardopenresp)
 	//err = binary.Read(dat, binary.LittleEndian, &forwardopenresp)
 	if err != nil {
@@ -220,16 +224,7 @@ type PreItemData struct {
 	Timeout uint16
 }
 
-type EIPForwardOpen_Reply2 struct {
-	Service        CIPService
-	Unknown2       [3]byte
-	OTConnectionID uint32
-	TOConnectionID uint32
-	Unknown3       uint16
-}
-
 type EIPForwardOpen_Reply struct {
-	Unknown        [16]byte
 	Service        CIPService
 	Unknown2       [3]byte
 	OTConnectionID uint32
@@ -286,12 +281,19 @@ type EIPForwardOpen_Large struct {
 	TONetworkConnParams uint32
 	TransportTrigger    byte
 	PathLen             byte
-	Path                [6]byte
 }
 
 const CIP_SerialNumber = 42
 
-func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
+func (conn *Connection) build_forward_open_large() CIPItem {
+	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
+	var msg EIPForwardOpen_Large
+
+	p := Paths(
+		PathPortBuild([]byte{0x00}, 1, true),
+		PathLogicalBuild(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
+		PathLogicalBuild(LogicalTypeInstanceID, 0x01, true),
+	)
 
 	conn.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint32(0x4200)
@@ -332,33 +334,12 @@ func (conn *Connection) build_forward_open_large() (msg EIPForwardOpen_Large) {
 	// byte 5: ...0 01.. logical segment type: Instance ID = 1
 	// byte 5: .... ..00 logical segment format: 8-bit (0)
 	// byte 6: path segment instance 0x01
-	msg.PathLen = 3
-	msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
+	//msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
+	// the 0x00 here is the slot number of the controller?
+	msg.PathLen = byte(len(p) / 2)
+	//msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
+	item.Marshal(msg)
+	item.Marshal(p)
 
-	return msg
-}
-
-// RR stands for Read Response
-type RR_Header struct {
-	InterfaceHandle uint32
-	Timeout         uint16
-	ItemCount       uint16
-	Item1ID         uint16
-	Item1Length     uint16
-	Item2ID         uint16
-	Item2Length     uint16
-}
-
-func BuildRRHeader(size int) RR_Header {
-	rr := RR_Header{}
-	rr.InterfaceHandle = 0
-	rr.Timeout = 0
-	rr.ItemCount = 2
-	rr.Item1ID = 0
-	rr.Item1Length = 0
-	rr.Item2ID = 0xB2
-	rr.Item2Length = uint16(size)
-
-	return rr
-
+	return item
 }
