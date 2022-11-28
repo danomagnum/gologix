@@ -8,3 +8,4 @@
 - https://github.com/EIPStackGroup/OpENer/blob/master/source/src/cip/ciptypes.h
 - https://www.odva.org/wp-content/uploads/2020/06/PUB00123R1_Common-Industrial_Protocol_and_Family_of_CIP_Networks.pdf
 - https://github.com/loki-os/go-ethernet-ip
+- https://www.can-cia.org/fileadmin/resources/documents/proceedings/2005_schiffer.pdf

@@ -50,6 +50,13 @@ func main() {
 	} else {
 		fmt.Printf("two elements of UDT : %+v\n", v3)
 	}
+	// string array read is untested:
+	v4, err := ReadArray[string](plc, "TestStrArr", 3)
+	if err != nil {
+		fmt.Printf("Problem with reading two elements of array. %v\n", err)
+	} else {
+		fmt.Printf("two element value new method: %v\n", v4)
+	}
 
 	//ReadAndPrint[bool](plc, "TestBool")
 	//ReadAndPrint[float32](plc, "TestReal")
