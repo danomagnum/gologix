@@ -47,7 +47,7 @@ type ListInstanceHeader struct {
 	Status  uint16
 }
 
-func (plc *PLC) ReadAll(start_instance uint32) error {
+func (plc *PLC) ListAllTags(start_instance uint32) error {
 	plc.readSequencer += 1
 	fmt.Printf("readall for %v", start_instance)
 
@@ -146,7 +146,7 @@ func (plc *PLC) ReadAll(start_instance uint32) error {
 	//return plc.ReadAll(start_instance)
 	//}
 	if data_hdr.Status == 6 && start_instance < 200 {
-		plc.ReadAll(start_instance)
+		plc.ListAllTags(start_instance)
 
 	}
 
