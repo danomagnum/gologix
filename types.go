@@ -68,7 +68,11 @@ const (
 	CIPTypeLREAL   CIPType = 0xCB
 	CIPTypeWORD    CIPType = 0xD2
 	CIPTypeDWORD   CIPType = 0xD3
-	CIPTypeSTRING  CIPType = 0xDA
+
+	// As far as I can tell CIPTypeSTRING isn't actually used in the controllers. Strings actually come
+	// accross as 0xA0 = CIPTypeStruct.  In this library we're using this as kind of a flag to keep track of whether
+	// a structure is a string or not.
+	CIPTypeSTRING CIPType = 0xDA
 )
 
 // return the size in bytes of the data structure
