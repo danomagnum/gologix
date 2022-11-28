@@ -66,6 +66,20 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}
 
+	if hdr2.Type == CIPTypeStruct {
+		str_hdr := CIPStructHeader{}
+		err = items[1].Unmarshal(&str_hdr)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+		}
+		str := make([]byte, str_hdr.Length)
+		err = items[1].Unmarshal(&str)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+		}
+		return str, nil
+	}
+	// not a struct so we can read the value directly
 	value := readValue(hdr2.Type, &items[1])
 	_ = value
 	return value, nil
@@ -79,6 +93,32 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 	if err != nil {
 		return t, err
 	}
+	if ct == CIPTypeStruct {
+		// val should be a byte slice
+		cast, ok := val.([]byte)
+		if !ok {
+			return t, errors.New("couldn't convert to byte slice")
+		}
+		b := bytes.NewBuffer(cast)
+		err := binary.Read(b, binary.LittleEndian, &t)
+		if err != nil {
+			return t, fmt.Errorf("couldn't parse str data. %w", err)
+		}
+		return t, nil
+	}
+	if ct == CIPTypeSTRING {
+		// val should be a byte slice
+		cast, ok := val.([]byte)
+		if !ok {
+			return t, errors.New("couldn't convert to byte slice")
+		}
+		s := string(cast)
+		t, ok = any(s).(T)
+		if !ok {
+			return t, errors.New("couldn't convert to string")
+		}
+		return t, nil
+	}
 	cast, ok := val.(T)
 	if !ok {
 		return t, errors.New("couldn't convert to correct type")
@@ -87,7 +127,13 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 
 }
 
+type CIPStructHeader struct {
+	Unknown uint16
+	Length  uint32
+}
+
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
+// The types of each field need to correspond to the correct CIP type as mapped in types.go
 func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error {
 
 	// build the tag list from the structure

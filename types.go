@@ -43,6 +43,8 @@ func GoVarToCIPType(T any) CIPType {
 		return CIPTypeREAL
 	case float64:
 		return CIPTypeLREAL
+	case string:
+		return CIPTypeSTRING
 	case interface{}:
 		return CIPTypeStruct
 	}

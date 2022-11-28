@@ -30,13 +30,14 @@ func main() {
 	//ReadAndPrint[int16](plc, "TestInt")
 	//ReadAndPrint[bool](plc, "TestBool")
 	//ReadAndPrint[float32](plc, "TestReal")
+	ReadAndPrint[string](plc, "TestString")
 
 	//tags := []string{"TestInt", "TestReal"}
 	tags := MultiReadStr{}
 
 	err := plc.read_multi(&tags, CIPTypeDWORD, 1)
 	if err != nil {
-		fmt.Printf("Error reading mulit. %v\n", err)
+		fmt.Printf("Error reading multi. %v\n", err)
 	}
 
 	fmt.Printf("Values: %+v", tags)
