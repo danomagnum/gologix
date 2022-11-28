@@ -29,10 +29,24 @@ type CIPMessage_UnRegister struct {
 	Path                   [6]byte
 }
 
+// todo: move sequence to a different struct and combine CIPIOIHeader and CIPMultiIOIHeader
 type CIPIOIHeader struct {
 	Sequence uint16
 	Service  CIPService
 	Size     byte
+}
+
+type CIPMultiIOIHeader struct {
+	Service CIPService
+	Size    byte
+}
+
+type CIPMultiServiceHeader struct {
+	Sequence     uint16
+	Service      CIPService
+	PathSize     byte
+	Path         [4]byte
+	ServiceCount uint16
 }
 type CIPWriteIOIFooter struct {
 	DataType uint16

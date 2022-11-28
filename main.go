@@ -24,11 +24,13 @@ func main() {
 	defer plc.Disconnect()
 	//plc.ReadAll(1)
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
-	ReadAndPrint[float32](plc, "program:Shed.Temp1")
-	ReadAndPrint[int32](plc, "TestDint")
-	ReadAndPrint[int16](plc, "TestInt")
-	ReadAndPrint[bool](plc, "TestBool")
-	ReadAndPrint[float32](plc, "TestReal")
+	//ReadAndPrint[float32](plc, "program:Shed.Temp1")
+	//ReadAndPrint[int32](plc, "TestDint")
+	//ReadAndPrint[int16](plc, "TestInt")
+	//ReadAndPrint[bool](plc, "TestBool")
+	//ReadAndPrint[float32](plc, "TestReal")
+	tags := []string{"TestInt", "TestReal"}
+	plc.read_multi(tags, CIPTypeDWORD, 1)
 
 }
 
