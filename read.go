@@ -14,7 +14,7 @@ func (plc *PLC) Read_Single(tag string) []byte {
 }
 
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
-	ioi := BuildIOI(tag, datatype)
+	ioi := NewIOI(tag, datatype)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
 	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
@@ -40,7 +40,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	reqitems[1].Marshal(ioi.Buffer)
 	reqitems[1].Marshal(ioi_footer)
 
-	plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	hdr, data, err := plc.recv_data()
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error
 	qty := len(tags)
 	iois := make([]*IOI, qty)
 	for i, tag := range tags {
-		iois[i] = BuildIOI(tag, datatype)
+		iois[i] = NewIOI(tag, datatype)
 	}
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
@@ -212,7 +212,7 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error
 	reqitems[1].Marshal(jump_table)
 	reqitems[1].Marshal(b.Bytes())
 
-	plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	hdr, data, err := plc.recv_data()
 	if err != nil {
 		return err

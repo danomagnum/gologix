@@ -3,7 +3,7 @@ package main
 func (plc *PLC) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
 	datatype := GoVarToCIPType(value)
-	ioi := BuildIOI(tag, datatype)
+	ioi := NewIOI(tag, datatype)
 	plc.readSequencer += 1
 	ioi_header := CIPIOIHeader{
 		Sequence: plc.readSequencer,
@@ -23,7 +23,7 @@ func (plc *PLC) Write_single(tag string, value any) error {
 	reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(value)
 
-	err := plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
+	err := plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

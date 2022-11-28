@@ -31,7 +31,7 @@ func (plc *PLC) Disconnect() error {
 
 	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
 
-	err = plc.Send(CIPCommandSendRRData, BuildItemsBytes(items)) // 0x65 is register session
+	err = plc.Send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send unconnect req %v", err)
 	}

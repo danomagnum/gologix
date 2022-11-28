@@ -59,13 +59,13 @@ func (plc *PLC) connect(ip string) error {
 
 	plc.ConnectionSize = 4002
 	// we have to do something different for small connection sizes.
-	fwd_open := plc.build_forward_open_large()
+	fwd_open := plc.NewForwardOpenLarge()
 	s := binary.Size(fwd_open)
 	_ = s
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 	items0[1] = fwd_open
-	err = plc.Send(CIPCommandSendRRData, BuildItemsBytes(items0))
+	err = plc.Send(CIPCommandSendRRData, MarshalItems(items0))
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ type EIPForwardOpen_Large struct {
 	PathLen             byte
 }
 
-func (plc *PLC) build_forward_open_large() CIPItem {
+func (plc *PLC) NewForwardOpenLarge() CIPItem {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 

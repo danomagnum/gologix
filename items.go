@@ -127,7 +127,7 @@ type CIPItemsHeader struct {
 	Count           uint16
 }
 
-// BuildItemsBytes takes a slice of items and generates the appropriate byte pattern for the packet
+// MarshalItems takes a slice of items and generates the appropriate byte pattern for the packet
 //
 // A lot of the time, item0 ends up being the "null" item with no Data section.
 //
@@ -152,7 +152,7 @@ type CIPItemsHeader struct {
 // 14+N0
 // 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
-func BuildItemsBytes(items []CIPItem) *[]byte {
+func MarshalItems(items []CIPItem) *[]byte {
 
 	b := new(bytes.Buffer)
 

@@ -25,7 +25,7 @@ func (plc *PLC) Send(cmd CIPCommand, msgs ...any) error {
 		size += binary.Size(msg)
 	}
 	// build header based on size
-	hdr := plc.BuildHeader(cmd, size)
+	hdr := plc.NewEIPHeader(cmd, size)
 
 	// initialize a buffer and add the header to it.
 	// the 24 is from the header size
@@ -75,7 +75,7 @@ func (plc *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 }
 
-func (plc *PLC) BuildHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (plc *PLC) NewEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	plc.SequenceCounter++
 
