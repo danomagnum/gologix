@@ -53,7 +53,7 @@ func GoVarToCIPType(T any) CIPType {
 
 const (
 	CIPTypeUnknown CIPType = 0x00
-	CIPTypeStruct  CIPType = 0xA0
+	CIPTypeStruct  CIPType = 0xA0 // also used for strings.  Not sure what's up with CIPTypeSTRING
 	CIPTypeBOOL    CIPType = 0xC1
 	CIPTypeBYTE    CIPType = 0xD1 // 8 bits packed into one byte
 	CIPTypeSINT    CIPType = 0xC2

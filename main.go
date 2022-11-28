@@ -32,10 +32,16 @@ func main() {
 	//ReadAndPrint[float32](plc, "TestReal")
 	ReadAndPrint[string](plc, "TestString")
 
+	value, err := Read[TestUDT](plc, "TestUDT")
+	if err != nil {
+		fmt.Printf("Problem reading udt. %v\n", err)
+	}
+	fmt.Printf("UDT: %+v\n", value)
+
 	//tags := []string{"TestInt", "TestReal"}
 	tags := MultiReadStr{}
 
-	err := plc.read_multi(&tags, CIPTypeDWORD, 1)
+	err = plc.read_multi(&tags, CIPTypeDWORD, 1)
 	if err != nil {
 		fmt.Printf("Error reading multi. %v\n", err)
 	}
@@ -57,4 +63,9 @@ type MultiReadStr struct {
 	TI int16   `gologix:"TestInt"`
 	TD int32   `gologix:"TestDint"`
 	TR float32 `gologix:"TestReal"`
+}
+
+type TestUDT struct {
+	Field1 int32
+	Field2 float32
 }

@@ -67,16 +67,25 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	}
 
 	if hdr2.Type == CIPTypeStruct {
+		if datatype == CIPTypeSTRING {
+			str_hdr := CIPStringHeader{}
+			err = items[1].Unmarshal(&str_hdr)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+			}
+			str := make([]byte, str_hdr.Length)
+			err = items[1].Unmarshal(&str)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+			}
+			return str, nil
+		}
 		str_hdr := CIPStructHeader{}
 		err = items[1].Unmarshal(&str_hdr)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 		}
-		str := make([]byte, str_hdr.Length)
-		err = items[1].Unmarshal(&str)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
-		}
+		str := items[1].Data[items[1].Pos:]
 		return str, nil
 	}
 	// not a struct so we can read the value directly
@@ -127,9 +136,12 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 
 }
 
-type CIPStructHeader struct {
+type CIPStringHeader struct {
 	Unknown uint16
 	Length  uint32
+}
+type CIPStructHeader struct {
+	Unknown uint16
 }
 
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
