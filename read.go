@@ -88,7 +88,7 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 }
 
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
-func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any, error) {
+func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error {
 
 	// build the tag list from the structure
 	T := reflect.TypeOf(tag_str).Elem()
@@ -157,7 +157,7 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any,
 	plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
 	hdr, data, err := plc.recv_data()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_ = hdr
 
@@ -168,11 +168,10 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any,
 	}
 	items, err := ReadItems(data)
 	if err != nil {
-		log.Printf("Problem reading items. %v", err)
-		return 0, nil
+		return fmt.Errorf("problem reading items. %w", err)
 	}
 	if len(items) != 2 {
-		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
+		return fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	ritem := items[1]
 	var reply_hdr MultiReadResultHeader
@@ -189,9 +188,12 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any,
 
 		// bit 8 of the service indicates whether it is a response service
 		if !rhdr.Service.IsResponse() {
-			return nil, fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
+			return fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
 		}
 		rhdr.Service = rhdr.Service.UnResponse()
+		if rhdr.Status != 0 {
+			return fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
+		}
 
 		result_values[i] = rhdr.Type.readValue(mybytes)
 
@@ -209,12 +211,12 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any,
 		fieldVal.Set(reflect.ValueOf(val))
 
 		if err != nil {
-			return tag_str, fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
+			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
 		}
 
 	}
 
-	return tag_str, nil
+	return nil
 }
 
 type MultiReadResultHeader struct {

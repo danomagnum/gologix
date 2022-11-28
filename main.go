@@ -34,7 +34,10 @@ func main() {
 	//tags := []string{"TestInt", "TestReal"}
 	tags := MultiReadStr{}
 
-	plc.read_multi(&tags, CIPTypeDWORD, 1)
+	err := plc.read_multi(&tags, CIPTypeDWORD, 1)
+	if err != nil {
+		fmt.Printf("Error reading mulit. %v\n", err)
+	}
 
 	fmt.Printf("Values: %+v", tags)
 
@@ -51,5 +54,6 @@ func ReadAndPrint[T GoLogixTypes](plc *PLC, path string) {
 
 type MultiReadStr struct {
 	TI int16   `gologix:"TestInt"`
+	TD int32   `gologix:"TestDint"`
 	TR float32 `gologix:"TestReal"`
 }
