@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -29,8 +30,13 @@ func main() {
 	//ReadAndPrint[int16](plc, "TestInt")
 	//ReadAndPrint[bool](plc, "TestBool")
 	//ReadAndPrint[float32](plc, "TestReal")
-	tags := []string{"TestInt", "TestReal"}
-	plc.read_multi(tags, CIPTypeDWORD, 1)
+
+	//tags := []string{"TestInt", "TestReal"}
+	tags := MultiReadStr{}
+
+	plc.read_multi(&tags, CIPTypeDWORD, 1)
+
+	fmt.Printf("Values: %+v", tags)
 
 }
 
@@ -41,4 +47,9 @@ func ReadAndPrint[T GoLogixTypes](plc *PLC, path string) {
 		return
 	}
 	log.Printf("%s: %v", path, value)
+}
+
+type MultiReadStr struct {
+	TI int16   `gologix:"TestInt"`
+	TR float32 `gologix:"TestReal"`
 }

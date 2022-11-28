@@ -159,6 +159,10 @@ func (c CIPType) String() string {
 	}
 }
 
+func (t CIPType) readValue(r io.Reader) any {
+	return readValue(t, r)
+}
+
 // readValue reads one unit of cip data type t into the correct go type.
 // To do this it reads the needed number of bytes from r.
 // It returns the value as an any so the caller will have to do a cast to get it back

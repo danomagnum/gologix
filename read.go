@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 )
 
 func (plc *PLC) Read_Single(tag string) []byte {
@@ -86,7 +87,24 @@ func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
 
 }
 
-func (plc *PLC) read_multi(tags []string, datatype CIPType, elements uint16) (any, error) {
+// tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
+func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) (any, error) {
+
+	// build the tag list from the structure
+	T := reflect.TypeOf(tag_str).Elem()
+	vf := reflect.VisibleFields(T)
+	tags := make([]string, 0)
+	tag_map := make(map[string]int)
+	for i := range vf {
+		field := vf[i]
+		tagpath, ok := field.Tag.Lookup("gologix")
+		if !ok {
+			continue
+		}
+		tags = append(tags, tagpath)
+		tag_map[tagpath] = i
+	}
+
 	// first generate IOIs for each tag
 	qty := len(tags)
 	iois := make([]*IOI, qty)
@@ -162,6 +180,7 @@ func (plc *PLC) read_multi(tags []string, datatype CIPType, elements uint16) (an
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
 	binary.Read(&ritem, binary.LittleEndian, &offset_table)
 	rb := ritem.Bytes()
+	result_values := make([]interface{}, reply_hdr.Reply_Count)
 	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
 		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
 		mybytes := bytes.NewBuffer(rb[offset:])
@@ -174,13 +193,28 @@ func (plc *PLC) read_multi(tags []string, datatype CIPType, elements uint16) (an
 		}
 		rhdr.Service = rhdr.Service.UnResponse()
 
-		value_byte_count := rhdr.Type.Size()
-		value_bytes := make([]byte, value_byte_count)
-		binary.Read(mybytes, binary.LittleEndian, &value_bytes)
+		result_values[i] = rhdr.Type.readValue(mybytes)
 
-		fmt.Printf("Result %d. %+v. value: %X.\n", i, rhdr, value_bytes)
+		fmt.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
 	}
-	return nil, nil
+
+	// now unpack the result values back into the given structure
+	for i, tag := range tags {
+		fieldno := tag_map[tag]
+		val := result_values[i]
+
+		v := reflect.ValueOf(&tag_str).Elem().Elem().Elem()
+
+		fieldVal := v.Field(fieldno)
+		fieldVal.Set(reflect.ValueOf(val))
+
+		if err != nil {
+			return tag_str, fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
+		}
+
+	}
+
+	return tag_str, nil
 }
 
 type MultiReadResultHeader struct {
@@ -192,8 +226,9 @@ type MultiReadResultHeader struct {
 }
 
 type MultiReadResult struct {
-	Service  CIPService
-	Reserved byte
-	Status   uint16
-	Type     CIPType
+	Service   CIPService
+	Reserved  byte
+	Status    uint16
+	Type      CIPType
+	Reserved2 byte
 }
