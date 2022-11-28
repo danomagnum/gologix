@@ -27,21 +27,28 @@ func main() {
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 	//ReadAndPrint[float32](plc, "program:Shed.Temp1")
 	ReadAndPrint[int32](plc, "TestDint")
+	ReadAndPrint[int32](plc, "TestDintArr[0]")
 	ReadAndPrint[int32](plc, "TestDintArr[2]")
 	ReadAndPrint[int32](plc, "TestUDT.Field1")
 	ReadAndPrint[int16](plc, "TestInt")
-	v, err := plc.read_single("TestDintArr[1]", CIPTypeDINT, 2)
-	if err != nil {
-		fmt.Printf("Problem with reading two elements of array. %v\n", err)
-	} else {
-		fmt.Printf("two element value: %v\n", v)
-	}
+	//v, err := plc.read_single("TestDintArr[1]", CIPTypeDINT, 2)
+	//if err != nil {
+	//fmt.Printf("Problem with reading two elements of array. %v\n", err)
+	//} else {
+	//fmt.Printf("two element value: %v\n", v)
+	//}
 
-	v2, err := ReadArray[int32](plc, "TestDintArr[1]", 2)
+	v2, err := ReadArray[int32](plc, "TestDintArr", 9)
 	if err != nil {
 		fmt.Printf("Problem with reading two elements of array. %v\n", err)
 	} else {
 		fmt.Printf("two element value new method: %v\n", v2)
+	}
+	v3, err := ReadArray[int32](plc, "TestDintArr[2]", 4)
+	if err != nil {
+		fmt.Printf("Problem with reading two elements of array. %v\n", err)
+	} else {
+		fmt.Printf("two element value new method: %v\n", v3)
 	}
 
 	//ReadAndPrint[bool](plc, "TestBool")

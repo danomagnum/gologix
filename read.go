@@ -86,8 +86,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	}
 	if elements == 1 {
 		// not a struct so we can read the value directly
-		var value any
-		value = readValue(hdr2.Type, &items[1])
+		value := readValue(hdr2.Type, &items[1])
 		return value, nil
 	} else {
 		value := make([]any, elements)
@@ -103,7 +102,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 func ReadArray[T GoLogixTypes](plc *PLC, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct := GoVarToCIPType(t[0])
-	val, err := plc.read_single("TestDintArr[1]", ct, elements)
+	val, err := plc.read_single(tag, ct, elements)
 	if err != nil {
 		return t, err
 	}
