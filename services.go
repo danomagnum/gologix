@@ -1,8 +1,24 @@
 package main
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 type CIPService byte
+
+func (s CIPService) IsResponse() bool {
+	// bit 8 of the service indicates whether it is a response service
+	is_response := s & 0b10000000
+	return is_response != 0
+}
+func (s CIPService) AsResponse() CIPService {
+	// bit 8 of the service indicates whether it is a response service
+	return s | 0b10000000
+}
+func (s CIPService) UnResponse() CIPService {
+	// bit 8 of the service indicates whether it is a response service
+	return s & 0b01111111
+}
 
 const (
 	// cip common services

@@ -138,7 +138,6 @@ func (plc *PLC) read_multi(tags []string, datatype CIPType, elements uint16) (an
 
 	plc.Send(CIPCommandSendUnitData, BuildItemsBytes(reqitems))
 	hdr, data, err := plc.recv_data()
-	return nil, nil
 	if err != nil {
 		return nil, err
 	}
@@ -157,13 +156,44 @@ func (plc *PLC) read_multi(tags []string, datatype CIPType, elements uint16) (an
 	if len(items) != 2 {
 		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
-	var hdr2 CIPReadResultData
-	err = items[1].Unmarshal(&hdr2)
-	if err != nil {
-		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
-	}
+	ritem := items[1]
+	var reply_hdr MultiReadResultHeader
+	binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
+	offset_table := make([]uint16, reply_hdr.Reply_Count)
+	binary.Read(&ritem, binary.LittleEndian, &offset_table)
+	rb := ritem.Bytes()
+	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
+		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
+		mybytes := bytes.NewBuffer(rb[offset:])
+		rhdr := MultiReadResult{}
+		binary.Read(mybytes, binary.LittleEndian, &rhdr)
 
-	value := readValue(hdr2.Type, &items[1])
-	_ = value
-	return value, nil
+		// bit 8 of the service indicates whether it is a response service
+		if !rhdr.Service.IsResponse() {
+			return nil, fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
+		}
+		rhdr.Service = rhdr.Service.UnResponse()
+
+		value_byte_count := rhdr.Type.Size()
+		value_bytes := make([]byte, value_byte_count)
+		binary.Read(mybytes, binary.LittleEndian, &value_bytes)
+
+		fmt.Printf("Result %d. %+v. value: %X.\n", i, rhdr, value_bytes)
+	}
+	return nil, nil
+}
+
+type MultiReadResultHeader struct {
+	SequenceCount uint16
+	Service       CIPService
+	Reserved      byte
+	Status        uint16
+	Reply_Count   uint16
+}
+
+type MultiReadResult struct {
+	Service  CIPService
+	Reserved byte
+	Status   uint16
+	Type     CIPType
 }
