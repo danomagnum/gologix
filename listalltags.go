@@ -60,8 +60,8 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 	reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 
 	p := Paths(
-		PathLogicalBuild(LogicalTypeClassID, 0x6B, true),
-		PathLogicalBuild(LogicalTypeInstanceID, start_instance, true),
+		MarshalPathLogical(LogicalTypeClassID, 0x6B, true),
+		MarshalPathLogical(LogicalTypeInstanceID, start_instance, true),
 	)
 
 	readmsg := ReaddAllData{

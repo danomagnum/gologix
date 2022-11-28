@@ -9,10 +9,6 @@ import (
 	"reflect"
 )
 
-func (plc *PLC) Read_Single(tag string) []byte {
-	return nil
-}
-
 func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi := NewIOI(tag, datatype)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
@@ -26,7 +22,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}
 	ioi_footer := CIPIOIFooter{
-		Elements: 1,
+		Elements: elements,
 	}
 
 	reqitems := make([]CIPItem, 2)
@@ -88,10 +84,69 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 		str := items[1].Data[items[1].Pos:]
 		return str, nil
 	}
-	// not a struct so we can read the value directly
-	value := readValue(hdr2.Type, &items[1])
-	_ = value
-	return value, nil
+	if elements == 1 {
+		// not a struct so we can read the value directly
+		var value any
+		value = readValue(hdr2.Type, &items[1])
+		return value, nil
+	} else {
+		value := make([]any, elements)
+		for i := 0; i < int(elements); i++ {
+			value[i] = readValue(hdr2.Type, &items[1])
+
+		}
+		return value, nil
+
+	}
+}
+
+func ReadArray[T GoLogixTypes](plc *PLC, tag string, elements uint16) ([]T, error) {
+	t := make([]T, elements)
+	ct := GoVarToCIPType(t[0])
+	val, err := plc.read_single("TestDintArr[1]", ct, elements)
+	if err != nil {
+		return t, err
+	}
+
+	//cast, ok := val.([]T)
+	cast, ok := val.([]any)
+	if !ok {
+		return t, fmt.Errorf("couldn't cast array. %w", err)
+	}
+	for i, v := range cast {
+		if ct == CIPTypeStruct {
+			// val should be a byte slice
+			cast2, ok := any(v).([]byte)
+			if !ok {
+				return t, errors.New("couldn't convert to byte slice")
+			}
+			b := bytes.NewBuffer(cast2)
+			err := binary.Read(b, binary.LittleEndian, &t)
+			if err != nil {
+				return t, fmt.Errorf("couldn't parse str data. %w", err)
+			}
+			//t[i] = cast2
+		}
+		if ct == CIPTypeSTRING {
+			// v should be a byte slice
+			cast2, ok := any(v).([]byte)
+			if !ok {
+				return t, errors.New("couldn't convert to byte slice")
+			}
+			s := string(cast2)
+			t[i], ok = any(s).(T)
+			if !ok {
+				return t, errors.New("couldn't convert to string")
+			}
+		}
+		cast2, ok := v.(T)
+		if !ok {
+			return t, errors.New("couldn't convert to correct type")
+		}
+		t[i] = cast2
+	}
+	return t, nil
+
 }
 
 func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {

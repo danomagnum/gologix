@@ -10,6 +10,23 @@ import (
 	"strings"
 )
 
+// The path is formatted like this.
+// byte 0: number of 16 bit words
+// byte 1: 000. .... path segment type (port segment = 0)
+// byte 1: ...0 .... extended link address (0 = false)
+// byte 1: .... 0001 port (backplane = 1)
+// byte 2: n/a
+// byte 3: 001. .... path segment type (logical segment = 1)
+// byte 3: ...0 00.. logical segment type class ID (0)
+// byte 3: .... ..00 logical segment format: 8-bit (0)
+// byte 4: path segment 0x20
+// byte 5: 001. .... path segment type (logical segment = 1)
+// byte 5: ...0 01.. logical segment type: Instance ID = 1
+// byte 5: .... ..00 logical segment format: 8-bit (0)
+// byte 6: path segment instance 0x01
+// so on...
+//msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}
+
 // bits 5,6,7 (counting from 0) are the segment type
 type SegmentType byte
 
@@ -21,6 +38,17 @@ const (
 	SegmentTypeData      SegmentType = 0b1000_0000
 	SegmentTypeDataType1 SegmentType = 0b1010_0000
 	SegmentTypeDataType2 SegmentType = 0b1100_0000
+
+	SegmentTypeElement8Bit      SegmentType = 0x28
+	SegmentTypeElement16Bit     SegmentType = 0x29
+	SegmentTypeElement32Bit     SegmentType = 0x2A
+	SegmentTypeClassID8Bit      SegmentType = 0x20
+	SegmentTypeClassID16Bit     SegmentType = 0x21
+	SegmentTypeInstanceID8Bit   SegmentType = 0x24
+	SegmentTypeInstanceID16Bit  SegmentType = 0x25
+	SegmentTypeAttributeID8Bit  SegmentType = 0x30
+	SegmentTypeAttributeID16Bit SegmentType = 0x31
+	SegmentTypeExtendedSymbolic SegmentType = 0x91
 )
 
 func Paths(arg ...[]byte) []byte {
@@ -52,7 +80,7 @@ const (
 	LogicalTypeServiceID   LogicalType = 0b0001_1000 //6 << 2
 )
 
-func PathDataBuild(tp DataTypes, data []byte, padded bool) []byte {
+func MarshalPathData(tp DataTypes, data []byte, padded bool) []byte {
 	//io := bytes.Buffer{}
 	io := make([]byte, 0, 16)
 
@@ -75,7 +103,7 @@ func PathDataBuild(tp DataTypes, data []byte, padded bool) []byte {
 	return io
 }
 
-func PathLogicalBuild(tp LogicalType, address uint32, padded bool) []byte {
+func MarshalPathLogical(tp LogicalType, address uint32, padded bool) []byte {
 	format := uint8(0)
 
 	if address <= 255 {
@@ -113,7 +141,7 @@ func PathLogicalBuild(tp LogicalType, address uint32, padded bool) []byte {
 	return io
 }
 
-func PathPortBuild(link []byte, portID uint16, padded bool) []byte {
+func MarshalPathPort(link []byte, portID uint16, padded bool) []byte {
 	extendedLinkTag := len(link) > 1
 	extendedPortTag := !(portID < 15)
 
@@ -157,16 +185,8 @@ func PathPortBuild(link []byte, portID uint16, padded bool) []byte {
 	return io
 }
 
-func sized_pathgen(path string) (int, []byte, error) {
-	res, err := pathgen(path)
-	if err != nil {
-		return 0, nil, err
-	}
-	return len(res), res, nil
-}
-
 // this function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
-func pathgen(path string) ([]byte, error) {
+func ParsePath(path string) ([]byte, error) {
 	// get rid of any spaces and square brackets
 	path = strings.ReplaceAll(path, " ", "")
 	path = strings.ReplaceAll(path, "[", "")

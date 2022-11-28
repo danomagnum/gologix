@@ -172,9 +172,9 @@ func (plc *PLC) NewForwardOpenLarge() CIPItem {
 	var msg EIPForwardOpen_Large
 
 	p := Paths(
-		PathPortBuild([]byte{0x00}, 1, true),
-		PathLogicalBuild(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
-		PathLogicalBuild(LogicalTypeInstanceID, 0x01, true),
+		MarshalPathPort([]byte{0x00}, 1, true),
+		MarshalPathLogical(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
+		MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
 	)
 
 	plc.ConnectionSerialNumber = uint16(rand.Uint32())
@@ -202,24 +202,7 @@ func (plc *PLC) NewForwardOpenLarge() CIPItem {
 	msg.TORPI = 0x00204001
 	msg.TONetworkConnParams = ConnectionParams
 	msg.TransportTrigger = 0xA3
-	// The path is formatted like this.
-	// byte 0: number of 16 bit words
-	// byte 1: 000. .... path segment type (port segment = 0)
-	// byte 1: ...0 .... extended link address (0 = false)
-	// byte 1: .... 0001 port (backplane = 1)
-	// byte 2: n/a
-	// byte 3: 001. .... path segment type (logical segment = 1)
-	// byte 3: ...0 00.. logical segment type class ID (0)
-	// byte 3: .... ..00 logical segment format: 8-bit (0)
-	// byte 4: path segment 0x20
-	// byte 5: 001. .... path segment type (logical segment = 1)
-	// byte 5: ...0 01.. logical segment type: Instance ID = 1
-	// byte 5: .... ..00 logical segment format: 8-bit (0)
-	// byte 6: path segment instance 0x01
-	//msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
-	// the 0x00 here is the slot number of the controller?
 	msg.PathLen = byte(len(p) / 2)
-	//msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01} // TODO: build path automatically
 	item.Marshal(msg)
 	item.Marshal(p)
 

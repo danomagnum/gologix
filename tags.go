@@ -76,6 +76,7 @@ func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
 }
 
 // Internal Object Identifier. Used to specify a tag name in the controller
+// the Buffer has the CIP route for a tag path.
 type IOI struct {
 	Path   string
 	Type   CIPType
@@ -118,15 +119,15 @@ func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 			for _, order_size := range t.Array_Order {
 				if order_size < 256 {
 					// byte, byte
-					index_part := []byte{0x28, byte(order_size)}
+					index_part := []byte{byte(CIPElement_8bit), byte(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part)
 				} else if order_size < 65536 {
 					// uint16, uint16
-					index_part := []uint16{0x29, uint16(order_size)}
+					index_part := []uint16{uint16(CIPElement_16bit), uint16(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part)
 				} else {
 					// uint16, uint32
-					index_part0 := []uint16{0x2A}
+					index_part0 := []uint16{uint16(CIPElement_32bit)}
 					binary.Write(ioi, binary.LittleEndian, index_part0)
 					index_part1 := []uint32{uint32(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part1)
@@ -139,7 +140,7 @@ func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 			if err == nil && bit_access <= 31 {
 				// This is a bit access.
 				// we won't do anything for now and will just parse the
-				// bit out of the word when taht time comes.
+				// bit out of the word when that time comes.
 				continue
 			}
 			ioi_part := MarshalIOIPart(tag_part)
@@ -162,7 +163,7 @@ func MarshalIOIPart(tagpath string) []byte {
 		//tag_size += 1
 	}
 
-	tag_name_header := [2]byte{0x91, byte(tag_size)}
+	tag_name_header := [2]byte{byte(SegmentTypeExtendedSymbolic), byte(tag_size)}
 	tag_name_msg := append(tag_name_header[:], []byte(t.BasePath)...)
 	// has to be an even number of bytes.
 	if need_extend {
