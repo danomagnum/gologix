@@ -107,25 +107,20 @@ func ReadArray[T GoLogixTypes](plc *PLC, tag string, elements uint16) ([]T, erro
 		return t, err
 	}
 
+	if ct == CIPTypeStruct {
+		b, ok := val.([]byte)
+		if !ok {
+			return t, fmt.Errorf("couldn't cast to bytes. %w", err)
+		}
+		return parseArrayStuct[T](b, elements)
+	}
+
 	//cast, ok := val.([]T)
 	cast, ok := val.([]any)
 	if !ok {
 		return t, fmt.Errorf("couldn't cast array. %w", err)
 	}
 	for i, v := range cast {
-		if ct == CIPTypeStruct {
-			// val should be a byte slice
-			cast2, ok := any(v).([]byte)
-			if !ok {
-				return t, errors.New("couldn't convert to byte slice")
-			}
-			b := bytes.NewBuffer(cast2)
-			err := binary.Read(b, binary.LittleEndian, &t)
-			if err != nil {
-				return t, fmt.Errorf("couldn't parse str data. %w", err)
-			}
-			//t[i] = cast2
-		}
 		if ct == CIPTypeSTRING {
 			// v should be a byte slice
 			cast2, ok := any(v).([]byte)
@@ -329,6 +324,19 @@ func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error
 	}
 
 	return nil
+}
+
+func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
+	t := make([]T, elements)
+	// val should be a byte slice
+	b := bytes.NewBuffer(dat)
+	for i := 0; i < int(elements); i++ {
+		err := binary.Read(b, binary.LittleEndian, &t[i])
+		if err != nil {
+			return t, fmt.Errorf("couldn't parse str data. %w", err)
+		}
+	}
+	return t, nil
 }
 
 type MultiReadResultHeader struct {

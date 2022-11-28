@@ -44,11 +44,11 @@ func main() {
 	} else {
 		fmt.Printf("two element value new method: %v\n", v2)
 	}
-	v3, err := ReadArray[int32](plc, "TestDintArr[2]", 4)
+	v3, err := ReadArray[TestUDT](plc, "TestUDTArr[2]", 2)
 	if err != nil {
 		fmt.Printf("Problem with reading two elements of array. %v\n", err)
 	} else {
-		fmt.Printf("two element value new method: %v\n", v3)
+		fmt.Printf("two elements of UDT : %+v\n", v3)
 	}
 
 	//ReadAndPrint[bool](plc, "TestBool")
