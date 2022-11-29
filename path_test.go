@@ -1,39 +1,38 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
-func TestPath_gen(t *testing.T) {
-	tar := []byte{0x01, 0x00, 0x12, 0x0C, 0x31, 0x37, 0x32, 0x2E, 0x32, 0x35, 0x2E, 0x35, 0x38, 0x2E, 0x31, 0x31, 0x01, 0x01}
-	path := "1,0,2,172.25.58.11,1,1"
-	res, err := ParsePath(path)
-
-	if err != nil {
-		t.Errorf("Error in pathgen for %s. %v", path, err)
+func TestPath(t *testing.T) {
+	var tests = []struct {
+		path string
+		want []byte
+	}{
+		{
+			"1,0,2,172.25.58.11,1,1",
+			[]byte{0x01, 0x00, 0x12, 0x0C, 0x31, 0x37, 0x32, 0x2E, 0x32, 0x35, 0x2E, 0x35, 0x38, 0x2E, 0x31, 0x31, 0x01, 0x01},
+		},
+		{
+			"1,0,32,2,36,1",
+			[]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01},
+		},
 	}
 
-	if !check_bytes(tar, res) {
-		t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", tar, res)
+	for _, tt := range tests {
+
+		testname := fmt.Sprintf("path: %s", tt.path)
+		t.Run(testname, func(t *testing.T) {
+			res, err := ParsePath(tt.path)
+			if err != nil {
+				t.Errorf("Error in pathgen for %s. %v", tt.path, err)
+			}
+			if !check_bytes(res, tt.want) {
+				t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", tt.want, res)
+			}
+		})
 	}
-	t.Logf("Wrong Value for result.  \nWanted %v. \nGot    %v", tar, res)
-
-}
-
-func TestPath_gen2(t *testing.T) {
-	// backplane (1) -> plc slot 0 -> logical segment 0 -> (length 2) item 292 (0x0124 (little endian))
-	tar := []byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}
-	path := "1,0,32,2,36,1"
-	res, err := ParsePath(path)
-
-	if err != nil {
-		t.Errorf("Error in pathgen for %s. %v", path, err)
-	}
-
-	if !check_bytes(tar, res) {
-		t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", tar, res)
-	}
-	t.Logf("Wrong Value for result.  \nWanted %v. \nGot    %v", tar, res)
 
 }
 

@@ -99,6 +99,9 @@ func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 		ioi = extant
 		return
 	}
+	// CIP doesn't care about case.  But we'll make it lowercase to match
+	// the encodings shown in 1756-PM020H-EN-P
+	tagpath = strings.ToLower(tagpath)
 	tag_array := strings.Split(tagpath, ".")
 
 	ioi = new(IOI)

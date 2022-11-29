@@ -26,7 +26,12 @@ func main() {
 	//plc.ReadAll(1)
 	//plc.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 	//ReadAndPrint[float32](plc, "program:Shed.Temp1")
-	ReadAndPrint[int32](plc, "TestDint")
+	ReadAndPrint[int32](plc, "TestDint") // 36
+
+	// these two tests don't work yet
+	ReadAndPrint[bool](plc, "TestDint.0") // should be false
+	ReadAndPrint[bool](plc, "TestDint.2") // should be true
+
 	ReadAndPrint[int32](plc, "TestDintArr[0]")
 	ReadAndPrint[int32](plc, "TestDintArr[2]")
 	ReadAndPrint[int32](plc, "TestUDT.Field1")
@@ -50,12 +55,15 @@ func main() {
 	} else {
 		fmt.Printf("two elements of UDT : %+v\n", v3)
 	}
+	test_strarr := false
 	// string array read is untested:
-	v4, err := ReadArray[string](plc, "TestStrArr", 3)
-	if err != nil {
-		fmt.Printf("Problem with reading two elements of array. %v\n", err)
-	} else {
-		fmt.Printf("two element value new method: %v\n", v4)
+	if test_strarr {
+		v4, err := ReadArray[string](plc, "TestStrArr", 3)
+		if err != nil {
+			fmt.Printf("Problem with reading two elements of array. %v\n", err)
+		} else {
+			fmt.Printf("two element value new method: %v\n", v4)
+		}
 	}
 
 	//ReadAndPrint[bool](plc, "TestBool")
