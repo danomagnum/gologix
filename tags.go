@@ -94,6 +94,7 @@ const DEFAULT_BUFFER_SIZE = 256
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
 func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
+	tagpath = strings.ToLower(tagpath)
 	extant, exists := ioi_cache[tagpath]
 	if exists {
 		ioi = extant
@@ -101,7 +102,6 @@ func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 	}
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
-	tagpath = strings.ToLower(tagpath)
 	tag_array := strings.Split(tagpath, ".")
 
 	ioi = new(IOI)

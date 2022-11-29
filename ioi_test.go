@@ -7,6 +7,7 @@ import (
 
 // these tests came from the tag names in 1756-PM020H-EN-P
 // it only tests the request path portion of each tag addressing example
+// it also only tests symbolic paths.
 func TestIOI(t *testing.T) {
 	ioi_cache = make(map[string]*IOI)
 	var tests = []struct {
