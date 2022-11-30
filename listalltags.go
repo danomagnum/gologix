@@ -64,7 +64,7 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 
-	p, err := BuildPath(CIPObject_Symbol, CIPInstance(start_instance))
+	p, err := Serialize(CIPObject_Symbol, CIPInstance(start_instance))
 	if err != nil {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}

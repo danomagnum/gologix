@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"regexp"
@@ -181,4 +182,18 @@ func MarshalIOIPart(tagpath string) []byte {
 		tag_name_msg = append(tag_name_msg, []byte{0x00}...)
 	}
 	return tag_name_msg
+}
+
+func (ioi *IOI) Service(s CIPService) *bytes.Buffer {
+
+	size := byte(len(ioi.Buffer) / 2)
+
+	b := new(bytes.Buffer)
+
+	binary.Write(b, binary.LittleEndian, s)
+	binary.Write(b, binary.LittleEndian, size)
+	binary.Write(b, binary.LittleEndian, ioi.Buffer)
+
+	return b
+
 }

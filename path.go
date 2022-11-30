@@ -4,6 +4,7 @@ package gologix
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"strconv"
 	"strings"
@@ -95,16 +96,34 @@ func ParsePath(path string) ([]byte, error) {
 	return byte_path, nil
 }
 
-type Byteable interface {
+type Serializable interface {
 	Bytes() []byte
 }
 
-func BuildPath(ps ...Byteable) (*bytes.Buffer, error) {
+//func Serialize(ps ...Serializable) (*bytes.Buffer, error) {
+//b := new(bytes.Buffer)
+//for _, p := range ps {
+//_, err := b.Write(p.Bytes())
+//if err != nil {
+//return nil, err
+//}
+//}
+//return b, nil
+//}
+
+func Serialize(strs ...any) (*bytes.Buffer, error) {
 	b := new(bytes.Buffer)
-	for _, p := range ps {
-		_, err := b.Write(p.Bytes())
-		if err != nil {
-			return nil, err
+	for _, str := range strs {
+		switch serializable_str := str.(type) {
+		case Serializable:
+			// if the struct is serializable, we should use its Bytes() function to get its
+			// representation instead of binary.Write
+			_, err := b.Write(serializable_str.Bytes())
+			if err != nil {
+				return nil, err
+			}
+		case any:
+			binary.Write(b, binary.LittleEndian, str)
 		}
 	}
 	return b, nil

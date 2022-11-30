@@ -207,7 +207,7 @@ func (plc *PLC) NewForwardOpenLarge() (CIPItem, error) {
 			MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
 		)
 	*/
-	p, err := BuildPath(CIPPort{PortNo: 1}, CIPObject_MessageRouter, CIPInstance(1))
+	p, err := Serialize(CIPPort{PortNo: 1}, CIPObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}

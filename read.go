@@ -13,17 +13,8 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	ioi := NewIOI(tag, datatype)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
-	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
+	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
 	plc.readSequencer += 1
-
-	ioi_header := CIPIOIHeader{
-		Sequence: plc.readSequencer,
-		Service:  CIPService_Read,
-		Size:     byte(len(ioi.Buffer) / 2),
-	}
-	ioi_footer := CIPIOIFooter{
-		Elements: elements,
-	}
 
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
@@ -32,9 +23,12 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
-	reqitems[1].Marshal(ioi_header)
-	reqitems[1].Marshal(ioi.Buffer)
-	reqitems[1].Marshal(ioi_footer)
+	//reqitems[1].Marshal(ioi_header)
+	//reqitems[1].Marshal(ioi.Buffer)
+	//reqitems[1].Marshal(ioi_footer)
+	reqitems[1].Marshal(plc.readSequencer)
+	reqitems[1].Marshal(ioi.Service(CIPService_Read))
+	reqitems[1].Marshal(elements)
 
 	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	hdr, data, err := plc.recv_data()
