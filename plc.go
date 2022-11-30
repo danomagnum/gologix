@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var ioi_cache map[string]*IOI
-
 type PLC struct {
 	IPAddress     string
 	ProcessorSlot int

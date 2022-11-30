@@ -92,6 +92,23 @@ func (plc *PLC) connect(ip string) error {
 		return fmt.Errorf("problem reading items from forward open req. %w", err)
 	}
 
+	fwopenresphdr := CIPMessageRouterResponse{}
+	err = items[1].Unmarshal(&fwopenresphdr)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling forward open response header. %w", err)
+	}
+	extended_status := make([]byte, fwopenresphdr.Status_Len*2)
+	if fwopenresphdr.Status_Len != 0 {
+		err = items[1].Unmarshal(&extended_status)
+		if err != nil {
+			return fmt.Errorf("error unmarshaling forward open response header extended status. %w", err)
+		}
+	}
+
+	if fwopenresphdr.Status != 0 {
+		return fmt.Errorf("bad status on forward open header. got %x", fwopenresphdr.Status)
+	}
+
 	forwardopenresp := EIPForwardOpen_Reply{}
 	err = items[1].Unmarshal(&forwardopenresp)
 	if err != nil {
@@ -111,9 +128,18 @@ type PreItemData struct {
 	Timeout uint16
 }
 
+type CIPMessageRouterResponse struct {
+	Service    CIPService
+	Reserved   byte // always 0
+	Status     byte // result status
+	Status_Len byte // additional result word count - can be zero
+}
+
 type EIPForwardOpen_Reply struct {
-	Service        CIPService
-	Unknown2       [3]byte
+	//Service        CIPService
+	//Reserved       byte // always 0
+	//Status         byte // result status
+	//Status_Len     byte // additional result word count - can be zero
 	OTConnectionID uint32
 	TOConnectionID uint32
 	Unknown3       uint16

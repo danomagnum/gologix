@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+// it's fine for this to be global. One string maps to one IOI regardless of what PLC it comes from.
+// this just lets us not have to re-process them.
+var ioi_cache map[string]*IOI
+
 type TagPartDescriptor struct {
 	FullPath    string
 	BasePath    string
