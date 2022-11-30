@@ -1,4 +1,4 @@
-package main
+package gologix
 
 // based on code from https://github.com/loki-os/go-ethernet-ip
 

@@ -1,4 +1,4 @@
-package main
+package gologix
 
 import (
 	"flag"
@@ -6,11 +6,12 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"testing"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
-func main() {
+func TestMain(t *testing.T) {
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -45,13 +46,13 @@ func main() {
 
 	v2, err := ReadArray[int32](plc, "TestDintArr", 9)
 	if err != nil {
-		fmt.Printf("Problem with reading two elements of array. %v\n", err)
+		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	} else {
 		fmt.Printf("two element value new method: %v\n", v2)
 	}
 	v3, err := ReadArray[TestUDT](plc, "TestUDTArr[2]", 2)
 	if err != nil {
-		fmt.Printf("Problem with reading two elements of array. %v\n", err)
+		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	} else {
 		fmt.Printf("two elements of UDT : %+v\n", v3)
 	}
@@ -60,7 +61,7 @@ func main() {
 	if test_strarr {
 		v4, err := ReadArray[string](plc, "TestStrArr", 3)
 		if err != nil {
-			fmt.Printf("Problem with reading two elements of array. %v\n", err)
+			t.Errorf("Problem with reading two elements of array. %v\n", err)
 		} else {
 			fmt.Printf("two element value new method: %v\n", v4)
 		}
@@ -72,7 +73,7 @@ func main() {
 
 	value, err := Read[TestUDT](plc, "TestUDT")
 	if err != nil {
-		fmt.Printf("Problem reading udt. %v\n", err)
+		t.Errorf("Problem reading udt. %v\n", err)
 	}
 	fmt.Printf("UDT: %+v\n", value)
 
@@ -81,7 +82,7 @@ func main() {
 
 	err = plc.read_multi(&tags, CIPTypeDWORD, 1)
 	if err != nil {
-		fmt.Printf("Error reading multi. %v\n", err)
+		t.Errorf("Error reading multi. %v\n", err)
 	}
 
 	fmt.Printf("Values: %+v", tags)

@@ -1,4 +1,4 @@
-package main
+package gologix
 
 // todo: move sequence to a different struct and combine CIPIOIHeader and CIPMultiIOIHeader
 type CIPIOIHeader struct {

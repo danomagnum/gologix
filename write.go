@@ -1,4 +1,4 @@
-package main
+package gologix
 
 func (plc *PLC) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
