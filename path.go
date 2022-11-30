@@ -42,14 +42,6 @@ const (
 	SegmentTypeExtendedSymbolic SegmentType = 0x91
 )
 
-// bits 0 and 4 (counting from 0) are the data type bits
-type DataTypes byte
-
-const (
-	DataTypeSimple DataTypes = 0b0000_0000
-	DataTypeANSI   DataTypes = 0b0001_0001 //0x11
-)
-
 type CIPPort struct {
 	PortNo       byte
 	ExtensionLen byte
