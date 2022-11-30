@@ -81,12 +81,6 @@ const (
 	CIPClass_AssemblyObject CIPClass = 0x04
 )
 
-type CIPAttribute byte
-
-const (
-	CIPAttribute_Data CIPAttribute = 0x03
-)
-
 func SizeOf(strs ...any) int {
 	t := 0 // total
 	for _, str := range strs {

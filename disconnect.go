@@ -42,9 +42,9 @@ func (plc *PLC) Disconnect() error {
 type CIPMessage_UnRegister struct {
 	Service                CIPService
 	CipPathSize            byte
-	ClassType              CIPClassType
+	ClassType              CIPClassSize
 	Class                  byte
-	InstanceType           CIPInstanceType
+	InstanceType           CIPInstanceSize
 	Instance               byte
 	Priority               byte
 	TimeoutTicks           byte

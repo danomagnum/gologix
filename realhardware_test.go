@@ -4,23 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"runtime/pprof"
 	"testing"
 )
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-
-func TestMain(t *testing.T) {
+func TestRealHardware(t *testing.T) {
+	t.Skip()
 	flag.Parse()
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	plc.Connect()
 	defer plc.Disconnect()

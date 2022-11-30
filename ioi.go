@@ -88,6 +88,10 @@ func (ioi *IOI) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (ioi *IOI) Bytes() []byte {
+	return ioi.Buffer
+}
+
 // this is the default buffer size for tag IOI generation.
 const DEFAULT_BUFFER_SIZE = 256
 

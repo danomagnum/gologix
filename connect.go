@@ -148,9 +148,9 @@ type EIPForwardOpen_Large struct {
 	Service CIPService
 	// path
 	PathSize     byte
-	ClassType    CIPClassType
+	ClassType    CIPClassSize
 	Class        CIPObject
-	InstanceType CIPInstanceType
+	InstanceType CIPInstanceSize
 	Instance     byte
 
 	// service specific data
