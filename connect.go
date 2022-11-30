@@ -59,7 +59,10 @@ func (plc *PLC) connect(ip string) error {
 
 	plc.ConnectionSize = 4002
 	// we have to do something different for small connection sizes.
-	fwd_open := plc.NewForwardOpenLarge()
+	fwd_open, err := plc.NewForwardOpenLarge()
+	if err != nil {
+		return fmt.Errorf("couldn't create forward open. %w", err)
+	}
 	s := binary.Size(fwd_open)
 	_ = s
 	items0 := make([]CIPItem, 2)
@@ -167,15 +170,21 @@ type EIPForwardOpen_Large struct {
 	PathLen                byte
 }
 
-func (plc *PLC) NewForwardOpenLarge() CIPItem {
+func (plc *PLC) NewForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 
-	p := Paths(
-		MarshalPathPort([]byte{0x00}, 1, true),
-		MarshalPathLogical(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
-		MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
-	)
+	/*
+		p := Paths(
+			MarshalPathPort([]byte{0x00}, 1, true),
+			MarshalPathLogical(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
+			MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
+		)
+	*/
+	p, err := BuildPath(CIPPort{PortNo: 1}, CIPObject_MessageRouter, CIPInstance(1))
+	if err != nil {
+		return item, fmt.Errorf("couldn't build path. %w", err)
+	}
 
 	plc.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint32(0x4200)
@@ -204,11 +213,11 @@ func (plc *PLC) NewForwardOpenLarge() CIPItem {
 	msg.TORPI = 0x00204001
 	msg.TONetworkConnParams = ConnectionParams
 	msg.TransportTrigger = 0xA3
-	msg.PathLen = byte(len(p) / 2)
+	msg.PathLen = byte(p.Len() / 2)
 	item.Marshal(msg)
-	item.Marshal(p)
+	item.Marshal(p.Bytes())
 
-	return item
+	return item, nil
 }
 
 type CIPMessage_Register struct {

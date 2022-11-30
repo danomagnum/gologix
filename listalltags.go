@@ -94,7 +94,7 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 	}
 
 	reqitems[1] = NewItem(CIPItem_UnconnectedData, readmsg)
-	reqitems[1].Marshal(p)
+	reqitems[1].Marshal(p.Bytes())
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
