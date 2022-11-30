@@ -224,3 +224,18 @@ func ParsePath(path string) ([]byte, error) {
 
 	return byte_path, nil
 }
+
+type Byteable interface {
+	Bytes() []byte
+}
+
+func BuildPath(ps ...Byteable) (*bytes.Buffer, error) {
+	b := new(bytes.Buffer)
+	for _, p := range ps {
+		_, err := b.Write(p.Bytes())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b, nil
+}

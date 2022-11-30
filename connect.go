@@ -141,30 +141,30 @@ type EIPForwardOpen_Standard struct {
 }
 
 type EIPForwardOpen_Large struct {
-	Service   CIPService
-	PathSize  byte
-	ClassType byte
-	Class     byte
-
-	InstanceType byte
+	// service
+	Service CIPService
+	// path
+	PathSize     byte
+	ClassType    CIPClassType
+	Class        CIPObject
+	InstanceType CIPInstanceType
 	Instance     byte
-	Priority     byte
-	TimeoutTicks byte
 
+	// service specific data
+	Priority               byte
+	TimeoutTicks           byte
 	OTConnectionID         uint32
 	TOConnectionID         uint32
 	ConnectionSerialNumber uint16
 	VendorID               uint16
-
 	OriginatorSerialNumber uint32
 	Multiplier             uint32
 	OTRPI                  uint32
 	OTNetworkConnParams    uint32
-
-	TORPI               uint32
-	TONetworkConnParams uint32
-	TransportTrigger    byte
-	PathLen             byte
+	TORPI                  uint32
+	TONetworkConnParams    uint32
+	TransportTrigger       byte
+	PathLen                byte
 }
 
 func (plc *PLC) NewForwardOpenLarge() CIPItem {
@@ -183,13 +183,15 @@ func (plc *PLC) NewForwardOpenLarge() CIPItem {
 	ConnectionParams += uint32(plc.ConnectionSize)
 
 	msg.Service = CIPService_LargeForwardOpen
-	msg.PathSize = 0x02
-	msg.ClassType = 0x20
-	msg.Class = 0x06
-	msg.InstanceType = 0x24
+	// this next section is the path
+	msg.PathSize = 0x02 // length in words
+	msg.ClassType = CIPClass_8bit
+	msg.Class = CIPObject_ConnectionManager
+	msg.InstanceType = CIPInstance_8bit
 	msg.Instance = 0x01
-	msg.Priority = 0x0A
-	msg.TimeoutTicks = 0x0E
+	// end of path
+	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)
+	msg.TimeoutTicks = 0x0E // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
 	//msg.OTConnectionID = 0x05318008
 	msg.OTConnectionID = rand.Uint32() //0x20000002
 	msg.TOConnectionID = rand.Uint32()

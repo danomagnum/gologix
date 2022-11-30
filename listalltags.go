@@ -47,6 +47,11 @@ type ListInstanceHeader struct {
 	Status  uint16
 }
 
+// the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
+// of the instance attribute list of the symbol objects.
+//
+// see 1756-PM020H-EN-P March 2022 page 39
+// also see https://forums.mrplc.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (plc *PLC) ListAllTags(start_instance uint32) error {
 	plc.readSequencer += 1
 	fmt.Printf("readall for %v", start_instance)
@@ -59,10 +64,15 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 
-	p := Paths(
+	p, err := BuildPath(CIPObject_Symbol, CIPInstance(start_instance))
+	if err != nil {
+		return fmt.Errorf("couldn't build path. %w", err)
+	}
+	/*p := Paths(
 		MarshalPathLogical(LogicalTypeClassID, 0x6B, true),
 		MarshalPathLogical(LogicalTypeInstanceID, start_instance, true),
 	)
+	*/
 
 	readmsg := ReaddAllData{
 		//Sequence:    plc.readSequencer,
@@ -73,7 +83,7 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 		Message: EmbeddedMessage{
 			Size:       14,
 			Service:    CIPService_GetInstanceAttributeList,
-			PathLength: byte(len(p) / 2),
+			PathLength: byte(p.Len() / 2),
 			/*Path:          p,
 			Data:          [4]uint16{3, 1, 2, 8},
 			RoutePathSize: 1,
@@ -85,7 +95,12 @@ func (plc *PLC) ListAllTags(start_instance uint32) error {
 
 	reqitems[1] = NewItem(CIPItem_UnconnectedData, readmsg)
 	reqitems[1].Marshal(p)
-	reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
+	number_of_attr_to_receive := 3
+	attr1_symbol_name := 1
+	attr2_symbol_type := 2
+	attr8_arraydims := 8
+	//reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
+	reqitems[1].Marshal([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
 	reqitems[1].Marshal(byte(1))
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))

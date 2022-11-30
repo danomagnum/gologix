@@ -48,3 +48,34 @@ func check_bytes(s0, s1 []byte) bool {
 	}
 	return true
 }
+
+func TestPathBuild(t *testing.T) {
+	tests := []struct {
+		name string
+		path []Byteable
+		want []byte
+	}{
+		{
+			name: "connection manager only",
+			path: []Byteable{CIPObject_ConnectionManager},
+			want: []byte{0x20, 0x06},
+		},
+		{
+			name: "connection manager instance 1",
+			path: []Byteable{CIPObject_ConnectionManager, CIPInstance(1)},
+			want: []byte{0x20, 0x06, 0x24, 0x01},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			have, err := BuildPath(tt.path...)
+			if err != nil {
+				t.Errorf("Problem building path. %v", err)
+			}
+			if !check_bytes(have.Bytes(), tt.want) {
+				t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", have.Bytes(), tt.want)
+			}
+		})
+	}
+
+}

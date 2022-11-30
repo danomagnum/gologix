@@ -285,13 +285,47 @@ const (
 	CIPElement_32bit CIPElementType = 0x2A
 )
 
+type CIPInstance uint16
+
+func (p CIPInstance) Bytes() []byte {
+	if p < 256 {
+		b := make([]byte, 2)
+		b[0] = byte(CIPInstance_8bit)
+		b[1] = byte(p)
+		return b
+	} else {
+
+		b := make([]byte, 4)
+		b[0] = byte(CIPInstance_16bit)
+		binary.LittleEndian.PutUint16(b[2:], uint16(p))
+		return b
+	}
+}
+
 // Here are the objects
 
-type CIPObject byte
+type CIPObject uint16
+
+func (p CIPObject) Bytes() []byte {
+	if p < 256 {
+		b := make([]byte, 2)
+		b[0] = byte(CIPClass_8bit)
+		b[1] = byte(p)
+		return b
+	} else {
+
+		b := make([]byte, 4)
+		b[0] = byte(CIPClass_16bit)
+		binary.LittleEndian.PutUint16(b[2:], uint16(p))
+		return b
+	}
+}
 
 const (
 	CIPObject_Assembly                     CIPObject = 0x04
 	CIPObject_AckHandler                   CIPObject = 0x2B
+	CIPObject_Symbol                       CIPObject = 0x6B
+	CIPObject_Template                     CIPObject = 0x6C
 	CIPObject_Connection                   CIPObject = 0x05
 	CIPObject_ConnectionConfig             CIPObject = 0xF3
 	CIPObject_ConnectionManager            CIPObject = 0x06
@@ -376,6 +410,7 @@ const (
 	CIPObject_RSTPBridge                   CIPObject = 0x54
 	CIPObject_RSTPPort                     CIPObject = 0x55
 	CIPObject_TCPIP                        CIPObject = 0xF5
+	CIPObject_PCCC                         CIPObject = 0x67
 )
 
 // Here are predefined profiles
