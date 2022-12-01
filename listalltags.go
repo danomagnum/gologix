@@ -54,7 +54,7 @@ type ListInstanceHeader2 struct {
 //
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrplc.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
-func (plc *PLC) ListAllTags2(start_instance uint32) error {
+func (plc *PLC) ListAllTags(start_instance uint32) error {
 	plc.readSequencer += 1
 	fmt.Printf("readall for %v", start_instance)
 
@@ -170,7 +170,7 @@ func (plc *PLC) ListAllTags2(start_instance uint32) error {
 	log.Printf("Status: %v", hdr.Status)
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		plc.ListAllTags2(start_instance)
+		plc.ListAllTags(start_instance)
 	}
 
 	return nil

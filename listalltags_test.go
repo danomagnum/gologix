@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestList2(t *testing.T) {
+func TestList(t *testing.T) {
 
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	err := plc.Connect()
@@ -15,7 +15,7 @@ func TestList2(t *testing.T) {
 	}
 	defer plc.Disconnect()
 
-	plc.ListAllTags2(0)
+	plc.ListAllTags(0)
 
 	fmt.Printf("Tags: %+v\n", plc.KnownTags["testdintarr"])
 
