@@ -30,7 +30,7 @@ func (client *Client) Connect() error {
 }
 
 func (client *Client) register_session() error {
-	reg_msg := CIPMessage_Register{}
+	reg_msg := msgCIPRegister{}
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
@@ -94,7 +94,7 @@ func (client *Client) connect() error {
 		return fmt.Errorf("large Forward Open Failed. code %v", hdr.Status)
 	}
 	// header before items
-	preitem := PreItemData{}
+	preitem := msgPreItemData{}
 	err = binary.Read(dat, binary.LittleEndian, &preitem)
 	if err != nil {
 		return fmt.Errorf("problem reading items header from forward open req. %w", err)
@@ -105,7 +105,7 @@ func (client *Client) connect() error {
 		return fmt.Errorf("problem reading items from forward open req. %w", err)
 	}
 
-	fwopenresphdr := CIPMessageRouterResponse{}
+	fwopenresphdr := msgCIPMessageRouterResponse{}
 	err = items[1].Unmarshal(&fwopenresphdr)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling forward open response header. %w", err)
@@ -122,7 +122,7 @@ func (client *Client) connect() error {
 		return fmt.Errorf("bad status on forward open header. got %x", fwopenresphdr.Status)
 	}
 
-	forwardopenresp := EIPForwardOpen_Reply{}
+	forwardopenresp := msgEIPForwardOpen_Reply{}
 	err = items[1].Unmarshal(&forwardopenresp)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling forward open response. %w", err)
@@ -136,19 +136,19 @@ func (client *Client) connect() error {
 
 }
 
-type PreItemData struct {
+type msgPreItemData struct {
 	Handle  uint32
 	Timeout uint16
 }
 
-type CIPMessageRouterResponse struct {
+type msgCIPMessageRouterResponse struct {
 	Service    CIPService
 	Reserved   byte // always 0
 	Status     byte // result status
 	Status_Len byte // additional result word count - can be zero
 }
 
-type EIPForwardOpen_Reply struct {
+type msgEIPForwardOpen_Reply struct {
 	//Service        CIPService
 	//Reserved       byte // always 0
 	//Status         byte // result status
@@ -160,7 +160,7 @@ type EIPForwardOpen_Reply struct {
 
 // in this message T is for target and O is for originator so
 // TO is target -> originator and OT is originator -> target
-type EIPForwardOpen_Standard struct {
+type msgEIPForwardOpen_Standard struct {
 	Service                byte
 	PathSize               byte
 	ClassType              byte
@@ -182,7 +182,7 @@ type EIPForwardOpen_Standard struct {
 	TransportTrigger       byte
 }
 
-type EIPForwardOpen_Large struct {
+type msgEIPForwardOpen_Large struct {
 	// service
 	Service CIPService
 	// path
@@ -211,7 +211,7 @@ type EIPForwardOpen_Large struct {
 
 func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
-	var msg EIPForwardOpen_Large
+	var msg msgEIPForwardOpen_Large
 
 	p, err := Serialize(
 		client.Path,
@@ -255,7 +255,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	return item, nil
 }
 
-type CIPMessage_Register struct {
+type msgCIPRegister struct {
 	ProtocolVersion uint16
 	OptionFlag      uint16
 }

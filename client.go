@@ -15,8 +15,6 @@ type Client struct {
 
 	KnownTags map[string]KnownTag
 
-	// Route
-
 	Mutex                  sync.Mutex
 	Conn                   net.Conn
 	SessionHandle          uint32
