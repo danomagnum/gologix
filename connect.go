@@ -13,10 +13,20 @@ func (client *Client) Connect() error {
 		client.ConnectionSize = 508
 	}
 
+	// default path is backplane -> slot 0
+	var err error
+	if client.Path == nil {
+		client.Path, err = Serialize(CIPPort{PortNo: 1}, CIPAddress(0))
+		if err != nil {
+			return fmt.Errorf("can't setup default path. %w", err)
+
+		}
+	}
+
 	if ioi_cache == nil {
 		ioi_cache = make(map[string]*IOI)
 	}
-	return client.connect(client.IPAddress)
+	return client.connect()
 }
 
 func (client *Client) register_session() error {
@@ -42,13 +52,13 @@ func (client *Client) register_session() error {
 
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
-func (client *Client) connect(ip string) error {
+func (client *Client) connect() error {
 	if client.Connected {
 		return nil
 	}
 	client.KnownTags = make(map[string]KnownTag)
 	var err error
-	client.Conn, err = net.Dial("tcp", ip+CIP_Port)
+	client.Conn, err = net.Dial("tcp", client.IPAddress+CIP_Port)
 	if err != nil {
 		return err
 	}
@@ -203,15 +213,9 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 
-	/*
-		p := Paths(
-			MarshalPathPort([]byte{0x00}, 1, true),
-			MarshalPathLogical(LogicalTypeClassID, uint32(CIPObject_MessageRouter), true),
-			MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
-		)
-	*/
 	p, err := Serialize(
-		CIPPort{PortNo: 1}, CIPAddress(0),
+		client.Path,
+		//CIPPort{PortNo: 1}, CIPAddress(0),
 		CIPObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)

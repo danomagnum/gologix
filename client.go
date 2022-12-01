@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"bytes"
 	"net"
 	"sync"
 	"time"
@@ -8,7 +9,7 @@ import (
 
 type Client struct {
 	IPAddress     string
-	ProcessorSlot int
+	Path          *bytes.Buffer
 	SocketTimeout time.Duration
 	readSequencer uint16
 
