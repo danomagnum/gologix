@@ -27,3 +27,20 @@ func (p CIPInstance) Bytes() []byte {
 		return b
 	}
 }
+
+type JustBytes []byte
+
+func (p JustBytes) Bytes() []byte {
+	if len(p) == 1 {
+		b := make([]byte, len(p)+1)
+		b[0] = byte(CIPInstance_8bit)
+		copy(b[1:], p)
+		return b
+	} else {
+		b := make([]byte, len(p)+2)
+		b[0] = byte(CIPInstance_16bit)
+		copy(b[2:], p)
+		return b
+	}
+
+}

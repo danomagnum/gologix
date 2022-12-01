@@ -1,6 +1,9 @@
 package gologix
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestList2(t *testing.T) {
 
@@ -13,5 +16,7 @@ func TestList2(t *testing.T) {
 	defer plc.Disconnect()
 
 	plc.ListAllTags2(0)
+
+	fmt.Printf("Tags: %+v", plc.KnownTags)
 
 }

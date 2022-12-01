@@ -46,6 +46,7 @@ func (plc *PLC) connect(ip string) error {
 	if plc.Connected {
 		return nil
 	}
+	plc.KnownTags = make(map[string]KnownTag)
 	var err error
 	plc.Conn, err = net.Dial("tcp", ip+CIP_Port)
 	if err != nil {
@@ -57,7 +58,9 @@ func (plc *PLC) connect(ip string) error {
 		return err
 	}
 
-	plc.ConnectionSize = 4002
+	if plc.ConnectionSize == 0 {
+		plc.ConnectionSize = 4002
+	}
 	// we have to do something different for small connection sizes.
 	fwd_open, err := plc.NewForwardOpenLarge()
 	if err != nil {
