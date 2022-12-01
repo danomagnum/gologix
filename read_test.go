@@ -9,8 +9,8 @@ func TestReadSingle(t *testing.T) {
 		tag   string
 		wants any
 	}{
-		{"TestSint", byte(117)},
 		{"TestInt", int16(999)},
+		{"TestSint", byte(117)},
 		{"TestDint", int32(36)},
 		{"TestReal", float32(93.45)},
 		{"TestDintArr[0]", int32(4351)},
@@ -22,7 +22,11 @@ func TestReadSingle(t *testing.T) {
 	}
 
 	plc := &PLC{IPAddress: "192.168.2.241"}
-	plc.Connect()
+	err := plc.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	defer plc.Disconnect()
 
 	for _, tt := range tests {

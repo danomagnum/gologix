@@ -8,7 +8,6 @@ import (
 )
 
 func TestRealHardware(t *testing.T) {
-	t.Skip()
 	flag.Parse()
 	plc := &PLC{IPAddress: "192.168.2.241"}
 	plc.Connect()

@@ -27,7 +27,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	//reqitems[1].Marshal(ioi.Buffer)
 	//reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(plc.readSequencer)
-	reqitems[1].Marshal(ioi.Service(CIPService_Read))
+	reqitems[1].Marshal(ioi.Service(CIPService_Read).Bytes())
 	reqitems[1].Marshal(elements)
 
 	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))

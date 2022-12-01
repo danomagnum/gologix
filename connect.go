@@ -105,7 +105,7 @@ func (plc *PLC) connect(ip string) error {
 		}
 	}
 
-	if fwopenresphdr.Status != 0 {
+	if fwopenresphdr.Status != 0x00 {
 		return fmt.Errorf("bad status on forward open header. got %x", fwopenresphdr.Status)
 	}
 
@@ -175,7 +175,7 @@ type EIPForwardOpen_Large struct {
 	// path
 	PathSize     byte
 	ClassType    CIPClassSize
-	Class        CIPObject
+	Class        byte
 	InstanceType CIPInstanceSize
 	Instance     byte
 
@@ -207,7 +207,9 @@ func (plc *PLC) NewForwardOpenLarge() (CIPItem, error) {
 			MarshalPathLogical(LogicalTypeInstanceID, 0x01, true),
 		)
 	*/
-	p, err := Serialize(CIPPort{PortNo: 1}, CIPObject_MessageRouter, CIPInstance(1))
+	p, err := Serialize(
+		CIPPort{PortNo: 1}, CIPAddress(0),
+		CIPObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -221,7 +223,7 @@ func (plc *PLC) NewForwardOpenLarge() (CIPItem, error) {
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = CIPClass_8bit
-	msg.Class = CIPObject_ConnectionManager
+	msg.Class = byte(CIPObject_ConnectionManager)
 	msg.InstanceType = CIPInstance_8bit
 	msg.Instance = 0x01
 	// end of path
