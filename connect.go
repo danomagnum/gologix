@@ -9,14 +9,14 @@ import (
 )
 
 func (client *Client) Connect() error {
-	if plc.Size == 0 {
-		plc.Size = 508
+	if client.ConnectionSize == 0 {
+		client.ConnectionSize = 508
 	}
 
 	if ioi_cache == nil {
 		ioi_cache = make(map[string]*IOI)
 	}
-	return plc.connect(plc.IPAddress)
+	return client.connect(client.IPAddress)
 }
 
 func (client *Client) register_session() error {
@@ -24,17 +24,17 @@ func (client *Client) register_session() error {
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
-	err := plc.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
+	err := client.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
 	if err != nil {
 		return fmt.Errorf("couldn't send connect req %w", err)
 	}
 	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	resp_hdr, resp_data, err := plc.recv_data()
+	resp_hdr, resp_data, err := client.recv_data()
 	if err != nil {
 		return fmt.Errorf("couldn't get connect response %w", err)
 	}
-	plc.SessionHandle = resp_hdr.SessionHandle
-	log.Printf("Session Handle %v", plc.SessionHandle)
+	client.SessionHandle = resp_hdr.SessionHandle
+	log.Printf("Session Handle %v", client.SessionHandle)
 	_ = resp_data
 	return nil
 
@@ -43,26 +43,26 @@ func (client *Client) register_session() error {
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
 func (client *Client) connect(ip string) error {
-	if plc.Connected {
+	if client.Connected {
 		return nil
 	}
-	plc.KnownTags = make(map[string]KnownTag)
+	client.KnownTags = make(map[string]KnownTag)
 	var err error
-	plc.Conn, err = net.Dial("tcp", ip+CIP_Port)
+	client.Conn, err = net.Dial("tcp", ip+CIP_Port)
 	if err != nil {
 		return err
 	}
 
-	err = plc.register_session()
+	err = client.register_session()
 	if err != nil {
 		return err
 	}
 
-	if plc.ConnectionSize == 0 {
-		plc.ConnectionSize = 4002
+	if client.ConnectionSize == 0 {
+		client.ConnectionSize = 4002
 	}
 	// we have to do something different for small connection sizes.
-	fwd_open, err := plc.NewForwardOpenLarge()
+	fwd_open, err := client.NewForwardOpenLarge()
 	if err != nil {
 		return fmt.Errorf("couldn't create forward open. %w", err)
 	}
@@ -71,11 +71,11 @@ func (client *Client) connect(ip string) error {
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 	items0[1] = fwd_open
-	err = plc.Send(CIPCommandSendRRData, MarshalItems(items0))
+	err = client.Send(CIPCommandSendRRData, MarshalItems(items0))
 	if err != nil {
 		return err
 	}
-	hdr, dat, err := plc.recv_data()
+	hdr, dat, err := client.recv_data()
 	if err != nil {
 		return err
 	}
@@ -118,10 +118,10 @@ func (client *Client) connect(ip string) error {
 		return fmt.Errorf("error unmarshaling forward open response. %w", err)
 	}
 	log.Printf("ForwardOpen: %+v", forwardopenresp)
-	plc.OTNetworkConnectionID = forwardopenresp.OTConnectionID
+	client.OTNetworkConnectionID = forwardopenresp.OTConnectionID
 	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 
-	plc.Connected = true
+	client.Connected = true
 	return nil
 
 }
@@ -217,10 +217,10 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	plc.ConnectionSerialNumber = uint16(rand.Uint32())
+	client.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint32(0x4200)
 	ConnectionParams = ConnectionParams << 16 // for long packet
-	ConnectionParams += uint32(plc.ConnectionSize)
+	ConnectionParams += uint32(client.ConnectionSize)
 
 	msg.Service = CIPService_LargeForwardOpen
 	// this next section is the path
@@ -235,7 +235,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	//msg.OTConnectionID = 0x05318008
 	msg.OTConnectionID = rand.Uint32() //0x20000002
 	msg.TOConnectionID = rand.Uint32()
-	msg.ConnectionSerialNumber = plc.ConnectionSerialNumber
+	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
 	msg.VendorID = CIP_VendorID
 	msg.OriginatorSerialNumber = CIP_SerialNumber
 	msg.Multiplier = 0x03

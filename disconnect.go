@@ -4,10 +4,10 @@ import "log"
 
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
-	if !plc.Connected {
+	if !client.Connected {
 		return nil
 	}
-	plc.Connected = false
+	client.Connected = false
 	var err error
 
 	items := make([]CIPItem, 2)
@@ -22,7 +22,7 @@ func (client *Client) Disconnect() error {
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
-		ConnectionSerialNumber: plc.ConnectionSerialNumber,
+		ConnectionSerialNumber: client.ConnectionSerialNumber,
 		VendorID:               CIP_VendorID,
 		OriginatorSerialNumber: CIP_SerialNumber,
 		PathSize:               3,                                           // 16 bit words
@@ -31,7 +31,7 @@ func (client *Client) Disconnect() error {
 
 	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
 
-	err = plc.Send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
+	err = client.Send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
 	if err != nil {
 		log.Panicf("Couldn't send unconnect req %v", err)
 	}

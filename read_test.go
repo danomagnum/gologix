@@ -21,19 +21,19 @@ func TestReadSingle(t *testing.T) {
 		{"TestUDTArr[2].Field2", float32(15.0)},
 	}
 
-	plc := &Client{IPAddress: "192.168.2.241"}
-	err := plc.Connect()
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer plc.Disconnect()
+	defer client.Disconnect()
 
 	for _, tt := range tests {
 
 		t.Run(tt.tag, func(t2 *testing.T) {
 			ct := GoVarToCIPType(tt.wants)
-			value, err := plc.read_single(tt.tag, ct, 1)
+			value, err := client.read_single(tt.tag, ct, 1)
 			if err != nil {
 				t2.Errorf("Problem reading %s. %v", tt.tag, err)
 				return
@@ -73,11 +73,11 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	plc := &Client{IPAddress: "192.168.2.241"}
-	plc.Connect()
-	defer plc.Disconnect()
+	client := &Client{IPAddress: "192.168.2.241"}
+	client.Connect()
+	defer client.Disconnect()
 
-	err := plc.read_multi(&read, CIPTypeStruct, 1)
+	err := client.read_multi(&read, CIPTypeStruct, 1)
 	if err != nil {
 		t.Errorf("Problem reading. %v", err)
 		return

@@ -16,7 +16,6 @@ type Client struct {
 
 	// Route
 
-	Size                   int // 508 is the default
 	Mutex                  sync.Mutex
 	Conn                   net.Conn
 	SessionHandle          uint32

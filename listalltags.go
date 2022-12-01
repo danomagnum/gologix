@@ -53,9 +53,9 @@ type ListInstanceHeader2 struct {
 // of the instance attribute list of the symbol objects.
 //
 // see 1756-PM020H-EN-P March 2022 page 39
-// also see https://forums.mrplc.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
+// also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (client *Client) ListAllTags(start_instance uint32) error {
-	plc.readSequencer += 1
+	client.readSequencer += 1
 	fmt.Printf("readall for %v", start_instance)
 
 	// have to start at 1.
@@ -65,7 +65,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		CIPObject_Symbol, CIPInstance(start_instance),
@@ -75,7 +75,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	readmsg := EmbeddedMessage{
-		SequenceCount: plc.readSequencer,
+		SequenceCount: client.readSequencer,
 		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
@@ -92,8 +92,8 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := plc.recv_data()
+	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.recv_data()
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		} else {
 			kt.Array_Order = make([]int, 0)
 		}
-		plc.KnownTags[strings.ToLower(string(tag_name))] = kt
+		client.KnownTags[strings.ToLower(string(tag_name))] = kt
 
 		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
 			tag_name,
@@ -170,7 +170,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	log.Printf("Status: %v", hdr.Status)
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		plc.ListAllTags(start_instance)
+		client.ListAllTags(start_instance)
 	}
 
 	return nil

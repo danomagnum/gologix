@@ -7,17 +7,17 @@ import (
 
 func TestList(t *testing.T) {
 
-	plc := &Client{IPAddress: "192.168.2.241"}
-	err := plc.Connect()
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer plc.Disconnect()
+	defer client.Disconnect()
 
-	plc.ListAllTags(0)
+	client.ListAllTags(0)
 
-	fmt.Printf("Tags: %+v\n", plc.KnownTags["testdintarr"])
+	fmt.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 
 	// check that we picked up all the test tags properly
 	tests := make(map[string]KnownTag)
@@ -34,7 +34,7 @@ func TestList(t *testing.T) {
 
 	for k := range tests {
 		t.Run(k, func(t *testing.T) {
-			have := plc.KnownTags[k]
+			have := client.KnownTags[k]
 			want := tests[k]
 
 			if have.Name != want.Name {

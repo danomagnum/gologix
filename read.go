@@ -14,10 +14,10 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
 	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
-	plc.readSequencer += 1
+	client.readSequencer += 1
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
@@ -26,12 +26,12 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	//reqitems[1].Marshal(ioi_header)
 	//reqitems[1].Marshal(ioi.Buffer)
 	//reqitems[1].Marshal(ioi_footer)
-	reqitems[1].Marshal(plc.readSequencer)
+	reqitems[1].Marshal(client.readSequencer)
 	reqitems[1].Marshal(ioi.Service(CIPService_Read).Bytes())
 	reqitems[1].Marshal(elements)
 
-	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := plc.recv_data()
+	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.recv_data()
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 func ReadArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct := GoVarToCIPType(t[0])
-	val, err := plc.read_single(tag, ct, elements)
+	val, err := client.read_single(tag, ct, elements)
 	if err != nil {
 		return t, err
 	}
@@ -141,7 +141,7 @@ func Read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
 	//fmt.Printf("reading type %T", t)
 	ct := GoVarToCIPType(t)
-	val, err := plc.read_single(tag, ct, 1)
+	val, err := client.read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
 	}
@@ -187,7 +187,7 @@ type CIPStructHeader struct {
 	Unknown uint16
 }
 
-// tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
+// tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
 func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16) error {
 
@@ -215,13 +215,13 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
 	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
-	plc.readSequencer += 1
+	client.readSequencer += 1
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &plc.OTNetworkConnectionID)
+	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := CIPMultiServiceHeader{
-		Sequence:     plc.readSequencer,
+		Sequence:     client.readSequencer,
 		Service:      CIPService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
@@ -255,8 +255,8 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	reqitems[1].Marshal(jump_table)
 	reqitems[1].Marshal(b.Bytes())
 
-	plc.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := plc.recv_data()
+	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.recv_data()
 	if err != nil {
 		return err
 	}
