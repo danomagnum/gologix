@@ -11,3 +11,4 @@
 - https://www.can-cia.org/fileadmin/resources/documents/proceedings/2005_schiffer.pdf
 - https://github.com/ruscito/pycomm
 - http://www.plctalk.net/qanda/showthread.php?t=133853
+- https://www.odva.org/wp-content/uploads/2020/05/PUB00070_Recommended-Functionality-for-EIP-Devices-v10.pdf
