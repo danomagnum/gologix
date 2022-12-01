@@ -9,7 +9,7 @@ import (
 
 func TestRealHardware(t *testing.T) {
 	flag.Parse()
-	plc := &PLC{IPAddress: "192.168.2.241"}
+	plc := &Client{IPAddress: "192.168.2.241"}
 	plc.Connect()
 	defer plc.Disconnect()
 	//plc.ReadAll(1)
@@ -77,7 +77,7 @@ func TestRealHardware(t *testing.T) {
 
 }
 
-func ReadAndPrint[T GoLogixTypes](plc *PLC, path string) {
+func ReadAndPrint[T GoLogixTypes](client *Client, path string) {
 	value, err := Read[T](plc, path)
 	if err != nil {
 		log.Printf("Problem reading %s. %v", path, err)

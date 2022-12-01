@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-func (plc *PLC) Connect() error {
+func (client *Client) Connect() error {
 	if plc.Size == 0 {
 		plc.Size = 508
 	}
@@ -19,7 +19,7 @@ func (plc *PLC) Connect() error {
 	return plc.connect(plc.IPAddress)
 }
 
-func (plc *PLC) register_session() error {
+func (client *Client) register_session() error {
 	reg_msg := CIPMessage_Register{}
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
@@ -42,7 +42,7 @@ func (plc *PLC) register_session() error {
 
 // To connect we first send a register session command.
 // based on the reply we get from that we send a forward open command.
-func (plc *PLC) connect(ip string) error {
+func (client *Client) connect(ip string) error {
 	if plc.Connected {
 		return nil
 	}
@@ -199,7 +199,7 @@ type EIPForwardOpen_Large struct {
 	PathLen                byte
 }
 
-func (plc *PLC) NewForwardOpenLarge() (CIPItem, error) {
+func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
 	var msg EIPForwardOpen_Large
 

@@ -7,7 +7,7 @@ import (
 
 func TestList(t *testing.T) {
 
-	plc := &PLC{IPAddress: "192.168.2.241"}
+	plc := &Client{IPAddress: "192.168.2.241"}
 	err := plc.Connect()
 	if err != nil {
 		t.Error(err)

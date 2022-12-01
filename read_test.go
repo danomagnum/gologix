@@ -21,7 +21,7 @@ func TestReadSingle(t *testing.T) {
 		{"TestUDTArr[2].Field2", float32(15.0)},
 	}
 
-	plc := &PLC{IPAddress: "192.168.2.241"}
+	plc := &Client{IPAddress: "192.168.2.241"}
 	err := plc.Connect()
 	if err != nil {
 		t.Error(err)
@@ -73,7 +73,7 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	plc := &PLC{IPAddress: "192.168.2.241"}
+	plc := &Client{IPAddress: "192.168.2.241"}
 	plc.Connect()
 	defer plc.Disconnect()
 

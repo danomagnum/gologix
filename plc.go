@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type PLC struct {
+type Client struct {
 	IPAddress     string
 	ProcessorSlot int
 	SocketTimeout time.Duration

@@ -1,6 +1,6 @@
 package gologix
 
-func (plc *PLC) Write_single(tag string, value any) error {
+func (client *Client) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
 	datatype := GoVarToCIPType(value)
 	ioi := NewIOI(tag, datatype)

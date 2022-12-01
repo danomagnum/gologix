@@ -18,7 +18,7 @@ type EIPHeader struct {
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (plc *PLC) Send(cmd CIPCommand, msgs ...any) error {
+func (client *Client) Send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -54,7 +54,7 @@ func (plc *PLC) Send(cmd CIPCommand, msgs ...any) error {
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (plc *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
+func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 	hdr := EIPHeader{}
 	var err error
@@ -75,7 +75,7 @@ func (plc *PLC) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 }
 
-func (plc *PLC) NewEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (client *Client) NewEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	plc.SequenceCounter++
 

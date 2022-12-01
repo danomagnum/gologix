@@ -3,7 +3,7 @@ package gologix
 import "log"
 
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
-func (plc *PLC) Disconnect() error {
+func (client *Client) Disconnect() error {
 	if !plc.Connected {
 		return nil
 	}

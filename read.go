@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi := NewIOI(tag, datatype)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
@@ -93,7 +93,7 @@ func (plc *PLC) read_single(tag string, datatype CIPType, elements uint16) (any,
 	}
 }
 
-func ReadArray[T GoLogixTypes](plc *PLC, tag string, elements uint16) ([]T, error) {
+func ReadArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct := GoVarToCIPType(t[0])
 	val, err := plc.read_single(tag, ct, elements)
@@ -137,7 +137,7 @@ func ReadArray[T GoLogixTypes](plc *PLC, tag string, elements uint16) ([]T, erro
 
 }
 
-func Read[T GoLogixTypes](plc *PLC, tag string) (T, error) {
+func Read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
 	//fmt.Printf("reading type %T", t)
 	ct := GoVarToCIPType(t)
@@ -189,7 +189,7 @@ type CIPStructHeader struct {
 
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the PLC.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
-func (plc *PLC) read_multi(tag_str any, datatype CIPType, elements uint16) error {
+func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16) error {
 
 	// build the tag list from the structure
 	T := reflect.TypeOf(tag_str).Elem()

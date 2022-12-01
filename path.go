@@ -31,15 +31,6 @@ import (
 type SegmentType byte
 
 const (
-	SegmentTypeElement8Bit      SegmentType = 0x28
-	SegmentTypeElement16Bit     SegmentType = 0x29
-	SegmentTypeElement32Bit     SegmentType = 0x2A
-	SegmentTypeClassID8Bit      SegmentType = 0x20
-	SegmentTypeClassID16Bit     SegmentType = 0x21
-	SegmentTypeInstanceID8Bit   SegmentType = 0x24
-	SegmentTypeInstanceID16Bit  SegmentType = 0x25
-	SegmentTypeAttributeID8Bit  SegmentType = 0x30
-	SegmentTypeAttributeID16Bit SegmentType = 0x31
 	SegmentTypeExtendedSymbolic SegmentType = 0x91
 )
 
@@ -100,17 +91,8 @@ type Serializable interface {
 	Bytes() []byte
 }
 
-//func Serialize(ps ...Serializable) (*bytes.Buffer, error) {
-//b := new(bytes.Buffer)
-//for _, p := range ps {
-//_, err := b.Write(p.Bytes())
-//if err != nil {
-//return nil, err
-//}
-//}
-//return b, nil
-//}
-
+// given a list of structures, serialize them with the Bytes() method if available,
+// otherwise serialize with binary.write()
 func Serialize(strs ...any) (*bytes.Buffer, error) {
 	b := new(bytes.Buffer)
 	for _, str := range strs {
