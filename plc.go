@@ -29,8 +29,9 @@ type PLC struct {
 }
 
 type KnownTag struct {
-	Name     string
-	Type     CIPType
-	Class    CIPClass
-	Instance CIPInstance
+	Name        string
+	Type        CIPType
+	Class       CIPClass
+	Instance    CIPInstance
+	Array_Order []int
 }

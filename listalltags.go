@@ -12,16 +12,9 @@ type EmbeddedMessage struct {
 	SequenceCount uint16
 	Service       CIPService
 	PathLength    byte
-	/*
-		Path          []byte
-		Data          [4]uint16
-		RoutePathSize byte
-		Reserved      byte
-		PathSegment   uint16
-	*/
 }
 
-type ReaddAllData2 struct {
+type ReaddAllData struct {
 	//Sequence    uint16
 	SequenceCount uint16
 	Service       CIPService
@@ -29,15 +22,6 @@ type ReaddAllData2 struct {
 	RequestPath   [2]byte
 	Timeout       uint16
 	Message       EmbeddedMessage
-}
-
-type ReaddAllData struct {
-	//Sequence    uint16
-	Service     CIPService
-	PathLength  byte
-	RequestPath [4]byte
-	Timeout     uint16
-	Message     EmbeddedMessage
 }
 
 type tagResultDataHeader struct {
@@ -153,6 +137,21 @@ func (plc *PLC) ListAllTags2(start_instance uint32) error {
 			Type:     tag_ftr.Type,
 			Class:    CIPClass(tag_ftr.TypeInfo),
 			Instance: CIPInstance(tag_hdr.InstanceID),
+		}
+		if tag_ftr.Dimension3 != 0 {
+			kt.Array_Order = make([]int, 3)
+			kt.Array_Order[2] = int(tag_ftr.Dimension3)
+			kt.Array_Order[1] = int(tag_ftr.Dimension2)
+			kt.Array_Order[0] = int(tag_ftr.Dimension1)
+		} else if tag_ftr.Dimension2 != 0 {
+			kt.Array_Order = make([]int, 2)
+			kt.Array_Order[1] = int(tag_ftr.Dimension2)
+			kt.Array_Order[0] = int(tag_ftr.Dimension1)
+		} else if tag_ftr.Dimension1 != 0 {
+			kt.Array_Order = make([]int, 1)
+			kt.Array_Order[0] = int(tag_ftr.Dimension1)
+		} else {
+			kt.Array_Order = make([]int, 0)
 		}
 		plc.KnownTags[strings.ToLower(string(tag_name))] = kt
 
