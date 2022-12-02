@@ -61,7 +61,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedMessage{
+	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
@@ -148,7 +148,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedMessage{
+	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_Read,
 		PathLength:    byte(p.Len() / 2),

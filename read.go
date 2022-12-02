@@ -18,15 +18,16 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
-	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
-	// the total data so maybe not.
-	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
-	//reqitems[1].Marshal(ioi_header)
-	//reqitems[1].Marshal(ioi.Buffer)
-	//reqitems[1].Marshal(ioi_footer)
-	reqitems[1].Marshal(client.Sequencer())
-	reqitems[1].Marshal(ioi.Service(CIPService_Read).Bytes())
+	readmsg := msgCIPConnectedServiceReq{
+		SequenceCount: client.Sequencer(),
+		Service:       CIPService_Read,
+		PathLength:    byte(len(ioi.Bytes()) / 2),
+	}
+	// setup item
+	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	// add path
+	reqitems[1].Marshal(ioi.Bytes())
+	// add service specific data
 	reqitems[1].Marshal(elements)
 
 	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
@@ -218,7 +219,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	ioi_header := CIPMultiServiceHeader{
+	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     client.Sequencer(),
 		Service:      CIPService_MultipleService,
 		PathSize:     2,
@@ -228,6 +229,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 
 	b := bytes.Buffer{}
 	// we now have to build up the jump table for each IOI.
+	// and pack all the IOIs together into b
 	jump_table := make([]uint16, qty)
 	jump_start := 2 + qty*2 // 2 bytes + 2 bytes per jump entry
 	for i := 0; i < qty; i++ {

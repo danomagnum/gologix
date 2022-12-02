@@ -8,15 +8,6 @@ import (
 	"strings"
 )
 
-// this is the generic connected message.
-// it goes into an item (always item[1]?) and is followed up with
-// a valid path.  The item specifies the CIPService that goes with the message
-type msgCIPConnectedMessage struct {
-	SequenceCount uint16
-	Service       CIPService
-	PathLength    byte
-}
-
 type msgtagResultDataHeader struct {
 	InstanceID uint32
 	NameLength uint16
@@ -78,19 +69,21 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedMessage{
+	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
+	// setup item
 	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	// add path
 	reqitems[1].Marshal(p.Bytes())
+	// add service specific data
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
 	attr8_arraydims := 8
-	//reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
 	reqitems[1].Marshal([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
 	reqitems[1].Marshal(byte(1))
 	reqitems[1].Marshal(byte(0))

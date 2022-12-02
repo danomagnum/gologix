@@ -35,7 +35,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedMessage{
+	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),

@@ -12,13 +12,23 @@ type CIPMultiIOIHeader struct {
 	Size    byte
 }
 
-type CIPMultiServiceHeader struct {
+// this is the generic connected message.
+// it goes into an item (always item[1]?) and is followed up with
+// a valid path.  The item specifies the CIPService that goes with the message
+type msgCIPConnectedServiceReq struct {
+	SequenceCount uint16
+	Service       CIPService
+	PathLength    byte
+}
+
+type msgCIPConnectedMultiServiceReq struct {
 	Sequence     uint16
 	Service      CIPService
 	PathSize     byte
 	Path         [4]byte
 	ServiceCount uint16
 }
+
 type CIPWriteIOIFooter struct {
 	DataType uint16
 	Elements uint16
