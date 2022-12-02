@@ -120,4 +120,5 @@ const (
 	CIPObject_RSTPPort                     CIPObject = 0x55
 	CIPObject_TCPIP                        CIPObject = 0xF5
 	CIPObject_PCCC                         CIPObject = 0x67
+	CIPObject_ControllerInfo               CIPObject = 0xAC // don't know the official name
 )
