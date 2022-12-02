@@ -13,7 +13,7 @@ func (client *Client) Disconnect() error {
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{} // null item
 
-	reg_msg := CIPMessage_UnRegister{
+	reg_msg := msgCIPMessage_UnRegister{
 		Service:                CIPService_ForwardClose,
 		CipPathSize:            0x02,
 		ClassType:              CIPClass_8bit,
@@ -39,7 +39,7 @@ func (client *Client) Disconnect() error {
 
 }
 
-type CIPMessage_UnRegister struct {
+type msgCIPMessage_UnRegister struct {
 	Service                CIPService
 	CipPathSize            byte
 	ClassType              CIPClassSize

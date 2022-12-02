@@ -22,6 +22,18 @@ type msgtagResultDataFooter struct {
 }
 
 // see page 42 of 1756-PM020H-EN-P
+func (f msgtagResultDataFooter) PreDefined() bool {
+	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
+	return !((val > 0x0100) && (val < 0x0EFF))
+}
+
+// see page 42 of 1756-PM020H-EN-P
+func (f msgtagResultDataFooter) Atomic() bool {
+	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
+	return val < 0xFF
+}
+
+// see page 42 of 1756-PM020H-EN-P
 func (f msgtagResultDataFooter) Template_ID() uint16 {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
 	template_mask := uint16(0b0000_0111_1111_1111)
@@ -121,6 +133,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		binary.Read(data2, binary.LittleEndian, tag_hdr)
 		tag_name := make([]byte, tag_hdr.NameLength)
 		binary.Read(data2, binary.LittleEndian, &tag_name)
+		tag_string := string(tag_name)
 
 		// the end of the tagname has to be aligned on a 16 bit word
 		//tagname_alignment := tag_hdr.NameLength % 2
@@ -150,6 +163,37 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		} else {
 			kt.Array_Order = make([]int, 0)
 		}
+
+		// per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
+		// because they aren't valid for reading/writing.
+		if !tag_ftr.Atomic() && tag_ftr.PreDefined() {
+			log.Printf("Skipping Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
+				tag_name,
+				tag_hdr.InstanceID,
+				tag_ftr.Type,
+				tag_ftr.TypeInfo,
+				tag_ftr.Dimension1,
+				tag_ftr.Dimension2,
+				tag_ftr.Dimension3,
+				tag_ftr.Template_ID(),
+			)
+		}
+		if tag_string[:2] == "__" {
+			log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
+			continue
+		}
+
+		if tag_string[:8] == "Program:" {
+			client.ListSubTags(tag_string, 1)
+			continue
+		}
+
+		if tag_ftr.Template_ID() != 0 {
+			log.Printf("Looking up template for Tag: '%s' ", tag_string)
+			client.ListMembers(uint32(tag_ftr.Template_ID()))
+			continue
+		}
+
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt
 
 		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
