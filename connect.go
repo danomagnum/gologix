@@ -10,7 +10,8 @@ import (
 
 func (client *Client) Connect() error {
 	if client.ConnectionSize == 0 {
-		client.ConnectionSize = 508
+		client.ConnectionSize = 4000
+		//client.ConnectionSize = 508
 	}
 
 	// default path is backplane -> slot 0

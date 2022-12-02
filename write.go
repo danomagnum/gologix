@@ -4,9 +4,8 @@ func (client *Client) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
 	datatype := GoVarToCIPType(value)
 	ioi := NewIOI(tag, datatype)
-	client.readSequencer += 1
 	ioi_header := CIPIOIHeader{
-		Sequence: client.readSequencer,
+		Sequence: client.Sequencer(),
 		Service:  CIPService_Write,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}

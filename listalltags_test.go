@@ -51,16 +51,3 @@ func TestList(t *testing.T) {
 	}
 
 }
-
-func compare_array_order(have, want []int) bool {
-	if len(have) != len(want) {
-		return false
-	}
-
-	for i := range have {
-		if have[i] != want[i] {
-			return false
-		}
-	}
-	return true
-}

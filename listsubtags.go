@@ -8,70 +8,12 @@ import (
 	"strings"
 )
 
-type EmbeddedMessage struct {
-	SequenceCount uint16
-	Service       CIPService
-	PathLength    byte
-}
-
-type ReaddAllData struct {
-	//Sequence    uint16
-	SequenceCount uint16
-	Service       CIPService
-	PathLength    byte
-	RequestPath   [2]byte
-	Timeout       uint16
-	Message       EmbeddedMessage
-}
-
-type tagResultDataHeader struct {
-	InstanceID uint32
-	NameLength uint16
-}
-
-type tagResultDataFooter struct {
-	Type       CIPType
-	TypeInfo   byte
-	Dimension1 uint32
-	Dimension2 uint32
-	Dimension3 uint32
-}
-
-// see page 42 of 1756-PM020H-EN-P
-func (f tagResultDataFooter) Template_ID() uint16 {
-	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
-	template_mask := uint16(0b0000_0111_1111_1111)
-	bit12 := uint16(1 << 12)
-	bit15 := uint16(1 << 15)
-	b12_set := val&bit12 != 0
-	b15_set := val&bit15 != 0
-	if !b15_set || b12_set {
-		// not a template
-		return 0
-	}
-
-	return val & template_mask
-
-}
-
-type ListInstanceHeader struct {
-	SequenceCount uint16
-	Status        uint16
-}
-
-type ListInstanceHeader2 struct {
-	Service       CIPService
-	Reserved      byte
-	SequenceCount uint16
-	Status        uint16
-}
-
 // the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
 // of the instance attribute list of the symbol objects.
 //
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
-func (client *Client) ListAllTags(start_instance uint32) error {
+func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 	fmt.Printf("readall for %v", start_instance)
 
 	// have to start at 1.
@@ -79,11 +21,14 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = 1
 	}
 
+	ioi := NewIOI(roottag, 16)
+
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
+		ioi.Buffer,
 		CIPObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
@@ -138,8 +83,9 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	for data2.Len() > 0 {
 
 		binary.Read(data2, binary.LittleEndian, tag_hdr)
-		tag_name := make([]byte, tag_hdr.NameLength)
-		binary.Read(data2, binary.LittleEndian, &tag_name)
+		newtag_bytes := make([]byte, tag_hdr.NameLength)
+		binary.Read(data2, binary.LittleEndian, &newtag_bytes)
+		newtag_name := fmt.Sprintf("%s.%s", roottag, string(newtag_bytes))
 
 		// the end of the tagname has to be aligned on a 16 bit word
 		//tagname_alignment := tag_hdr.NameLength % 2
@@ -149,7 +95,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		binary.Read(data2, binary.LittleEndian, tag_ftr)
 
 		kt := KnownTag{
-			Name:     string(tag_name),
+			Name:     newtag_name,
 			Type:     tag_ftr.Type,
 			Class:    CIPClass(tag_ftr.TypeInfo),
 			Instance: CIPInstance(tag_hdr.InstanceID),
@@ -169,17 +115,16 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		} else {
 			kt.Array_Order = make([]int, 0)
 		}
-		client.KnownTags[strings.ToLower(string(tag_name))] = kt
+		client.KnownTags[strings.ToLower(newtag_name)] = kt
 
-		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
-			tag_name,
+		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
+			newtag_name,
 			tag_hdr.InstanceID,
 			tag_ftr.Type,
 			tag_ftr.TypeInfo,
 			tag_ftr.Dimension1,
 			tag_ftr.Dimension2,
 			tag_ftr.Dimension3,
-			tag_ftr.Template_ID(),
 		)
 		start_instance = tag_hdr.InstanceID
 
@@ -187,7 +132,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	log.Printf("Status: %v", hdr.Status)
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		client.ListAllTags(start_instance)
+		client.ListSubTags(roottag, start_instance)
 	}
 
 	return nil

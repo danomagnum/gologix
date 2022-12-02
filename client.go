@@ -8,10 +8,10 @@ import (
 )
 
 type Client struct {
-	IPAddress     string
-	Path          *bytes.Buffer
-	SocketTimeout time.Duration
-	readSequencer uint16
+	IPAddress      string
+	Path           *bytes.Buffer
+	SocketTimeout  time.Duration
+	sequencerValue uint16
 
 	KnownTags map[string]KnownTag
 
@@ -19,11 +19,16 @@ type Client struct {
 	Conn                   net.Conn
 	SessionHandle          uint32
 	OTNetworkConnectionID  uint32
-	SequenceCounter        uint16
+	HeaderSequenceCounter  uint16
 	Connected              bool
 	ConnectionSize         int
 	ConnectionSerialNumber uint16
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
+}
+
+func (client *Client) Sequencer() uint16 {
+	client.sequencerValue++
+	return client.sequencerValue
 }
 
 type KnownTag struct {

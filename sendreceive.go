@@ -77,7 +77,7 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 func (client *Client) NewEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
-	client.SequenceCounter++
+	client.HeaderSequenceCounter++
 
 	hdr.Command = uint16(cmd)
 	//hdr.Command = 0x0070
