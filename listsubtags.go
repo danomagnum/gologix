@@ -35,7 +35,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := EmbeddedMessage{
+	readmsg := msgCIPConnectedMessage{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
@@ -75,11 +75,11 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 	// get ready to read tag info from item 1 data
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 	//data2.Next(4)
-	data_hdr := ListInstanceHeader2{}
+	data_hdr := msgListInstanceHeader{}
 	binary.Read(data2, binary.LittleEndian, &data_hdr)
 
-	tag_hdr := new(tagResultDataHeader)
-	tag_ftr := new(tagResultDataFooter)
+	tag_hdr := new(msgtagResultDataHeader)
+	tag_ftr := new(msgtagResultDataFooter)
 	for data2.Len() > 0 {
 
 		binary.Read(data2, binary.LittleEndian, tag_hdr)

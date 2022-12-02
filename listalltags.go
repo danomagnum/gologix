@@ -8,28 +8,21 @@ import (
 	"strings"
 )
 
-type EmbeddedMessage struct {
+// this is the generic connected message.
+// it goes into an item (always item[1]?) and is followed up with
+// a valid path.  The item specifies the CIPService that goes with the message
+type msgCIPConnectedMessage struct {
 	SequenceCount uint16
 	Service       CIPService
 	PathLength    byte
 }
 
-type ReaddAllData struct {
-	//Sequence    uint16
-	SequenceCount uint16
-	Service       CIPService
-	PathLength    byte
-	RequestPath   [2]byte
-	Timeout       uint16
-	Message       EmbeddedMessage
-}
-
-type tagResultDataHeader struct {
+type msgtagResultDataHeader struct {
 	InstanceID uint32
 	NameLength uint16
 }
 
-type tagResultDataFooter struct {
+type msgtagResultDataFooter struct {
 	Type       CIPType
 	TypeInfo   byte
 	Dimension1 uint32
@@ -38,7 +31,7 @@ type tagResultDataFooter struct {
 }
 
 // see page 42 of 1756-PM020H-EN-P
-func (f tagResultDataFooter) Template_ID() uint16 {
+func (f msgtagResultDataFooter) Template_ID() uint16 {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
 	template_mask := uint16(0b0000_0111_1111_1111)
 	bit12 := uint16(1 << 12)
@@ -54,12 +47,7 @@ func (f tagResultDataFooter) Template_ID() uint16 {
 
 }
 
-type ListInstanceHeader struct {
-	SequenceCount uint16
-	Status        uint16
-}
-
-type ListInstanceHeader2 struct {
+type msgListInstanceHeader struct {
 	Service       CIPService
 	Reserved      byte
 	SequenceCount uint16
@@ -90,7 +78,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := EmbeddedMessage{
+	readmsg := msgCIPConnectedMessage{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
@@ -130,11 +118,11 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	// get ready to read tag info from item 1 data
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 	//data2.Next(4)
-	data_hdr := ListInstanceHeader2{}
+	data_hdr := msgListInstanceHeader{}
 	binary.Read(data2, binary.LittleEndian, &data_hdr)
 
-	tag_hdr := new(tagResultDataHeader)
-	tag_ftr := new(tagResultDataFooter)
+	tag_hdr := new(msgtagResultDataHeader)
+	tag_ftr := new(msgtagResultDataFooter)
 	for data2.Len() > 0 {
 
 		binary.Read(data2, binary.LittleEndian, tag_hdr)

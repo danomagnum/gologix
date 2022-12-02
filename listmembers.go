@@ -7,7 +7,14 @@ import (
 	"log"
 )
 
-type msgGetAttrListResponse struct {
+// this is specifically the response for a GetAttrList service on a
+// template object with requested attributes of 4,5,2,1
+// where
+//      4 = Size of the template in 32 bit words
+//      5 = Size of the data in the template (when sent in a read response)
+//      2 = Number of fields/members in the template
+//      1 = The handle of the template. not sure what this is for yet
+type msgGetTemplateAttrListResponse struct {
 	SequenceCount   uint16
 	Service         CIPService
 	Reserved        byte
@@ -34,7 +41,7 @@ type msgGetAttrListResponse struct {
 	Handle        uint16
 }
 
-func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetAttrListResponse, error) {
+func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTemplateAttrListResponse, error) {
 	fmt.Printf("list members for %v", str_instance)
 
 	// have to start at 1.
@@ -51,10 +58,10 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetAttrLi
 		//CIPObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
-		return msgGetAttrListResponse{}, fmt.Errorf("couldn't build path. %w", err)
+		return msgGetTemplateAttrListResponse{}, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := EmbeddedMessage{
+	readmsg := msgCIPConnectedMessage{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
@@ -82,7 +89,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetAttrLi
 	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	hdr, data, err := client.recv_data()
 	if err != nil {
-		return msgGetAttrListResponse{}, err
+		return msgGetTemplateAttrListResponse{}, err
 	}
 	_ = hdr
 	_ = data
@@ -101,7 +108,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetAttrLi
 	// get ready to read tag info from item 1 data
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 
-	result := msgGetAttrListResponse{}
+	result := msgGetTemplateAttrListResponse{}
 	binary.Read(data2, binary.LittleEndian, &result)
 	fmt.Printf("Result: %+v\n\n", result)
 
@@ -141,7 +148,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := EmbeddedMessage{
+	readmsg := msgCIPConnectedMessage{
 		SequenceCount: client.Sequencer(),
 		Service:       CIPService_Read,
 		PathLength:    byte(p.Len() / 2),
@@ -219,10 +226,12 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	return descriptor, nil
 }
 
+// full descriptor of a struct in the controller.
+// could be a UDT or a builtin struct like a TON
 type UDTDescriptor struct {
 	Instance_ID uint32
 	Name        string
-	Info        msgGetAttrListResponse
+	Info        msgGetTemplateAttrListResponse
 	Members     []UDTMemberDescriptor
 }
 
