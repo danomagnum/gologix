@@ -1,13 +1,13 @@
 package gologix
 
-// todo: move sequence to a different struct and combine CIPIOIHeader and CIPMultiIOIHeader
-type CIPIOIHeader struct {
+// todo: move sequence to a different struct and combine msgCIPIOIHeader and CIPMultiIOIHeader
+type msgCIPIOIHeader struct {
 	Sequence uint16
 	Service  CIPService
 	Size     byte
 }
 
-type CIPMultiIOIHeader struct {
+type msgCIPMultiIOIHeader struct {
 	Service CIPService
 	Size    byte
 }
@@ -29,15 +29,15 @@ type msgCIPConnectedMultiServiceReq struct {
 	ServiceCount uint16
 }
 
-type CIPWriteIOIFooter struct {
+type msgCIPWriteIOIFooter struct {
 	DataType uint16
 	Elements uint16
 }
-type CIPIOIFooter struct {
+type msgCIPIOIFooter struct {
 	Elements uint16
 }
 
-type CIPReadResultHeader struct {
+type msgCIPReadResultHeader struct {
 	InterfaceHandle uint32
 	Timeout         uint16
 }
@@ -45,7 +45,7 @@ type CIPReadResultHeader struct {
 // This should be everything before the actual result value data
 // so you can read this off the buffer and be in the correct position to
 // read the actual value as the type indicated by Type
-type CIPReadResultData struct {
+type msgCIPReadResultData struct {
 	SequenceCounter uint16
 	Service         CIPService
 	Status          [3]byte

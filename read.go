@@ -37,7 +37,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	}
 	_ = hdr
 
-	read_result_header := CIPReadResultHeader{}
+	read_result_header := msgCIPReadResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		log.Printf("Problem reading read result header. %v", err)
@@ -50,7 +50,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	if len(items) != 2 {
 		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
-	var hdr2 CIPReadResultData
+	var hdr2 msgCIPReadResultData
 	err = items[1].Unmarshal(&hdr2)
 	if err != nil {
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
@@ -235,11 +235,11 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	for i := 0; i < qty; i++ {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
-		h := CIPMultiIOIHeader{
+		h := msgCIPMultiIOIHeader{
 			Service: CIPService_Read,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
-		f := CIPIOIFooter{
+		f := msgCIPIOIFooter{
 			Elements: elements,
 		}
 		binary.Write(&b, binary.LittleEndian, h)
@@ -262,7 +262,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	}
 	_ = hdr
 
-	read_result_header := CIPReadResultHeader{}
+	read_result_header := msgCIPReadResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		log.Printf("Problem reading read result header. %v", err)
@@ -275,7 +275,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 		return fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	ritem := items[1]
-	var reply_hdr MultiReadResultHeader
+	var reply_hdr msgMultiReadResultHeader
 	binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
 	binary.Read(&ritem, binary.LittleEndian, &offset_table)
@@ -284,7 +284,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
 		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
 		mybytes := bytes.NewBuffer(rb[offset:])
-		rhdr := MultiReadResult{}
+		rhdr := msgMultiReadResult{}
 		binary.Read(mybytes, binary.LittleEndian, &rhdr)
 
 		// bit 8 of the service indicates whether it is a response service
@@ -333,7 +333,7 @@ func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 	return t, nil
 }
 
-type MultiReadResultHeader struct {
+type msgMultiReadResultHeader struct {
 	SequenceCount uint16
 	Service       CIPService
 	Reserved      byte
@@ -341,7 +341,7 @@ type MultiReadResultHeader struct {
 	Reply_Count   uint16
 }
 
-type MultiReadResult struct {
+type msgMultiReadResult struct {
 	Service   CIPService
 	Reserved  byte
 	Status    uint16
