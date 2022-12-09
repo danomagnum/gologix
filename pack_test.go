@@ -68,4 +68,11 @@ func TestPack(t *testing.T) {
 	if !check_bytes(have, want) {
 		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", have, want)
 	}
+
+	have2 := S{}
+	unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	if have2 != s {
+		t.Errorf("ResultMismatch.\n Have \n%v\n Want \n%v\n", have2, s)
+
+	}
 }
