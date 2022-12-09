@@ -1,7 +1,7 @@
 package gologix
 
 import (
-	"fmt"
+	"log"
 	"testing"
 )
 
@@ -17,7 +17,7 @@ func TestList(t *testing.T) {
 
 	client.ListAllTags(0)
 
-	fmt.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
+	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 
 	// check that we picked up all the test tags properly
 	tests := make(map[string]KnownTag)

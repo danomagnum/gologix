@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 )
 
 type CIPItemID uint16
@@ -92,12 +93,12 @@ func (item *CIPItem) Marshal(str any) {
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
 		if err != nil {
-			fmt.Printf("Problem writing. %v", err)
+			log.Printf("Problem writing. %v", err)
 		}
 	default:
 		err := binary.Write(item, binary.LittleEndian, str)
 		if err != nil {
-			fmt.Printf("Problem writing. %v", err)
+			log.Printf("Problem writing. %v", err)
 		}
 	}
 }

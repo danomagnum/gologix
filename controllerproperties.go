@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -95,7 +96,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 
 	result := msgGetControllerPropList{}
 	binary.Read(data2, binary.LittleEndian, &result)
-	fmt.Printf("Result: %+v\n\n", result)
+	log.Printf("Result: %+v\n\n", result)
 
 	return result, nil
 }

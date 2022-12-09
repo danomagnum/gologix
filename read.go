@@ -161,7 +161,6 @@ func ReadArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 
 func Read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
-	//fmt.Printf("reading type %T", t)
 	ct := GoVarToCIPType(t)
 	val, err := client.read_single(tag, ct, 1)
 	if err != nil {
@@ -323,7 +322,7 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 
 		result_values[i] = rhdr.Type.readValue(mybytes)
 
-		fmt.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+		log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
 	}
 
 	// now unpack the result values back into the given structure

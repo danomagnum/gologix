@@ -104,7 +104,7 @@ func TestReadTimeout(t *testing.T) {
 	defer client.Disconnect()
 	fmt.Println("sleeping for 2 minutes. to let the comms timeout")
 	for t := 0; t < 24; t++ {
-		fmt.Printf("%d\n", t*5)
+		log.Printf("%d\n", t*5)
 		time.Sleep(time.Second * 5)
 	}
 	//client.Conn.Close()
@@ -113,7 +113,7 @@ func TestReadTimeout(t *testing.T) {
 	if err != nil {
 		t.Errorf("problem reading. %v", err)
 	}
-	fmt.Printf("value: %v\n", value)
+	log.Printf("value: %v\n", value)
 }
 
 func TestErrs(t *testing.T) {

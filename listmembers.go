@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -41,7 +42,7 @@ type msgGetTemplateAttrListResponse struct {
 }
 
 func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTemplateAttrListResponse, error) {
-	fmt.Printf("list members for %v", str_instance)
+	log.Printf("list members for %v", str_instance)
 
 	// have to start at 1.
 	if str_instance == 0 {
@@ -108,7 +109,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 	result := msgGetTemplateAttrListResponse{}
 	binary.Read(data2, binary.LittleEndian, &result)
-	fmt.Printf("Result: %+v\n\n", result)
+	log.Printf("Result: %+v\n\n", result)
 
 	return result, nil
 }
@@ -126,7 +127,7 @@ type msgMemberInfo struct {
 }
 
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
-	fmt.Printf("list members for %v", str_instance)
+	log.Printf("list members for %v", str_instance)
 
 	template_info, err := client.GetTemplateInstanceAttr(str_instance)
 
@@ -189,7 +190,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	memberInfos := make([]msgMemberInfo, template_info.MemberCount)
 	binary.Read(data2, binary.LittleEndian, &memberInfos)
-	fmt.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
+	log.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
 
 	descriptor := UDTDescriptor{}
 	descriptor.Info = template_info

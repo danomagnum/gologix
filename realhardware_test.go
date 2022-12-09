@@ -2,7 +2,6 @@ package gologix
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"testing"
 )
@@ -27,22 +26,22 @@ func TestRealHardware(t *testing.T) {
 	ReadAndPrint[int16](client, "TestInt")
 	//v, err := client.read_single("TestDintArr[1]", CIPTypeDINT, 2)
 	//if err != nil {
-	//fmt.Printf("Problem with reading two elements of array. %v\n", err)
+	//log.Printf("Problem with reading two elements of array. %v\n", err)
 	//} else {
-	//fmt.Printf("two element value: %v\n", v)
+	//log.Printf("two element value: %v\n", v)
 	//}
 
 	v2, err := ReadArray[int32](client, "TestDintArr", 9)
 	if err != nil {
 		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	} else {
-		fmt.Printf("two element value new method: %v\n", v2)
+		log.Printf("two element value new method: %v\n", v2)
 	}
 	v3, err := ReadArray[TestUDT](client, "TestUDTArr[2]", 2)
 	if err != nil {
 		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	} else {
-		fmt.Printf("two elements of UDT : %+v\n", v3)
+		log.Printf("two elements of UDT : %+v\n", v3)
 	}
 	test_strarr := false
 	// string array read is untested:
@@ -51,7 +50,7 @@ func TestRealHardware(t *testing.T) {
 		if err != nil {
 			t.Errorf("Problem with reading two elements of array. %v\n", err)
 		} else {
-			fmt.Printf("two element value new method: %v\n", v4)
+			log.Printf("two element value new method: %v\n", v4)
 		}
 	}
 
@@ -63,7 +62,7 @@ func TestRealHardware(t *testing.T) {
 	if err != nil {
 		t.Errorf("Problem reading udt. %v\n", err)
 	}
-	fmt.Printf("UDT: %+v\n", value)
+	log.Printf("UDT: %+v\n", value)
 
 	//tags := []string{"TestInt", "TestReal"}
 	tags := MultiReadStr{}
@@ -73,7 +72,7 @@ func TestRealHardware(t *testing.T) {
 		t.Errorf("Error reading multi. %v\n", err)
 	}
 
-	fmt.Printf("Values: %+v", tags)
+	log.Printf("Values: %+v", tags)
 
 }
 
@@ -109,11 +108,11 @@ func TestReadKnown(t *testing.T) {
 
 	client.ListAllTags(0)
 
-	fmt.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
+	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 
 	v, err := client.read_single("TestInt", CIPTypeINT, 1)
 
-	fmt.Printf("got %v.", v)
+	log.Printf("got %v.", v)
 
 	if err != nil {
 		t.Error(err)

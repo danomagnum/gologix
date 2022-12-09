@@ -164,7 +164,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		// per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
 		// because they aren't valid for reading/writing.
-		if !tag_ftr.Atomic() && tag_ftr.PreDefined() {
+		if !tag_ftr.Atomic() && tag_ftr.PreDefined() && verbose {
 			log.Printf("Skipping Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
 				tag_name,
 				tag_hdr.InstanceID,
@@ -176,7 +176,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 				tag_ftr.Template_ID(),
 			)
 		}
-		if tag_string[:2] == "__" {
+		if tag_string[:2] == "__" && verbose {
 			log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
 			continue
 		}
@@ -196,16 +196,18 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt
 
-		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
-			tag_name,
-			tag_hdr.InstanceID,
-			tag_ftr.Type,
-			tag_ftr.TypeInfo,
-			tag_ftr.Dimension1,
-			tag_ftr.Dimension2,
-			tag_ftr.Dimension3,
-			tag_ftr.Template_ID(),
-		)
+		if verbose {
+			log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
+				tag_name,
+				tag_hdr.InstanceID,
+				tag_ftr.Type,
+				tag_ftr.TypeInfo,
+				tag_ftr.Dimension1,
+				tag_ftr.Dimension2,
+				tag_ftr.Dimension3,
+				tag_ftr.Template_ID(),
+			)
+		}
 		start_instance = tag_hdr.InstanceID
 
 	}

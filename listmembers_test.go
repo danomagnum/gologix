@@ -1,7 +1,7 @@
 package gologix
 
 import (
-	"fmt"
+	"log"
 	"testing"
 )
 
@@ -19,6 +19,6 @@ func TestMembersList(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("data structure: %+v\n", descriptor)
+	log.Printf("data structure: %+v\n", descriptor)
 
 }
