@@ -105,6 +105,8 @@ const DEFAULT_BUFFER_SIZE = 256
 // data on the backside to indicate what index is requested if needed.
 func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 	ioi = new(IOI)
+	// CIP doesn't care about case.  But we'll make it lowercase to match
+	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
 	tag_info, ok := client.KnownTags[tagpath]
 	if ok {
@@ -117,8 +119,6 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 		ioi = extant
 		return
 	}
-	// CIP doesn't care about case.  But we'll make it lowercase to match
-	// the encodings shown in 1756-PM020H-EN-P
 	tag_array := strings.Split(tagpath, ".")
 
 	ioi.Path = tagpath
