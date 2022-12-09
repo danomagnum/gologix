@@ -1,9 +1,14 @@
 package gologix
 
+import "fmt"
+
 func (client *Client) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
 	datatype := GoVarToCIPType(value)
-	ioi := client.NewIOI(tag, datatype)
+	ioi, err := client.NewIOI(tag, datatype)
+	if err != nil {
+		return fmt.Errorf("Problem generating IOI. %w", err)
+	}
 	ioi_header := msgCIPIOIHeader{
 		Sequence: client.Sequencer(),
 		Service:  CIPService_Write,
@@ -22,7 +27,7 @@ func (client *Client) Write_single(tag string, value any) error {
 	reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(value)
 
-	err := client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
+	err = client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

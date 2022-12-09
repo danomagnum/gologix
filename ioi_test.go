@@ -91,7 +91,10 @@ func TestIOI(t *testing.T) {
 
 		testname := fmt.Sprintf("tag: %s", tt.path)
 		t.Run(testname, func(t *testing.T) {
-			res := client.NewIOI(tt.path, tt.t)
+			res, err := client.NewIOI(tt.path, tt.t)
+			if err != nil {
+				t.Errorf("IOI Generation error. %v", err)
+			}
 			if !check_bytes(res.Buffer, tt.want) {
 				t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", to_hex(tt.want), to_hex(res.Buffer))
 			}

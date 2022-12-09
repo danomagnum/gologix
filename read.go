@@ -10,10 +10,11 @@ import (
 )
 
 func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
-	ioi := client.NewIOI(tag, datatype)
-	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
-	// won't get an error but it will return the last value you requested again.
-	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
+	ioi, err := client.NewIOI(tag, datatype)
+
+	if err != nil {
+		return nil, err
+	}
 
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
@@ -210,7 +211,11 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	qty := len(tags)
 	iois := make([]*IOI, qty)
 	for i, tag := range tags {
-		iois[i] = client.NewIOI(tag, datatype)
+		var err error
+		iois[i], err = client.NewIOI(tag, datatype)
+		if err != nil {
+			return err
+		}
 	}
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.

@@ -103,13 +103,17 @@ const DEFAULT_BUFFER_SIZE = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
+func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err error) {
 	ioi = new(IOI)
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
 	tag_info, ok := client.KnownTags[tagpath]
 	if ok {
+		if tag_info.Type != datatype {
+			err = fmt.Errorf("Data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Type)
+			return
+		}
 		log.Printf("Knew about tag %s. %+v", tagpath, tag_info)
 		ioi.Buffer = tag_info.Bytes()
 		return
@@ -170,7 +174,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 	}
 
 	ioi_cache[tagpath] = ioi
-	return ioi
+	return
 }
 
 func MarshalIOIPart(tagpath string) []byte {

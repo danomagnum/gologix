@@ -8,9 +8,14 @@ import (
 )
 
 type Client struct {
-	IPAddress      string
-	Path           *bytes.Buffer
-	SocketTimeout  time.Duration
+	IPAddress     string
+	Path          *bytes.Buffer
+	SocketTimeout time.Duration
+
+	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
+	// won't get an error but it will return the last value you requested again.
+	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
+	// Use Sequencer() instead of accessing this directly to achieve that.
 	sequencerValue uint16
 
 	KnownTags map[string]KnownTag
