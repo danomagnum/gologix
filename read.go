@@ -322,7 +322,9 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 
 		result_values[i] = rhdr.Type.readValue(mybytes)
 
-		log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+		if verbose {
+			log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+		}
 	}
 
 	// now unpack the result values back into the given structure

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -114,7 +113,6 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Type)
 			return
 		}
-		log.Printf("Knew about tag %s. %+v", tagpath, tag_info)
 		ioi.Buffer = tag_info.Bytes()
 		return
 	}

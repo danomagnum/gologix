@@ -1,7 +1,6 @@
 package gologix
 
 import (
-	"log"
 	"testing"
 )
 
@@ -15,10 +14,9 @@ func TestMembersList(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	descriptor, err := client.ListMembers(1658)
+	_, err = client.ListMembers(1658)
 	if err != nil {
 		t.Error(err)
 	}
-	log.Printf("data structure: %+v\n", descriptor)
 
 }

@@ -176,8 +176,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 				tag_ftr.Template_ID(),
 			)
 		}
-		if tag_string[:2] == "__" && verbose {
-			log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
+		if tag_string[:2] == "__" {
+			if verbose {
+				log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
+			}
 			continue
 		}
 
@@ -189,7 +191,9 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		}
 
 		if tag_ftr.Template_ID() != 0 {
-			log.Printf("Looking up template for Tag: '%s' ", tag_string)
+			if verbose {
+				log.Printf("Looking up template for Tag: '%s' ", tag_string)
+			}
 			client.ListMembers(uint32(tag_ftr.Template_ID()))
 			continue
 		}
@@ -211,7 +215,9 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = tag_hdr.InstanceID
 
 	}
-	log.Printf("Status: %v", hdr.Status)
+	if verbose {
+		log.Printf("Status: %v", hdr.Status)
+	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {
 		client.ListAllTags(start_instance)

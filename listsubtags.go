@@ -14,7 +14,9 @@ import (
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
-	log.Printf("readall for %v", start_instance)
+	if verbose {
+		log.Printf("readall for %v", start_instance)
+	}
 
 	// have to start at 1.
 	if start_instance == 0 {
@@ -119,19 +121,23 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		}
 		client.KnownTags[strings.ToLower(newtag_name)] = kt
 
-		log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
-			newtag_name,
-			tag_hdr.InstanceID,
-			tag_ftr.Type,
-			tag_ftr.TypeInfo,
-			tag_ftr.Dimension1,
-			tag_ftr.Dimension2,
-			tag_ftr.Dimension3,
-		)
+		if verbose {
+			log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
+				newtag_name,
+				tag_hdr.InstanceID,
+				tag_ftr.Type,
+				tag_ftr.TypeInfo,
+				tag_ftr.Dimension1,
+				tag_ftr.Dimension2,
+				tag_ftr.Dimension3,
+			)
+		}
 		start_instance = tag_hdr.InstanceID
 
 	}
-	log.Printf("Status: %v", hdr.Status)
+	if verbose {
+		log.Printf("Status: %v", hdr.Status)
+	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {
 		client.ListSubTags(roottag, start_instance)

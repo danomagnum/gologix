@@ -96,7 +96,9 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 
 	result := msgGetControllerPropList{}
 	binary.Read(data2, binary.LittleEndian, &result)
-	log.Printf("Result: %+v\n\n", result)
+	if verbose {
+		log.Printf("Result: %+v\n\n", result)
+	}
 
 	return result, nil
 }
