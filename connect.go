@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"time"
 )
 
 func (client *Client) Connect() error {
@@ -35,12 +36,10 @@ func (client *Client) register_session() error {
 	reg_msg.ProtocolVersion = 1
 	reg_msg.OptionFlag = 0
 
-	err := client.Send(CIPCommandRegisterSession, reg_msg) // 0x65 is register session
-	if err != nil {
-		return fmt.Errorf("couldn't send connect req %w", err)
-	}
 	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	resp_hdr, resp_data, err := client.recv_data()
+	//client.Send(CIPCommandRegisterSession, reg_msg)
+	resp_hdr, resp_data, err := client.send_recv_data(CIPCommandRegisterSession, reg_msg)
+	//resp_hdr, resp_data, err := client.recv_data(CIPCommandRegisterSession, reg_msg)
 	if err != nil {
 		return fmt.Errorf("couldn't get connect response %w", err)
 	}
@@ -48,6 +47,35 @@ func (client *Client) register_session() error {
 	log.Printf("Session Handle %v", client.SessionHandle)
 	_ = resp_data
 	return nil
+
+}
+
+func (client *Client) keepalive() {
+	og_props := msgGetControllerPropList{}
+	if client.SocketTimeout == 0 {
+		return
+	}
+	t := time.NewTicker(client.SocketTimeout / 4)
+	for range t.C {
+		if client.Connected {
+			new_props, err := client.GetControllerPropList()
+			if err != nil {
+				log.Printf("keepalive failed. %v", err)
+				return
+			}
+			if new_props != og_props {
+				log.Print("controller change detected. re-analyzing types.")
+				err := client.ListAllTags(0)
+				if err != nil {
+					log.Printf("keepalive read failed. %v", err)
+					return
+				}
+
+			}
+
+		}
+
+	}
 
 }
 
@@ -82,11 +110,7 @@ func (client *Client) connect() error {
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
 	items0[1] = fwd_open
-	err = client.Send(CIPCommandSendRRData, MarshalItems(items0))
-	if err != nil {
-		return err
-	}
-	hdr, dat, err := client.recv_data()
+	hdr, dat, err := client.send_recv_data(CIPCommandSendRRData, MarshalItems(items0))
 	if err != nil {
 		return err
 	}
@@ -133,6 +157,7 @@ func (client *Client) connect() error {
 	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 
 	client.Connected = true
+
 	return nil
 
 }

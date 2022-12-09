@@ -1,7 +1,10 @@
 package gologix
 
 import (
+	"errors"
 	"fmt"
+	"log"
+	"net"
 	"testing"
 	"time"
 )
@@ -79,7 +82,7 @@ func TestReadMulti(t *testing.T) {
 	client.Connect()
 	defer client.Disconnect()
 
-	err := client.read_multi(&read, CIPTypeStruct, 1)
+	err := client.ReadMulti(&read, CIPTypeStruct, 1)
 	if err != nil {
 		t.Errorf("Problem reading. %v", err)
 		return
@@ -90,6 +93,7 @@ func TestReadMulti(t *testing.T) {
 }
 
 func TestReadTimeout(t *testing.T) {
+	t.Skip("requires timeout that is too long")
 
 	client := &Client{IPAddress: "192.168.2.241"}
 	err := client.Connect()
@@ -98,14 +102,28 @@ func TestReadTimeout(t *testing.T) {
 		return
 	}
 	defer client.Disconnect()
-	fmt.Println("sleeping for 2 minutes.")
-	time.Sleep(time.Minute * 2)
-	fmt.Println("sleep complete")
-	value, err := client.read_single("testint", CIPTypeINT, 1)
+	fmt.Println("sleeping for 2 minutes. to let the comms timeout")
+	for t := 0; t < 24; t++ {
+		fmt.Printf("%d\n", t*5)
+		time.Sleep(time.Second * 5)
+	}
+	//client.Conn.Close()
+	//fmt.Println("\nsleep complete")
+	value, err := client.ReadSingle("testint", CIPTypeINT, 1)
 	if err != nil {
 		t.Errorf("problem reading. %v", err)
 	}
 	fmt.Printf("value: %v\n", value)
+}
+
+func TestErrs(t *testing.T) {
+	e := fmt.Errorf("this is an error %v", 3)
+	err := net.OpError{Err: e}
+
+	if errors.Is(&err, &net.OpError{}) {
+		log.Printf("ok")
+	}
+
 }
 
 // these are the four example structs defined in 1756-PM020H-EN-P page 61

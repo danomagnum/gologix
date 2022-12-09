@@ -68,7 +68,7 @@ func TestRealHardware(t *testing.T) {
 	//tags := []string{"TestInt", "TestReal"}
 	tags := MultiReadStr{}
 
-	err = client.read_multi(&tags, CIPTypeDWORD, 1)
+	err = client.ReadMulti(&tags, CIPTypeDWORD, 1)
 	if err != nil {
 		t.Errorf("Error reading multi. %v\n", err)
 	}

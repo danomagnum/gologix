@@ -85,8 +85,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.recv_data()
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -164,8 +163,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.recv_data()
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return UDTDescriptor{}, err
 	}

@@ -27,12 +27,7 @@ func (client *Client) Write_single(tag string, value any) error {
 	reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(value)
 
-	err = client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	if err != nil {
-		return err
-	}
-
-	hdr, data, err := client.recv_data()
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

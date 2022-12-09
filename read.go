@@ -6,8 +6,29 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"reflect"
 )
+
+func (client *Client) ReadSingle(tag string, datatype CIPType, elements uint16) (any, error) {
+	val, err := client.read_single(tag, datatype, elements)
+	if err != nil {
+		// this happens if the connection closes.
+		switch err.(type) {
+		case *net.OpError:
+			// reconnect and try again
+			client.Disconnect()
+			err3 := client.Connect()
+			if err3 != nil {
+				return nil, fmt.Errorf("problem reconnecting. %v:%w", err, err3)
+			}
+			return client.read_single(tag, datatype, elements)
+		}
+		err = fmt.Errorf("problem reading. %w", err)
+	}
+	return val, err
+
+}
 
 func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi, err := client.NewIOI(tag, datatype)
@@ -31,8 +52,8 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	// add service specific data
 	reqitems[1].Marshal(elements)
 
-	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.recv_data()
+	//client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +211,7 @@ type CIPStructHeader struct {
 
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
-func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16) error {
+func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) error {
 
 	// build the tag list from the structure
 	T := reflect.TypeOf(tag_str).Elem()
@@ -260,8 +281,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	reqitems[1].Marshal(jump_table)
 	reqitems[1].Marshal(b.Bytes())
 
-	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.recv_data()
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

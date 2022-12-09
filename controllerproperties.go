@@ -72,8 +72,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.recv_data()
+	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return msgGetControllerPropList{}, err
 	}

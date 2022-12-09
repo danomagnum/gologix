@@ -53,6 +53,18 @@ func (client *Client) Send(cmd CIPCommand, msgs ...any) error {
 
 }
 
+// sends one message and gets one response in a mutex-protected way.
+func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *bytes.Reader, error) {
+	client.Mutex.Lock()
+	defer client.Mutex.Unlock()
+	err := client.Send(cmd, msgs...)
+	if err != nil {
+		return EIPHeader{}, nil, err
+	}
+	return client.recv_data()
+
+}
+
 // recv_data reads the header and then the number of words it specifies.
 func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 
