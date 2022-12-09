@@ -183,9 +183,11 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			continue
 		}
 
-		if tag_string[:8] == "Program:" {
-			client.ListSubTags(tag_string, 1)
-			continue
+		if len(tag_string) > 8 {
+			if tag_string[:8] == "Program:" {
+				client.ListSubTags(tag_string, 1)
+				continue
+			}
 		}
 
 		if tag_ftr.Template_ID() != 0 {
