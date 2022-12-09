@@ -86,3 +86,31 @@ func TestReadMulti(t *testing.T) {
 		t.Errorf("wanted %v got %v", wants, read)
 	}
 }
+
+// these are the four example structs defined in 1756-PM020H-EN-P page 61
+type test_STRUCT_A struct {
+	Limits uint32 // two bits packed here.
+	Travel uint32
+	Errors uint32 // actually a byte in the controller. But comes as a dint.
+	Wear   float32
+}
+
+type test_STRUCT_B struct {
+	PilotOn     uint32 // actually a bool
+	HourlyCount [12]uint16
+	Rate        float32
+}
+
+type test_STRUCT_C struct {
+	HoursFull  uint32 // actually a bool
+	Today      test_STRUCT_B
+	SampleTime uint32
+	Shipped    uint32
+}
+
+type test_STRUCT_D struct {
+	MyInt   uint32 // actually a uint16
+	MyFloat float32
+	MyArray [8]test_STRUCT_C
+	MyPID   float32
+}
