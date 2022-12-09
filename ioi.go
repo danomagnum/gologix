@@ -111,7 +111,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 	tag_info, ok := client.KnownTags[tagpath]
 	if ok {
 		if tag_info.Type != datatype {
-			err = fmt.Errorf("Data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Type)
+			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Type)
 			return
 		}
 		log.Printf("Knew about tag %s. %+v", tagpath, tag_info)
