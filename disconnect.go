@@ -1,6 +1,8 @@
 package gologix
 
-import "log"
+import (
+	"fmt"
+)
 
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
@@ -33,7 +35,7 @@ func (client *Client) Disconnect() error {
 
 	err = client.Send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
 	if err != nil {
-		log.Panicf("Couldn't send unconnect req %v", err)
+		return fmt.Errorf("couldn't send unconnect req %w", err)
 	}
 	return nil
 

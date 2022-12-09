@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -89,7 +88,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
-		log.Panic("Couldn't parse items")
+		return msgGetControllerPropList{}, fmt.Errorf("couldn't parse items %w", err)
 	}
 
 	// get ready to read tag info from item 1 data

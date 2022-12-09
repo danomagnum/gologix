@@ -72,7 +72,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
-		log.Panic("Couldn't parse items")
+		return fmt.Errorf("couldn't parse items. %w", err)
 	}
 
 	// get ready to read tag info from item 1 data

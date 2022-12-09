@@ -1,7 +1,9 @@
 package gologix
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestReadSingle(t *testing.T) {
@@ -85,6 +87,25 @@ func TestReadMulti(t *testing.T) {
 	if read != wants {
 		t.Errorf("wanted %v got %v", wants, read)
 	}
+}
+
+func TestReadTimeout(t *testing.T) {
+
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+	fmt.Println("sleeping for 2 minutes.")
+	time.Sleep(time.Minute * 2)
+	fmt.Println("sleep complete")
+	value, err := client.read_single("testint", CIPTypeINT, 1)
+	if err != nil {
+		t.Errorf("problem reading. %v", err)
+	}
+	fmt.Printf("value: %v\n", value)
 }
 
 // these are the four example structs defined in 1756-PM020H-EN-P page 61
