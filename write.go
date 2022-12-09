@@ -7,7 +7,7 @@ func (client *Client) Write_single(tag string, value any) error {
 	datatype := GoVarToCIPType(value)
 	ioi, err := client.NewIOI(tag, datatype)
 	if err != nil {
-		return fmt.Errorf("Problem generating IOI. %w", err)
+		return fmt.Errorf("problem generating IOI. %w", err)
 	}
 	ioi_header := msgCIPIOIHeader{
 		Sequence: client.Sequencer(),
