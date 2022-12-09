@@ -96,3 +96,27 @@ type TestUDT struct {
 	Field1 int32
 	Field2 float32
 }
+
+func TestReadKnown(t *testing.T) {
+
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+
+	client.ListAllTags(0)
+
+	fmt.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
+
+	v, err := client.read_single("TestInt", CIPTypeINT, 1)
+
+	fmt.Printf("got %v.", v)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+}

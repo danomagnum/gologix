@@ -21,7 +21,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		start_instance = 1
 	}
 
-	ioi := NewIOI(roottag, 16)
+	ioi := client.NewIOI(roottag, 16)
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}

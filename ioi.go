@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -102,8 +103,15 @@ const DEFAULT_BUFFER_SIZE = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
+func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
+	ioi = new(IOI)
 	tagpath = strings.ToLower(tagpath)
+	tag_info, ok := client.KnownTags[tagpath]
+	if ok {
+		log.Printf("Knew about tag %s. %+v", tagpath, tag_info)
+		ioi.Buffer = tag_info.Bytes()
+		return
+	}
 	extant, exists := ioi_cache[tagpath]
 	if exists {
 		ioi = extant
@@ -113,7 +121,6 @@ func NewIOI(tagpath string, datatype CIPType) (ioi *IOI) {
 	// the encodings shown in 1756-PM020H-EN-P
 	tag_array := strings.Split(tagpath, ".")
 
-	ioi = new(IOI)
 	ioi.Path = tagpath
 	ioi.Type = datatype
 	// we'll build this byte structure up as we go.

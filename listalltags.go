@@ -63,7 +63,6 @@ type msgListInstanceHeader struct {
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (client *Client) ListAllTags(start_instance uint32) error {
-	fmt.Printf("readall for %v", start_instance)
 
 	// have to start at 1.
 	if start_instance == 0 {

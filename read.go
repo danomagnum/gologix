@@ -10,7 +10,7 @@ import (
 )
 
 func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
-	ioi := NewIOI(tag, datatype)
+	ioi := client.NewIOI(tag, datatype)
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
 	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
@@ -210,7 +210,7 @@ func (client *Client) read_multi(tag_str any, datatype CIPType, elements uint16)
 	qty := len(tags)
 	iois := make([]*IOI, qty)
 	for i, tag := range tags {
-		iois[i] = NewIOI(tag, datatype)
+		iois[i] = client.NewIOI(tag, datatype)
 	}
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.

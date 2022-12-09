@@ -51,6 +51,7 @@ func check_bytes(s0, s1 []byte) bool {
 
 func TestPathBuild(t *testing.T) {
 	ioi_cache = make(map[string]*IOI)
+	client := Client{}
 	tests := []struct {
 		name string
 		path []any
@@ -73,7 +74,7 @@ func TestPathBuild(t *testing.T) {
 		},
 		{
 			name: "Symbol Object Instance 0 of tag 'Program:MainProgram'",
-			path: []any{NewIOI("Program:MainProgram", 16), CIPObject_Symbol, CIPInstance(0)},
+			path: []any{client.NewIOI("Program:MainProgram", 16), CIPObject_Symbol, CIPInstance(0)},
 			want: []byte{0x91, 0x13, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x3a, 0x6d, 0x61, 0x69,
 				0x6e, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x00, 0x20, 0x6B, 0x24, 0x00},
 		},
