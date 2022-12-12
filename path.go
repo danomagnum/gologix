@@ -48,7 +48,7 @@ func (p CIPPort) Bytes() []byte {
 }
 
 // this function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
-func ParsePath(path string) ([]byte, error) {
+func ParsePath(path string) (*bytes.Buffer, error) {
 	// get rid of any spaces and square brackets
 	path = strings.ReplaceAll(path, " ", "")
 	path = strings.ReplaceAll(path, "[", "")
@@ -84,7 +84,7 @@ func ParsePath(path string) ([]byte, error) {
 		byte_path = append(byte_path, byte(val))
 	}
 
-	return byte_path, nil
+	return bytes.NewBuffer(byte_path), nil
 }
 
 type Serializable interface {

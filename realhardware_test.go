@@ -8,7 +8,7 @@ import (
 
 func TestRealHardware(t *testing.T) {
 	flag.Parse()
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	client.Connect()
 	defer client.Disconnect()
 	//client.ReadAll(1)
@@ -104,7 +104,7 @@ type TestUDT struct {
 
 func TestReadKnown(t *testing.T) {
 
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

@@ -18,6 +18,10 @@ func TestPath(t *testing.T) {
 			"1,0,32,2,36,1",
 			[]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01},
 		},
+		{
+			"1,0",
+			[]byte{0x01, 0x00},
+		},
 	}
 
 	for _, tt := range tests {
@@ -28,7 +32,7 @@ func TestPath(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error in pathgen for %s. %v", tt.path, err)
 			}
-			if !check_bytes(res, tt.want) {
+			if !check_bytes(res.Bytes(), tt.want) {
 				t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", tt.want, res)
 			}
 		})
@@ -67,6 +71,11 @@ func TestPathBuild(t *testing.T) {
 			name: "connection manager only",
 			path: []any{CIPObject_ConnectionManager},
 			want: []byte{0x20, 0x06},
+		},
+		{
+			name: "backplane to slot 0",
+			path: []any{CIPPort{PortNo: 1}, CIPAddress(0)},
+			want: []byte{0x01, 0x00},
 		},
 		{
 			name: "connection manager instance 1",

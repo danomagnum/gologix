@@ -14,18 +14,18 @@ type EIPHeader struct {
 	Options       uint32
 }
 
-// Send takes the command followed by all the structures that need
+// send takes the command followed by all the structures that need
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (client *Client) Send(cmd CIPCommand, msgs ...any) error {
+func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
 		size += binary.Size(msg)
 	}
 	// build header based on size
-	hdr := client.NewEIPHeader(cmd, size)
+	hdr := client.newEIPHeader(cmd, size)
 
 	// initialize a buffer and add the header to it.
 	// the 24 is from the header size
@@ -42,7 +42,7 @@ func (client *Client) Send(cmd CIPCommand, msgs ...any) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
-		n, err := client.Conn.Write(b[written:])
+		n, err := client.conn.Write(b[written:])
 		if err != nil {
 			return err
 		}
@@ -55,9 +55,9 @@ func (client *Client) Send(cmd CIPCommand, msgs ...any) error {
 
 // sends one message and gets one response in a mutex-protected way.
 func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *bytes.Reader, error) {
-	client.Mutex.Lock()
-	defer client.Mutex.Unlock()
-	err := client.Send(cmd, msgs...)
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+	err := client.send(cmd, msgs...)
 	if err != nil {
 		return EIPHeader{}, nil, err
 	}
@@ -70,7 +70,7 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 	hdr := EIPHeader{}
 	var err error
-	err = binary.Read(client.Conn, binary.LittleEndian, &hdr)
+	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		return hdr, nil, err
 	}
@@ -79,7 +79,7 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {
-		err = binary.Read(client.Conn, binary.LittleEndian, &data)
+		err = binary.Read(client.conn, binary.LittleEndian, &data)
 	}
 	//log.Printf("Buffer: %v", data)
 	buf := bytes.NewReader(data)
@@ -87,7 +87,7 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 
 }
 
-func (client *Client) NewEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (client *Client) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	client.HeaderSequenceCounter++
 

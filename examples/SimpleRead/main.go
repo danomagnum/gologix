@@ -7,10 +7,18 @@ import (
 
 // Demo program for readng an INT tag named "TestInt" in the controller.
 func main() {
+	var err error
 
-	// connect to the PLC
-	client := &gologix.Client{IPAddress: "192.168.2.241"}
-	err := client.Connect()
+	// setup the client.  If you need a different path you'll have to set that.
+	client := gologix.NewClient("192.168.2.241")
+
+	// for example, to have a controller on slot 1 instead of 0 you could do this
+	//client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
+	// or this
+	// client.Path, err = gologix.ParsePath("1,1")
+
+	// connect using parameters in the client struct
+	err = client.Connect()
 	if err != nil {
 		fmt.Printf("Error opening client. %v", err)
 		return

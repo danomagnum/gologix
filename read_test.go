@@ -10,7 +10,7 @@ import (
 )
 
 func TestReadArrNew(t *testing.T) {
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -34,7 +34,7 @@ func TestReadArrNew(t *testing.T) {
 }
 
 func TestReadNewUDT(t *testing.T) {
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -53,7 +53,7 @@ func TestReadNewUDT(t *testing.T) {
 	}
 }
 func TestReadNewUDTArr(t *testing.T) {
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -84,7 +84,7 @@ func TestReadNewUDTArr(t *testing.T) {
 }
 
 func TestReadNew(t *testing.T) {
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -175,7 +175,7 @@ func TestReadSingle(t *testing.T) {
 		{"TestUDTArr[2].Field2", float32(15.0)},
 	}
 
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -231,7 +231,7 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	client.Connect()
 	defer client.Disconnect()
 
@@ -248,7 +248,7 @@ func TestReadMulti(t *testing.T) {
 func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
 
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	client.SocketTimeout = time.Minute
 	err := client.Connect()
 	if err != nil {

@@ -2,14 +2,24 @@ package gologix
 
 import (
 	"bytes"
+	"log"
 	"net"
 	"sync"
 	"time"
 )
 
 type Client struct {
-	IPAddress     string
-	Path          *bytes.Buffer
+	// ip address for connecting to the PLC comms module.
+	IPAddress string
+
+	// path to the controller as a byte slice.
+	// The data in the path should be similar to how you set it up in a msg instruction.
+	// ex: 1, 0 where 1 -> backlane, 0 -> slot 0, etc...
+	// but it has to be formatted properly as bytes (there are header bytes, etc for each portion of the path)
+	// you can use the Serialize function to generate this or the GeneratePath function if it's a simpler path
+	Path *bytes.Buffer
+
+	// Used for the keepalive messages.
 	SocketTimeout time.Duration
 
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
@@ -18,10 +28,14 @@ type Client struct {
 	// Use Sequencer() instead of accessing this directly to achieve that.
 	sequencerValue uint16
 
+	// this keeps track of what tags are in the controller.
+	// it maps tag names to a struct which has, among other things, the intance ID and class
+	// which can be used to read the tag more efficiently than sending the ascii tag name to the
+	// controller.  If you don't want to use this, set SocketTimeout to 0 and never call ListAllTags
 	KnownTags map[string]KnownTag
 
-	Mutex                  sync.Mutex
-	Conn                   net.Conn
+	mutex                  sync.Mutex
+	conn                   net.Conn
 	SessionHandle          uint32
 	OTNetworkConnectionID  uint32
 	HeaderSequenceCounter  uint16
@@ -36,6 +50,25 @@ type Client struct {
 func (client *Client) Sequencer() uint16 {
 	client.sequencerValue++
 	return client.sequencerValue
+}
+
+// create a client with reasonable defaults for the given ip address.
+// Default path is backplane, slot 0
+func NewClient(ip string) *Client {
+	// default path is backplane -> slot 0
+	p, err := ParsePath("1,0")
+	if ioi_cache == nil {
+		ioi_cache = make(map[string]*tagIOI)
+	}
+	if err != nil {
+		log.Panicf("this should not have failed since the path is hardcoded.  problem with path. %v", err)
+	}
+	return &Client{
+		IPAddress:      ip,
+		ConnectionSize: 4000,
+		Path:           p,
+	}
+
 }
 
 type KnownTag struct {

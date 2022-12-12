@@ -36,7 +36,7 @@ func (client *Client) Disconnect() error {
 
 	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
 
-	err = client.Send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
+	err = client.send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
 	if err != nil {
 		return fmt.Errorf("couldn't send unconnect req %w", err)
 	}

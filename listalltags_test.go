@@ -7,7 +7,7 @@ import (
 
 func TestList(t *testing.T) {
 
-	client := &Client{IPAddress: "192.168.2.241"}
+	client := NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

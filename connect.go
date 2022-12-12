@@ -103,7 +103,7 @@ func (client *Client) connect() error {
 	}
 	client.KnownTags = make(map[string]KnownTag)
 	var err error
-	client.Conn, err = net.Dial("tcp", client.IPAddress+CIP_Port)
+	client.conn, err = net.Dial("tcp", client.IPAddress+CIP_Port)
 	if err != nil {
 		return err
 	}
