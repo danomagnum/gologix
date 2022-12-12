@@ -17,6 +17,8 @@ func TestReadSingle(t *testing.T) {
 		{"TestInt", int16(999)},
 		{"TestSint", byte(117)},
 		{"TestDint", int32(36)},
+		{"TestDint.0", false},
+		{"TestDint.2", true},
 		{"TestReal", float32(93.45)},
 		{"TestDintArr[0]", int32(4351)},
 		{"TestDintArr[2]", int32(4353)},

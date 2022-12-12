@@ -101,6 +101,11 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 		return str, nil
 	}
 	if elements == 1 {
+		if datatype == CIPTypeBOOL && hdr2.Type != CIPTypeBOOL && ioi.BitAccess {
+			// we have requested a bool from some other type.  Maybe a bit access?
+			value := readValue(hdr2.Type, &items[1])
+			return getBit(hdr2.Type, value, ioi.BitPosition)
+		}
 		// not a struct so we can read the value directly
 		value := readValue(hdr2.Type, &items[1])
 		return value, nil

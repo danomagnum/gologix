@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 )
@@ -25,8 +26,10 @@ func GoTypeToCIPType[T GoLogixTypes]() CIPType {
 // return the CIPType that corresponds to go type of variable T
 func GoVarToCIPType(T any) CIPType {
 	switch T.(type) {
-	case byte:
+	case bool:
 		return CIPTypeBOOL
+	case byte:
+		return CIPTypeBYTE
 	case uint16:
 		return CIPTypeUINT
 	case int16:
@@ -250,4 +253,149 @@ func readValue(t CIPType, r io.Reader) any {
 	}
 	//log.Printf("type %v. value %v", t, value)
 	return value
+}
+
+// readValue reads one unit of cip data type t into the correct go type.
+// To do this it reads the needed number of bytes from r.
+// It returns the value as an any so the caller will have to do a cast to get it back
+func getBit(t CIPType, v any, bitpos int) (bool, error) {
+
+	var err error
+	switch t {
+	case CIPTypeUnknown:
+		panic("Unknown type.")
+	case CIPTypeStruct:
+		panic("Struct!")
+	case CIPTypeBOOL:
+		if bitpos == 0 {
+			x, ok := v.(bool)
+			if ok {
+				return x, nil
+			}
+			err = fmt.Errorf("value was a bool, but bit %d was requested. must be 0 for bool", bitpos)
+		}
+	case CIPTypeBYTE:
+		if bitpos >= 0 && bitpos < 8 {
+			x, ok := v.(byte)
+			if ok {
+				mask := byte(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a byte, but bit %d was requested. must be 0-7 for byte", bitpos)
+		}
+	case CIPTypeSINT:
+		if bitpos >= 0 && bitpos < 8 {
+			x, ok := v.(byte)
+			if ok {
+				mask := byte(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a SINT, but bit %d was requested. must be 0-7 for SINT", bitpos)
+		}
+	case CIPTypeINT:
+		if bitpos >= 0 && bitpos < 16 {
+			x, ok := v.(int16)
+			if ok {
+				mask := int16(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was an INT, but bit %d was requested. must be 0-15 for INT", bitpos)
+		}
+	case CIPTypeDINT:
+		if bitpos >= 0 && bitpos < 32 {
+			x, ok := v.(int32)
+			if ok {
+				mask := int32(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a DINT, but bit %d was requested. must be 0-31 for DINT", bitpos)
+		}
+	case CIPTypeLINT:
+		if bitpos >= 0 && bitpos < 64 {
+			x, ok := v.(int64)
+			if ok {
+				mask := int64(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a LINT, but bit %d was requested. must be 0-63 for LINT", bitpos)
+		}
+	case CIPTypeUSINT:
+		if bitpos >= 0 && bitpos < 8 {
+			x, ok := v.(byte)
+			if ok {
+				mask := byte(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a USINT, but bit %d was requested. must be 0-7 for USINT", bitpos)
+		}
+	case CIPTypeUINT:
+		if bitpos >= 0 && bitpos < 16 {
+			x, ok := v.(uint16)
+			if ok {
+				mask := uint16(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was an UINT, but bit %d was requested. must be 0-15 for UINT", bitpos)
+		}
+	case CIPTypeUDINT:
+		if bitpos >= 0 && bitpos < 32 {
+			x, ok := v.(uint32)
+			if ok {
+				mask := uint32(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a UDINT, but bit %d was requested. must be 0-31 for UDINT", bitpos)
+		}
+	case CIPTypeLWORD:
+		if bitpos >= 0 && bitpos < 64 {
+			x, ok := v.(uint64)
+			if ok {
+				mask := uint64(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a LWORD, but bit %d was requested. must be 0-63 for LWORD", bitpos)
+		}
+	case CIPTypeREAL:
+		err = fmt.Errorf("value was a REAL, not finding bit of real")
+	case CIPTypeLREAL:
+		err = fmt.Errorf("value was a LEAL, not finding bit of real")
+	case CIPTypeWORD:
+		if bitpos >= 0 && bitpos < 16 {
+			x, ok := v.(uint16)
+			if ok {
+				mask := uint16(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was an WORD, but bit %d was requested. must be 0-15 for WORD", bitpos)
+		}
+	case CIPTypeDWORD:
+		if bitpos >= 0 && bitpos < 32 {
+			x, ok := v.(uint32)
+			if ok {
+				mask := uint32(1 << bitpos)
+				masked := x & mask
+				return masked != 0, nil
+			}
+			err = fmt.Errorf("value was a DWORD, but bit %d was requested. must be 0-31 for DWORD", bitpos)
+		}
+	case CIPTypeSTRING:
+		err = fmt.Errorf("value was a STRING, not finding bit of string")
+	default:
+		panic("Default type.")
+
+	}
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	return false, err
 }

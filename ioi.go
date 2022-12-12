@@ -83,9 +83,11 @@ func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
 // Internal Object Identifier. Used to specify a tag name in the controller
 // the Buffer has the CIP route for a tag path.
 type IOI struct {
-	Path   string
-	Type   CIPType
-	Buffer []byte
+	Path        string
+	Type        CIPType
+	BitAccess   bool
+	BitPosition int
+	Buffer      []byte
 }
 
 func (ioi *IOI) Write(p []byte) (n int, err error) {
@@ -162,6 +164,8 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 				// This is a bit access.
 				// we won't do anything for now and will just parse the
 				// bit out of the word when that time comes.
+				ioi.BitAccess = true
+				ioi.BitPosition = bit_access
 				continue
 			}
 			ioi_part := MarshalIOIPart(tag_part)
