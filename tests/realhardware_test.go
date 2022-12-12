@@ -123,7 +123,7 @@ func TestReadKnown(t *testing.T) {
 
 	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 
-	v := uint16(0)
+	v := int16(0)
 	err = client.Read("TestInt", &v)
 
 	if err != nil {
