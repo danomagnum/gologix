@@ -66,8 +66,8 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CIPObject_ControllerInfo, CIPInstance(1),
-		//CIPObject_Symbol, CIPInstance(start_instance),
+		cipObject_ControllerInfo, CIPInstance(1),
+		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
 		return msgGetControllerPropList{}, fmt.Errorf("couldn't build path. %w", err)

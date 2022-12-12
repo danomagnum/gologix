@@ -34,7 +34,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 
 	p, err := Serialize(
 		ioi.Buffer,
-		CIPObject_Symbol, CIPInstance(start_instance),
+		cipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
 		return fmt.Errorf("couldn't build path. %w", err)

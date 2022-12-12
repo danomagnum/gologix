@@ -56,8 +56,8 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CIPObject_Template, CIPInstance(str_instance),
-		//CIPObject_Symbol, CIPInstance(start_instance),
+		cipObject_Template, CIPInstance(str_instance),
+		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("couldn't build path. %w", err)
@@ -146,8 +146,8 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CIPObject_Template, CIPInstance(str_instance),
-		//CIPObject_Symbol, CIPInstance(start_instance),
+		cipObject_Template, CIPInstance(str_instance),
+		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't build path. %w", err)

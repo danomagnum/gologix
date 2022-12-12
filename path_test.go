@@ -69,7 +69,7 @@ func TestPathBuild(t *testing.T) {
 	}{
 		{
 			name: "connection manager only",
-			path: []any{CIPObject_ConnectionManager},
+			path: []any{cipObject_ConnectionManager},
 			want: []byte{0x20, 0x06},
 		},
 		{
@@ -79,23 +79,23 @@ func TestPathBuild(t *testing.T) {
 		},
 		{
 			name: "connection manager instance 1",
-			path: []any{CIPObject_ConnectionManager, CIPInstance(1)},
+			path: []any{cipObject_ConnectionManager, CIPInstance(1)},
 			want: []byte{0x20, 0x06, 0x24, 0x01},
 		},
 		{
 			name: "Symbol Object Instance 0",
-			path: []any{CIPObject_Symbol, CIPInstance(0)},
+			path: []any{cipObject_Symbol, CIPInstance(0)},
 			want: []byte{0x20, 0x6B, 0x24, 0x00},
 		},
 		{
 			name: "Symbol Object Instance 0 of tag 'Program:MainProgram'",
-			path: []any{pmp_ioi, CIPObject_Symbol, CIPInstance(0)},
+			path: []any{pmp_ioi, cipObject_Symbol, CIPInstance(0)},
 			want: []byte{0x91, 0x13, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x3a, 0x6d, 0x61, 0x69,
 				0x6e, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x00, 0x20, 0x6B, 0x24, 0x00},
 		},
 		{
 			name: "Template Attributes Instance 0x02E9",
-			path: []any{CIPObject_Template, CIPInstance(0x02E9)},
+			path: []any{cipObject_Template, CIPInstance(0x02E9)},
 			want: []byte{0x20, 0x6C, 0x25, 0x00, 0xE9, 0x02},
 		},
 	}

@@ -13,7 +13,7 @@ func main() {
 	client := gologix.NewClient("192.168.2.241")
 
 	// for example, to have a controller on slot 1 instead of 0 you could do this
-	//client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
+	// client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
 	// or this
 	// client.Path, err = gologix.ParsePath("1,1")
 
@@ -23,7 +23,9 @@ func main() {
 		fmt.Printf("Error opening client. %v", err)
 		return
 	}
-	// setup a disconnect.  If you don't disconnect you might have trouble reconnecting
+	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
+	// you won't have sent the close forward open.  You'll have to wait for the CIP connection to time out
+	// if that happens (about a minute)
 	defer client.Disconnect()
 
 	// define a variable with a type that matches the tag you want to read.  In this case it is an INT so

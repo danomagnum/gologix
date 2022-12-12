@@ -234,7 +234,7 @@ type msgEIPForwardOpen_Large struct {
 	PathSize     byte
 	ClassType    CIPClassSize
 	Class        byte
-	InstanceType CIPInstanceSize
+	InstanceType cipInstanceSize
 	Instance     byte
 
 	// service specific data
@@ -261,7 +261,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	p, err := Serialize(
 		client.Path,
 		//CIPPort{PortNo: 1}, CIPAddress(0),
-		CIPObject_MessageRouter, CIPInstance(1))
+		cipObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -275,8 +275,8 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = CIPClass_8bit
-	msg.Class = byte(CIPObject_ConnectionManager)
-	msg.InstanceType = CIPInstance_8bit
+	msg.Class = byte(cipObject_ConnectionManager)
+	msg.InstanceType = cipInstance_8bit
 	msg.Instance = 0x01
 	// end of path
 	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)

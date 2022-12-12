@@ -141,15 +141,15 @@ func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 			for _, order_size := range t.Array_Order {
 				if order_size < 256 {
 					// byte, byte
-					index_part := []byte{byte(CIPElement_8bit), byte(order_size)}
+					index_part := []byte{byte(cipElement_8bit), byte(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part)
 				} else if order_size < 65536 {
 					// uint16, uint16
-					index_part := []uint16{uint16(CIPElement_16bit), uint16(order_size)}
+					index_part := []uint16{uint16(cipElement_16bit), uint16(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part)
 				} else {
 					// uint16, uint32
-					index_part0 := []uint16{uint16(CIPElement_32bit)}
+					index_part0 := []uint16{uint16(cipElement_32bit)}
 					binary.Write(ioi, binary.LittleEndian, index_part0)
 					index_part1 := []uint32{uint32(order_size)}
 					binary.Write(ioi, binary.LittleEndian, index_part1)

@@ -82,7 +82,7 @@ type KnownTag struct {
 func (t KnownTag) Bytes() []byte {
 	ins := CIPInstance(t.Instance)
 	b := bytes.Buffer{}
-	b.Write(CIPObject_Symbol.Bytes()) // 0x20 0x6B
+	b.Write(cipObject_Symbol.Bytes()) // 0x20 0x6B
 	b.Write(ins.Bytes())
 	return b.Bytes()
 }

@@ -24,9 +24,12 @@ func main() {
 		fmt.Printf("Error opening client. %v", err)
 		return
 	}
-	// setup a disconnect.  If you don't disconnect you might have trouble reconnecting
+	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
+	// you won't have sent the close forward open.  You'll have to wait for the CIP connection to time out
+	// if that happens (about a minute)
 	defer client.Disconnect()
 
+	// the client should be threadsafe so kicking off goroutines doing reads/writes in the background like this should be no issue.
 	hbChan := Heartbeat[bool](client, "TestHeartBeat", time.Second, time.Second*10)
 
 	for {
@@ -42,7 +45,7 @@ func main() {
 
 }
 
-// monitor tag for changes.
+// monitor tag for changes in a background goroutine.
 // poll at an interval of pollrate
 // sends a single true on the output channel if the value starts to change
 // sends a single false on the output channel if the value stops changing for timeout

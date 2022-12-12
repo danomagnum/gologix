@@ -23,7 +23,9 @@ func main() {
 		fmt.Printf("Error opening client. %v", err)
 		return
 	}
-	// setup a disconnect.  If you don't disconnect you might have trouble reconnecting
+	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
+	// you won't have sent the close forward open.  You'll have to wait for the CIP connection to time out
+	// if that happens (about a minute)
 	defer client.Disconnect()
 
 	// define a struct where fields have the tag to read from the controller specified

@@ -23,7 +23,7 @@ func (client *Client) Disconnect() error {
 		CipPathSize:            0x02,
 		ClassType:              CIPClass_8bit,
 		Class:                  0x06,
-		InstanceType:           CIPInstance_8bit,
+		InstanceType:           cipInstance_8bit,
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
@@ -49,7 +49,7 @@ type msgCIPMessage_UnRegister struct {
 	CipPathSize            byte
 	ClassType              CIPClassSize
 	Class                  byte
-	InstanceType           CIPInstanceSize
+	InstanceType           cipInstanceSize
 	Instance               byte
 	Priority               byte
 	TimeoutTicks           byte
