@@ -10,6 +10,276 @@ import (
 	"reflect"
 )
 
+func (client *Client) Read(tag string, data any) error {
+	switch data := data.(type) {
+	case *bool:
+		v, err := Read[bool](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *byte:
+		v, err := Read[byte](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *int16:
+		v, err := Read[int16](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *uint16:
+		v, err := Read[uint16](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *int32:
+		v, err := Read[int32](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *uint32:
+		v, err := Read[uint32](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *int64:
+		v, err := Read[int64](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *uint64:
+		v, err := Read[uint64](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *float32:
+		v, err := Read[float32](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *float64:
+		v, err := Read[float64](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+	case *string:
+		v, err := Read[string](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
+
+	case []bool:
+		elements := len(data)
+		v, err := ReadArray[bool](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []byte:
+		elements := len(data)
+		v, err := ReadArray[byte](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []int16:
+		elements := len(data)
+		v, err := ReadArray[int16](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []uint16:
+		elements := len(data)
+		v, err := ReadArray[uint16](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []int32:
+		elements := len(data)
+		v, err := ReadArray[int32](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []uint32:
+		elements := len(data)
+		v, err := ReadArray[uint32](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []int64:
+		elements := len(data)
+		v, err := ReadArray[int64](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []uint64:
+		elements := len(data)
+		v, err := ReadArray[uint64](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []float32:
+		elements := len(data)
+		v, err := ReadArray[float32](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []float64:
+		elements := len(data)
+		v, err := ReadArray[float64](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []interface{}:
+		// a pointer to a struct.
+		fmt.Printf("slice of interfaces detected")
+		val, err := client.read_single(tag, CIPTypeStruct, 1)
+		if err != nil {
+			return err
+		}
+		cast, ok := val.([]byte)
+		if !ok {
+			return errors.New("couldn't convert to byte slice")
+		}
+		b := bytes.NewBuffer(cast)
+		err = binary.Read(b, binary.LittleEndian, data)
+		if err != nil {
+			return fmt.Errorf("couldn't parse str data. %w", err)
+		}
+	}
+	// Fallback to reflect-based decoding.
+	v := reflect.ValueOf(data)
+	switch v.Kind() {
+	case reflect.Pointer:
+		// a pointer to a struct.
+		fmt.Printf("struct detected")
+		val, err := client.read_single(tag, CIPTypeStruct, 1)
+		if err != nil {
+			return err
+		}
+		cast, ok := val.([]byte)
+		if !ok {
+			return errors.New("couldn't convert to byte slice")
+		}
+		b := bytes.NewBuffer(cast)
+		err = binary.Read(b, binary.LittleEndian, data)
+		if err != nil {
+			return fmt.Errorf("couldn't parse str data. %w", err)
+		}
+
+	case reflect.Slice:
+		// slice of structs.
+		elements := uint16(v.Len())
+		fmt.Printf("slice of structs length %d detected", elements)
+		val, err := client.read_single(tag, CIPTypeStruct, elements)
+		if err != nil {
+			return err
+		}
+		dat, ok := val.([]byte)
+		if !ok {
+			return fmt.Errorf("couldn't convert to bytes")
+		}
+
+		b := bytes.NewBuffer(dat)
+		err = binary.Read(b, binary.LittleEndian, data)
+		if err != nil {
+			return fmt.Errorf("couldn't parse str data element %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (client *Client) ReadSingle(tag string, datatype CIPType, elements uint16) (any, error) {
 	val, err := client.read_single(tag, datatype, elements)
 	if err != nil {

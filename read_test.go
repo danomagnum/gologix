@@ -9,6 +9,137 @@ import (
 	"time"
 )
 
+func TestReadArrNew(t *testing.T) {
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+	tag := "TestDintArr[0]"
+	have := make([]int32, 5)
+	want := []int32{4351, 4352, 4353, 4354, 4355}
+
+	err = client.Read(tag, have)
+	if err != nil {
+		t.Errorf("Problem reading %s. %v", tag, err)
+		return
+	}
+	for i := range want {
+		if have[i] != want[i] {
+			t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
+		}
+	}
+}
+
+func TestReadNewUDT(t *testing.T) {
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+	tag := "TestUDTArr[0]"
+	have := TestUDT{}
+	want := TestUDT{Field1: 20, Field2: 19.0}
+	err = client.Read(tag, &have)
+	if err != nil {
+		t.Errorf("failed to read. %v", err)
+	}
+	if have != want {
+		fmt.Printf("have: %+v, want: %+v", have, want)
+	}
+}
+func TestReadNewUDTArr(t *testing.T) {
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+	tag := "TestUDTArr[0]"
+	have := make([]TestUDT, 5)
+	want := []TestUDT{
+		{Field1: 20, Field2: 19.0},
+		{Field1: 18, Field2: 17.0},
+		{Field1: 16, Field2: 15.0},
+		{Field1: 14, Field2: 13.0},
+		{Field1: 12, Field2: 11.0},
+	}
+	err = client.Read(tag, have)
+	if err != nil {
+		t.Errorf("failed to read. %v", err)
+	}
+	if len(have) != len(want) {
+		t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
+	}
+	for i := range want {
+		if have[i] != want[i] {
+			t.Errorf("have: %+v, want: %+v\n", have[i], want[i])
+		}
+	}
+}
+
+func TestReadNew(t *testing.T) {
+	client := &Client{IPAddress: "192.168.2.241"}
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+
+	testReadNew(t, client, "TestSint", byte(117))
+	testReadNew(t, client, "TestDint", int32(36))
+	testReadNew(t, client, "TestDint.0", false)
+	testReadNew(t, client, "TestDint.2", true)
+	testReadNew(t, client, "TestReal", float32(93.45))
+	testReadNew(t, client, "TestDintArr[0]", int32(4351))
+	testReadNew(t, client, "TestDintArr[0].0", true)
+	testReadNew(t, client, "TestDintArr[0].1", true)
+	testReadNew(t, client, "TestDintArr[0].2", true)
+	testReadNew(t, client, "TestDintArr[0].3", true)
+	testReadNew(t, client, "TestDintArr[0].4", true)
+	testReadNew(t, client, "TestDintArr[0].5", true)
+	testReadNew(t, client, "TestDintArr[0].6", true)
+	testReadNew(t, client, "TestDintArr[0].7", true)
+	testReadNew(t, client, "TestDintArr[0].8", false)
+	testReadNew(t, client, "TestDintArr[0].9", false)
+	testReadNew(t, client, "TestDintArr[0].10", false)
+	testReadNew(t, client, "TestDintArr[0].11", false)
+	testReadNew(t, client, "TestDintArr[0].12", true)
+	testReadNew(t, client, "TestDintArr[0].13", false)
+	testReadNew(t, client, "TestDintArr[0].14", false)
+	testReadNew(t, client, "TestDintArr[0].15", false)
+	testReadNew(t, client, "TestDintArr[2]", int32(4353))
+	testReadNew(t, client, "TestUDT.Field1", int32(85456))
+	testReadNew(t, client, "TestUDT.Field2", float32(123.456))
+	testReadNew(t, client, "TestUDTArr[2].Field1", int32(16))
+	testReadNew(t, client, "TestUDTArr[2].Field2", float32(15.0))
+
+}
+
+func testReadNew[T ComparableGoLogixTypes](t *testing.T, client *Client, tag string, want T) {
+
+	t.Run(tag, func(t *testing.T) {
+		//tag, want := "TestInt", int16(999)
+		var have T
+
+		err := client.Read(tag, &have)
+		if err != nil {
+			t.Errorf("Problem reading %s. %v", tag, err)
+			return
+		}
+		if have != want {
+			t.Errorf("wanted %v got %v", want, have)
+		}
+	},
+	)
+}
+
 func TestReadSingle(t *testing.T) {
 	var tests = []struct {
 		tag   string

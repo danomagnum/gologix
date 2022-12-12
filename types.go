@@ -16,6 +16,9 @@ type CIPType byte
 type GoLogixTypes interface {
 	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64 | string | interface{}
 }
+type ComparableGoLogixTypes interface {
+	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
+}
 
 // return the CIPType that corresponds to go type T
 func GoTypeToCIPType[T GoLogixTypes]() CIPType {
