@@ -51,16 +51,28 @@ func Heartbeat[T gologix.GoLogixTypes](client *gologix.Client, tag string, pollr
 	hbstatus := make(chan bool)
 
 	go func() {
-		// initialize heart beat variable
+		// heart beat value variables
 		var lastHB T
 		var newHB T
+
+		// hb last change reference
 		lastHB_Time := time.Now()
+
+		// hb status
 		ok := false
 
-		// poll rate for the heartbeat tag
 		ticker := time.NewTicker(pollrate)
 		for range ticker.C {
-			client.Read(tag, &newHB)
+			err := client.Read(tag, &newHB)
+			if err != nil {
+				// heartbeat read failed. send an edge triggered message about that.
+				if ok {
+					hbstatus <- false
+					ok = false
+				}
+				continue
+			}
+			// if the value changes, update the timestamp and set to ok flag to true.
 			if newHB != lastHB {
 				lastHB_Time = time.Now()
 				if !ok {
@@ -68,6 +80,8 @@ func Heartbeat[T gologix.GoLogixTypes](client *gologix.Client, tag string, pollr
 				}
 				ok = true
 			}
+
+			// see if we've timed out.  Send an edge triggered message out.
 			if time.Since(lastHB_Time) > timeout {
 				if ok {
 					hbstatus <- false
