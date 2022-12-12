@@ -50,7 +50,7 @@ You can read UDTs in if you define an equivalent struct to blit the data into. A
 
 You cannot write multiple items from an array at once, or write a whole UDT in the current version, but you can do them piecewise if needed.
 
-You can write to BOOL tags but NOT to bits of integers (ex: "MyBool" is OK, but "MyDint.3" is NOT)
+You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, but "MyDint.3" is NOT).  You can read from either just fine.
 
 If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
 
