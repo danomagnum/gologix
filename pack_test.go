@@ -47,7 +47,7 @@ func TestPack(t *testing.T) {
 	b := bytes.Buffer{}
 	//binary.Write(&b, binary.LittleEndian, s)
 
-	pack(&b, CIPPack{}, s)
+	Pack(&b, CIPPack{}, s)
 
 	have := b.Bytes()
 
@@ -70,7 +70,7 @@ func TestPack(t *testing.T) {
 	}
 
 	have2 := S{}
-	unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	Unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
 	if have2 != s {
 		t.Errorf("ResultMismatch.\n Have \n%v\n Want \n%v\n", have2, s)
 

@@ -82,6 +82,39 @@ func TestReadNewUDTArr(t *testing.T) {
 	}
 }
 
+func TestReadBoolPack(t *testing.T) {
+	client := gologix.NewClient("192.168.2.241")
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer client.Disconnect()
+
+	type udt2 struct {
+		Field1 int32
+		Flag1  bool
+		Flag2  bool
+		Field2 int32
+	}
+
+	s, err := gologix.ReadPacked[udt2](client, "TestUDT2")
+	if err != nil {
+		t.Errorf("couldn't read. %v", err)
+	}
+	/*
+		b := make([]byte, 12)
+		err = client.Read("TestUDT2", &b)
+		if err != nil {
+			t.Errorf("couldn't read as bytes. %v", err)
+		}
+		fmt.Printf("bytes: %v\n", b)
+		gologix.Unpack(bytes.NewBuffer(b), gologix.CIPPack{}, &s)
+	*/
+	fmt.Printf("got %+v\n", s)
+
+}
+
 func TestReadNew(t *testing.T) {
 	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()

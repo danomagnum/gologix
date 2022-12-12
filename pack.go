@@ -1,7 +1,9 @@
 package gologix
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"reflect"
 )
@@ -23,7 +25,7 @@ func (p CIPPack) Order() binary.ByteOrder {
 	return binary.LittleEndian
 }
 
-func pack(w io.Writer, p Packing, data any) int {
+func Pack(w io.Writer, p Packing, data any) int {
 
 	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
 	pos := 0
@@ -116,7 +118,7 @@ func pack(w io.Writer, p Packing, data any) int {
 		if k != reflect.Struct {
 			binary.Write(w, p.Order(), refVal.Field(i).Interface())
 		} else {
-			s = pack(w, p, refVal.Field(i).Interface())
+			s = Pack(w, p, refVal.Field(i).Interface())
 		}
 		pos += s
 	}
@@ -132,7 +134,7 @@ func pack(w io.Writer, p Packing, data any) int {
 	return pos
 }
 
-func unpack(r io.Reader, p Packing, data any) int {
+func Unpack(r io.Reader, p Packing, data any) int {
 
 	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
 	pos := 0
@@ -227,10 +229,25 @@ func unpack(r io.Reader, p Packing, data any) int {
 			binary.Read(r, p.Order(), refVal.Field(i).Addr().Interface())
 		} else {
 			val := refVal.Field(i).Addr().Interface()
-			s = unpack(r, p, val)
+			s = Unpack(r, p, val)
 		}
 		pos += s
 	}
 	// Last thing we need to do is check whether there are some packed bools that still need flushed out.
 	return pos
+}
+
+func ReadPacked[T any](client *Client, tag string) (T, error) {
+	var data T
+	buf := new(bytes.Buffer)
+	size := Pack(buf, CIPPack{}, data)
+
+	b := make([]byte, size)
+	err := client.Read(tag, &b)
+	if err != nil {
+		return data, fmt.Errorf("couldn't read %s as bytes. %v", tag, err)
+	}
+	Unpack(bytes.NewBuffer(b), CIPPack{}, &data)
+	return data, nil
+
 }
