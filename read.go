@@ -6,84 +6,83 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"reflect"
 )
 
 func (client *Client) Read(tag string, data any) error {
 	switch data := data.(type) {
 	case *bool:
-		v, err := Read[bool](client, tag)
+		v, err := read[bool](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *byte:
-		v, err := Read[byte](client, tag)
+		v, err := read[byte](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int16:
-		v, err := Read[int16](client, tag)
+		v, err := read[int16](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint16:
-		v, err := Read[uint16](client, tag)
+		v, err := read[uint16](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int32:
-		v, err := Read[int32](client, tag)
+		v, err := read[int32](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint32:
-		v, err := Read[uint32](client, tag)
+		v, err := read[uint32](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int64:
-		v, err := Read[int64](client, tag)
+		v, err := read[int64](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint64:
-		v, err := Read[uint64](client, tag)
+		v, err := read[uint64](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *float32:
-		v, err := Read[float32](client, tag)
+		v, err := read[float32](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *float64:
-		v, err := Read[float64](client, tag)
+		v, err := read[float64](client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *string:
-		v, err := Read[string](client, tag)
+		v, err := read[string](client, tag)
 		if err != nil {
 			return err
 		}
@@ -92,7 +91,7 @@ func (client *Client) Read(tag string, data any) error {
 
 	case []bool:
 		elements := len(data)
-		v, err := ReadArray[bool](client, tag, uint16(elements))
+		v, err := readArray[bool](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -105,7 +104,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []byte:
 		elements := len(data)
-		v, err := ReadArray[byte](client, tag, uint16(elements))
+		v, err := readArray[byte](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -118,7 +117,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int16:
 		elements := len(data)
-		v, err := ReadArray[int16](client, tag, uint16(elements))
+		v, err := readArray[int16](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -131,7 +130,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint16:
 		elements := len(data)
-		v, err := ReadArray[uint16](client, tag, uint16(elements))
+		v, err := readArray[uint16](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -144,7 +143,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int32:
 		elements := len(data)
-		v, err := ReadArray[int32](client, tag, uint16(elements))
+		v, err := readArray[int32](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -157,7 +156,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint32:
 		elements := len(data)
-		v, err := ReadArray[uint32](client, tag, uint16(elements))
+		v, err := readArray[uint32](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -170,7 +169,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int64:
 		elements := len(data)
-		v, err := ReadArray[int64](client, tag, uint16(elements))
+		v, err := readArray[int64](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -183,7 +182,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint64:
 		elements := len(data)
-		v, err := ReadArray[uint64](client, tag, uint16(elements))
+		v, err := readArray[uint64](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -196,7 +195,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []float32:
 		elements := len(data)
-		v, err := ReadArray[float32](client, tag, uint16(elements))
+		v, err := readArray[float32](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -209,7 +208,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []float64:
 		elements := len(data)
-		v, err := ReadArray[float64](client, tag, uint16(elements))
+		v, err := readArray[float64](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -278,26 +277,6 @@ func (client *Client) Read(tag string, data any) error {
 	}
 
 	return nil
-}
-
-func (client *Client) ReadSingle(tag string, datatype CIPType, elements uint16) (any, error) {
-	val, err := client.read_single(tag, datatype, elements)
-	if err != nil {
-		// this happens if the connection closes.
-		switch err.(type) {
-		case *net.OpError:
-			// reconnect and try again
-			client.Disconnect()
-			err3 := client.Connect()
-			if err3 != nil {
-				return nil, fmt.Errorf("problem reconnecting. %v:%w", err, err3)
-			}
-			return client.read_single(tag, datatype, elements)
-		}
-		err = fmt.Errorf("problem reading. %w", err)
-	}
-	return val, err
-
 }
 
 func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
@@ -390,7 +369,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	}
 }
 
-func ReadArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
+func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct := GoVarToCIPType(t[0])
 	val, err := client.read_single(tag, ct, elements)
@@ -434,7 +413,7 @@ func ReadArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 
 }
 
-func Read[T GoLogixTypes](client *Client, tag string) (T, error) {
+func read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
 	ct := GoVarToCIPType(t)
 	val, err := client.read_single(tag, ct, 1)

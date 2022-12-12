@@ -31,7 +31,7 @@ func TestRealHardware(t *testing.T) {
 	//log.Printf("two element value: %v\n", v)
 	//}
 
-	v2, err := ReadArray[int32](client, "TestDintArr", 9)
+	v2, err := readArray[int32](client, "TestDintArr", 9)
 	if err != nil {
 		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	}
@@ -41,7 +41,7 @@ func TestRealHardware(t *testing.T) {
 			t.Errorf("Problem with reading nine elements of array. got %v want %v\n", v2[i], want)
 		}
 	}
-	v3, err := ReadArray[TestUDT](client, "TestUDTArr[2]", 2)
+	v3, err := readArray[TestUDT](client, "TestUDTArr[2]", 2)
 	if err != nil {
 		t.Errorf("Problem with reading two elements of array. %v\n", err)
 	}
@@ -56,7 +56,7 @@ func TestRealHardware(t *testing.T) {
 	test_strarr := false
 	// string array read is untested:
 	if test_strarr {
-		v4, err := ReadArray[string](client, "TestStrArr", 3)
+		v4, err := readArray[string](client, "TestStrArr", 3)
 		if err != nil {
 			t.Errorf("Problem with reading two elements of array. %v\n", err)
 		} else {
@@ -68,7 +68,7 @@ func TestRealHardware(t *testing.T) {
 	//ReadAndPrint[float32](client, "TestReal")
 	ReadAndPrint[string](t, client, "TestString")
 
-	_, err = Read[TestUDT](client, "TestUDT")
+	_, err = read[TestUDT](client, "TestUDT")
 	if err != nil {
 		t.Errorf("Problem reading udt. %v\n", err)
 	}
@@ -84,7 +84,7 @@ func TestRealHardware(t *testing.T) {
 }
 
 func ReadAndPrint[T GoLogixTypes](t *testing.T, client *Client, path string) {
-	_, err := Read[T](client, path)
+	_, err := read[T](client, path)
 	if err != nil {
 		t.Errorf("Problem reading %s. %v", path, err)
 	}

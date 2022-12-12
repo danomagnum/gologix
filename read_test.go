@@ -263,7 +263,8 @@ func TestReadTimeout(t *testing.T) {
 	}
 	//client.Conn.Close()
 	//fmt.Println("\nsleep complete")
-	value, err := client.ReadSingle("testint", CIPTypeINT, 1)
+	var value int16
+	err = client.Read("testint", &value)
 	if err != nil {
 		t.Errorf("problem reading. %v", err)
 	}
