@@ -221,10 +221,15 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
+	types := make([]CIPType, 0)
 	tag_map := make(map[string]int)
+	val := reflect.ValueOf(tag_str).Elem()
 	for i := range vf {
 		field := vf[i]
 		tagpath, ok := field.Tag.Lookup("gologix")
+		v := val.Field(i).Interface()
+		ct := GoVarToCIPType(v)
+		types = append(types, ct)
 		if !ok {
 			continue
 		}
@@ -324,8 +329,18 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 		if rhdr.Status != 0 {
 			return fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
 		}
-
-		result_values[i] = rhdr.Type.readValue(mybytes)
+		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
+			// we have requested a bool from some other type.  Maybe a bit access?
+			value := readValue(rhdr.Type, &items[1])
+			val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
+			if err != nil {
+				log.Printf("problem reading value for this guy")
+				continue
+			}
+			result_values[i] = val
+		} else {
+			result_values[i] = rhdr.Type.readValue(mybytes)
+		}
 
 		if verbose {
 			log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])

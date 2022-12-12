@@ -76,6 +76,8 @@ func TestReadMulti(t *testing.T) {
 		TestDint          int32   `gologix:"TestDint"`
 		TestReal          float32 `gologix:"TestReal"`
 		TestDintArr0      int32   `gologix:"testdintarr[0]"`
+		TestDintArr0_0    bool    `gologix:"testdintarr[0].0"`
+		TestDintArr0_9    bool    `gologix:"testdintarr[0].9"`
 		TestDintArr2      int32   `gologix:"testdintarr[2]"`
 		TestUDTField1     int32   `gologix:"testudt.field1"`
 		TestUDTField2     float32 `gologix:"testudt.field2"`
@@ -89,6 +91,8 @@ func TestReadMulti(t *testing.T) {
 		TestDint:          36,
 		TestReal:          93.45,
 		TestDintArr0:      4351,
+		TestDintArr0_0:    true,
+		TestDintArr0_9:    false,
 		TestDintArr2:      4353,
 		TestUDTField1:     85456,
 		TestUDTField2:     123.456,
@@ -111,7 +115,7 @@ func TestReadMulti(t *testing.T) {
 }
 
 func TestReadTimeout(t *testing.T) {
-	//t.Skip("requires timeout that is too long")
+	t.Skip("requires timeout that is too long")
 
 	client := &Client{IPAddress: "192.168.2.241"}
 	client.SocketTimeout = time.Minute
