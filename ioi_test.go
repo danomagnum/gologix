@@ -9,7 +9,7 @@ import (
 // it only tests the request path portion of each tag addressing example
 // it also only tests symbolic paths.
 func TestIOI(t *testing.T) {
-	ioi_cache = make(map[string]*IOI)
+	ioi_cache = make(map[string]*tagIOI)
 	var tests = []struct {
 		path string
 		t    CIPType
@@ -91,7 +91,7 @@ func TestIOI(t *testing.T) {
 
 		testname := fmt.Sprintf("tag: %s", tt.path)
 		t.Run(testname, func(t *testing.T) {
-			res, err := client.NewIOI(tt.path, tt.t)
+			res, err := client.newIOI(tt.path, tt.t)
 			if err != nil {
 				t.Errorf("IOI Generation error. %v", err)
 			}

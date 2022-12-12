@@ -1,7 +1,6 @@
 package gologix
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"regexp"
@@ -11,9 +10,9 @@ import (
 
 // it's fine for this to be global. One string maps to one IOI regardless of what PLC it comes from.
 // this just lets us not have to re-process them.
-var ioi_cache map[string]*IOI
+var ioi_cache map[string]*tagIOI
 
-type TagPartDescriptor struct {
+type tagPartDescriptor struct {
 	FullPath    string
 	BasePath    string
 	Array_Order []int
@@ -24,7 +23,7 @@ type TagPartDescriptor struct {
 var bit_access_regex, _ = regexp.Compile(`\.\d+$`)
 var array_access_regex, _ = regexp.Compile(`\[([\d]|[,]|[\s])*\]$`)
 
-func (tag *TagPartDescriptor) Parse(tagpath string) error {
+func (tag *tagPartDescriptor) Parse(tagpath string) error {
 	var err error
 	tag.FullPath = tagpath
 	tag.BasePath = tagpath
@@ -74,7 +73,7 @@ func (tag *TagPartDescriptor) Parse(tagpath string) error {
 }
 
 // parse the tag name into its base tag (remove array index or bit) and get the array index if it exists
-func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
+func parse_tag_name(tagpath string) (tag tagPartDescriptor) {
 	tag.Parse(tagpath)
 	return
 
@@ -82,7 +81,7 @@ func parse_tag_name(tagpath string) (tag TagPartDescriptor) {
 
 // Internal Object Identifier. Used to specify a tag name in the controller
 // the Buffer has the CIP route for a tag path.
-type IOI struct {
+type tagIOI struct {
 	Path        string
 	Type        CIPType
 	BitAccess   bool
@@ -90,22 +89,22 @@ type IOI struct {
 	Buffer      []byte
 }
 
-func (ioi *IOI) Write(p []byte) (n int, err error) {
+func (ioi *tagIOI) Write(p []byte) (n int, err error) {
 	ioi.Buffer = append(ioi.Buffer, p...)
 	return len(p), nil
 }
 
-func (ioi *IOI) Bytes() []byte {
+func (ioi *tagIOI) Bytes() []byte {
 	return ioi.Buffer
 }
 
 // this is the default buffer size for tag IOI generation.
-const DEFAULT_BUFFER_SIZE = 256
+const defaultIOIBufferSize = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err error) {
-	ioi = new(IOI)
+func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
+	ioi = new(tagIOI)
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
@@ -128,13 +127,13 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 	ioi.Path = tagpath
 	ioi.Type = datatype
 	// we'll build this byte structure up as we go.
-	ioi.Buffer = make([]byte, 0, DEFAULT_BUFFER_SIZE)
+	ioi.Buffer = make([]byte, 0, defaultIOIBufferSize)
 
 	for _, tag_part := range tag_array {
 		if strings.HasSuffix(tag_part, "]") {
 			// part of an array
 			start_index := strings.Index(tag_part, "[")
-			ioi_part := MarshalIOIPart(tag_part[0:start_index])
+			ioi_part := marshalIOIPart(tag_part[0:start_index])
 			ioi.Write(ioi_part)
 
 			t := parse_tag_name(tag_part)
@@ -168,7 +167,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 				ioi.BitPosition = bit_access
 				continue
 			}
-			ioi_part := MarshalIOIPart(tag_part)
+			ioi_part := marshalIOIPart(tag_part)
 			ioi.Write(ioi_part)
 
 		}
@@ -179,7 +178,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *IOI, err er
 	return
 }
 
-func MarshalIOIPart(tagpath string) []byte {
+func marshalIOIPart(tagpath string) []byte {
 	t := parse_tag_name(tagpath)
 	tag_size := len(t.BasePath)
 	need_extend := false
@@ -195,18 +194,4 @@ func MarshalIOIPart(tagpath string) []byte {
 		tag_name_msg = append(tag_name_msg, []byte{0x00}...)
 	}
 	return tag_name_msg
-}
-
-func (ioi *IOI) Service(s CIPService) *bytes.Buffer {
-
-	size := byte(len(ioi.Buffer) / 2)
-
-	b := new(bytes.Buffer)
-
-	binary.Write(b, binary.LittleEndian, s)
-	binary.Write(b, binary.LittleEndian, size)
-	binary.Write(b, binary.LittleEndian, ioi.Buffer)
-
-	return b
-
 }

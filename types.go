@@ -20,12 +20,6 @@ type ComparableGoLogixTypes interface {
 	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64
 }
 
-// return the CIPType that corresponds to go type T
-func GoTypeToCIPType[T GoLogixTypes]() CIPType {
-	var t T
-	return GoVarToCIPType(t)
-}
-
 // return the CIPType that corresponds to go type of variable T
 func GoVarToCIPType(T any) CIPType {
 	switch T.(type) {
@@ -258,9 +252,8 @@ func readValue(t CIPType, r io.Reader) any {
 	return value
 }
 
-// readValue reads one unit of cip data type t into the correct go type.
-// To do this it reads the needed number of bytes from r.
-// It returns the value as an any so the caller will have to do a cast to get it back
+// after reading a value v from the controller, you can get a bit from it with
+// getBit. bitpos must be between 0 and the length of the CIPType you read.
 func getBit(t CIPType, v any, bitpos int) (bool, error) {
 
 	var err error

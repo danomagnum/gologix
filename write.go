@@ -5,7 +5,7 @@ import "fmt"
 func (client *Client) Write_single(tag string, value any) error {
 	//service = 0x4D // CIPService_Write
 	datatype := GoVarToCIPType(value)
-	ioi, err := client.NewIOI(tag, datatype)
+	ioi, err := client.newIOI(tag, datatype)
 	if err != nil {
 		return fmt.Errorf("problem generating IOI. %w", err)
 	}
