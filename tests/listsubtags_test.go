@@ -1,12 +1,13 @@
-package gologix
+package gologix_tests
 
 import (
+	"gologix"
 	"testing"
 )
 
 func TestSubList(t *testing.T) {
 
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

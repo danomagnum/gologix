@@ -308,7 +308,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	}
 	_ = hdr
 
-	read_result_header := msgCIPReadResultHeader{}
+	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		log.Printf("Problem reading read result header. %v", err)
@@ -464,7 +464,7 @@ type CIPStructHeader struct {
 
 // tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
-func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) error {
+func (client *Client) ReadMulti(tag_str any) error {
 
 	// build the tag list from the structure
 	T := reflect.TypeOf(tag_str).Elem()
@@ -491,7 +491,7 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.newIOI(tag, datatype)
+		iois[i], err = client.newIOI(tag, types[i])
 		if err != nil {
 			return err
 		}
@@ -524,7 +524,7 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{
-			Elements: elements,
+			Elements: 1,
 		}
 		binary.Write(&b, binary.LittleEndian, h)
 		b.Write(ioi.Buffer)
@@ -545,7 +545,7 @@ func (client *Client) ReadMulti(tag_str any, datatype CIPType, elements uint16) 
 	}
 	_ = hdr
 
-	read_result_header := msgCIPReadResultHeader{}
+	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		log.Printf("Problem reading read result header. %v", err)

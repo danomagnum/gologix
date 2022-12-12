@@ -1,8 +1,9 @@
-package gologix
+package gologix_tests
 
 import (
 	"errors"
 	"fmt"
+	"gologix"
 	"log"
 	"net"
 	"testing"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestReadArrNew(t *testing.T) {
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -34,7 +35,7 @@ func TestReadArrNew(t *testing.T) {
 }
 
 func TestReadNewUDT(t *testing.T) {
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -53,7 +54,7 @@ func TestReadNewUDT(t *testing.T) {
 	}
 }
 func TestReadNewUDTArr(t *testing.T) {
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -84,7 +85,7 @@ func TestReadNewUDTArr(t *testing.T) {
 }
 
 func TestReadNew(t *testing.T) {
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -122,7 +123,7 @@ func TestReadNew(t *testing.T) {
 
 }
 
-func testReadNew[T ComparableGoLogixTypes](t *testing.T, client *Client, tag string, want T) {
+func testReadNew[T gologix.ComparableGoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
 
 	t.Run(tag, func(t *testing.T) {
 		//tag, want := "TestInt", int16(999)
@@ -138,66 +139,6 @@ func testReadNew[T ComparableGoLogixTypes](t *testing.T, client *Client, tag str
 		}
 	},
 	)
-}
-
-func TestReadSingle(t *testing.T) {
-	var tests = []struct {
-		tag   string
-		wants any
-	}{
-		{"TestInt", int16(999)},
-		{"TestSint", byte(117)},
-		{"TestDint", int32(36)},
-		{"TestDint.0", false},
-		{"TestDint.2", true},
-		{"TestReal", float32(93.45)},
-		{"TestDintArr[0]", int32(4351)},
-		{"TestDintArr[0].0", true},
-		{"TestDintArr[0].1", true},
-		{"TestDintArr[0].2", true},
-		{"TestDintArr[0].3", true},
-		{"TestDintArr[0].4", true},
-		{"TestDintArr[0].5", true},
-		{"TestDintArr[0].6", true},
-		{"TestDintArr[0].7", true},
-		{"TestDintArr[0].8", false},
-		{"TestDintArr[0].9", false},
-		{"TestDintArr[0].10", false},
-		{"TestDintArr[0].11", false},
-		{"TestDintArr[0].12", true},
-		{"TestDintArr[0].13", false},
-		{"TestDintArr[0].14", false},
-		{"TestDintArr[0].15", false},
-		{"TestDintArr[2]", int32(4353)},
-		{"TestUDT.Field1", int32(85456)},
-		{"TestUDT.Field2", float32(123.456)},
-		{"TestUDTArr[2].Field1", int32(16)},
-		{"TestUDTArr[2].Field2", float32(15.0)},
-	}
-
-	client := NewClient("192.168.2.241")
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer client.Disconnect()
-
-	for _, tt := range tests {
-
-		t.Run(tt.tag, func(t2 *testing.T) {
-			ct := GoVarToCIPType(tt.wants)
-			value, err := client.read_single(tt.tag, ct, 1)
-			if err != nil {
-				t2.Errorf("Problem reading %s. %v", tt.tag, err)
-				return
-			}
-			if value != tt.wants {
-				t2.Errorf("wanted %v got %v", tt.wants, value)
-			}
-		})
-	}
-
 }
 
 func TestReadMulti(t *testing.T) {
@@ -231,11 +172,11 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	client.Connect()
 	defer client.Disconnect()
 
-	err := client.ReadMulti(&read, CIPTypeStruct, 1)
+	err := client.ReadMulti(&read)
 	if err != nil {
 		t.Errorf("Problem reading. %v", err)
 		return
@@ -248,7 +189,7 @@ func TestReadMulti(t *testing.T) {
 func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
 
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	client.SocketTimeout = time.Minute
 	err := client.Connect()
 	if err != nil {
@@ -279,32 +220,4 @@ func TestErrs(t *testing.T) {
 		log.Printf("ok")
 	}
 
-}
-
-// these are the four example structs defined in 1756-PM020H-EN-P page 61
-type test_STRUCT_A struct {
-	Limits uint32 // two bits packed here.
-	Travel uint32
-	Errors uint32 // actually a byte in the controller. But comes as a dint.
-	Wear   float32
-}
-
-type test_STRUCT_B struct {
-	PilotOn     uint32 // actually a bool
-	HourlyCount [12]uint16
-	Rate        float32
-}
-
-type test_STRUCT_C struct {
-	HoursFull  uint32 // actually a bool
-	Today      test_STRUCT_B
-	SampleTime uint32
-	Shipped    uint32
-}
-
-type test_STRUCT_D struct {
-	MyInt   uint32 // actually a uint16
-	MyFloat float32
-	MyArray [8]test_STRUCT_C
-	MyPID   float32
 }

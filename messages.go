@@ -37,7 +37,7 @@ type msgCIPIOIFooter struct {
 	Elements uint16
 }
 
-type msgCIPReadResultHeader struct {
+type msgCIPResultHeader struct {
 	InterfaceHandle uint32
 	Timeout         uint16
 }

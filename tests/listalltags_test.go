@@ -1,13 +1,14 @@
-package gologix
+package gologix_tests
 
 import (
+	"gologix"
 	"log"
 	"testing"
 )
 
 func TestList(t *testing.T) {
 
-	client := NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -20,15 +21,15 @@ func TestList(t *testing.T) {
 	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 
 	// check that we picked up all the test tags properly
-	tests := make(map[string]KnownTag)
-	tests["testdintarr"] = KnownTag{
+	tests := make(map[string]gologix.KnownTag)
+	tests["testdintarr"] = gologix.KnownTag{
 		Name:        "TestDintArr",
-		Type:        CIPTypeDINT,
+		Type:        gologix.CIPTypeDINT,
 		Array_Order: []int{10},
 	}
-	tests["testdint"] = KnownTag{
+	tests["testdint"] = gologix.KnownTag{
 		Name:        "TestDint",
-		Type:        CIPTypeDINT,
+		Type:        gologix.CIPTypeDINT,
 		Array_Order: []int{},
 	}
 
