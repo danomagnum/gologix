@@ -41,7 +41,7 @@ func TestWrite(t *testing.T) {
 
 }
 
-func write_and_check[T gologix.ComparableGoLogixTypes](t *testing.T, client *gologix.Client, tag string, values ...T) {
+func write_and_check[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, values ...T) {
 	var err error
 	var have T
 	t.Run(tag, func(t *testing.T) {

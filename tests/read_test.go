@@ -1,11 +1,9 @@
 package gologix_tests
 
 import (
-	"errors"
 	"fmt"
 	"gologix"
 	"log"
-	"net"
 	"testing"
 	"time"
 )
@@ -123,7 +121,7 @@ func TestReadNew(t *testing.T) {
 
 }
 
-func testReadNew[T gologix.ComparableGoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
+func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
 
 	t.Run(tag, func(t *testing.T) {
 		//tag, want := "TestInt", int16(999)
@@ -210,14 +208,4 @@ func TestReadTimeout(t *testing.T) {
 		t.Errorf("problem reading. %v", err)
 	}
 	log.Printf("value: %v\n", value)
-}
-
-func TestErrs(t *testing.T) {
-	e := fmt.Errorf("this is an error %v", 3)
-	err := net.OpError{Err: e}
-
-	if errors.Is(&err, &net.OpError{}) {
-		log.Printf("ok")
-	}
-
 }
