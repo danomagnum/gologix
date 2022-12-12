@@ -118,6 +118,7 @@ func TestReadNew(t *testing.T) {
 	testReadNew(t, client, "TestUDT.Field2", float32(123.456))
 	testReadNew(t, client, "TestUDTArr[2].Field1", int32(16))
 	testReadNew(t, client, "TestUDTArr[2].Field2", float32(15.0))
+	testReadNew(t, client, "TestString", "Something")
 
 }
 
