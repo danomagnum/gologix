@@ -56,7 +56,7 @@ If the UDT you're reading has bools packed in it, you'll need to use the ReadPac
 
 ## License
 
-This project is licensed under Apache 2.0 License - see the [LICENSE](LICENSE.txt) file for details.
+This project is licensed under the MIT license.
 
 ## Acknowledgements
 
