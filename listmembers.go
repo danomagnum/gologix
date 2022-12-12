@@ -51,9 +51,9 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		str_instance = 1
 	}
 
-	reqitems := make([]CIPItem, 2)
-	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems := make([]cipItem, 2)
+	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		cipObject_Template, CIPInstance(str_instance),
@@ -65,11 +65,11 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
-		Service:       CIPService_GetAttributeList,
+		Service:       cipService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Marshal(p.Bytes())
 	number_of_attr_to_receive := 4
 	attr_Size_32bitWords := 4
@@ -88,7 +88,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -141,9 +141,9 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't get template info. %w", err)
 	}
 
-	reqitems := make([]CIPItem, 2)
-	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems := make([]cipItem, 2)
+	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		cipObject_Template, CIPInstance(str_instance),
@@ -155,11 +155,11 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
-		Service:       CIPService_Read,
+		Service:       cipService_Read,
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Marshal(p.Bytes())
 	start_offset := uint32(0)
 	read_length := uint16(template_info.SizeWords*4 - 23)
@@ -170,7 +170,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return UDTDescriptor{}, err
 	}

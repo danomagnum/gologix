@@ -15,6 +15,17 @@ func (client *Client) Connect() error {
 		//client.ConnectionSize = 508
 	}
 
+	if client.Port == "" {
+		client.Port = ":44818"
+	}
+	if client.VendorID == 0 {
+
+		client.VendorID = 0x1776
+	}
+	if client.SerialNumber == 0 {
+		client.SerialNumber = 42
+	}
+
 	// default path is backplane -> slot 0
 	var err error
 	if client.Path == nil {
@@ -37,9 +48,9 @@ func (client *Client) register_session() error {
 	reg_msg.OptionFlag = 0
 
 	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	//client.Send(CIPCommandRegisterSession, reg_msg)
-	resp_hdr, resp_data, err := client.send_recv_data(CIPCommandRegisterSession, reg_msg)
-	//resp_hdr, resp_data, err := client.recv_data(CIPCommandRegisterSession, reg_msg)
+	//client.Send(cipCommandRegisterSession, reg_msg)
+	resp_hdr, resp_data, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
+	//resp_hdr, resp_data, err := client.recv_data(cipCommandRegisterSession, reg_msg)
 	if err != nil {
 		return fmt.Errorf("couldn't get connect response %w", err)
 	}
@@ -103,7 +114,7 @@ func (client *Client) connect() error {
 	}
 	client.KnownTags = make(map[string]KnownTag)
 	var err error
-	client.conn, err = net.Dial("tcp", client.IPAddress+CIP_Port)
+	client.conn, err = net.Dial("tcp", client.IPAddress+client.Port)
 	if err != nil {
 		return err
 	}
@@ -123,10 +134,10 @@ func (client *Client) connect() error {
 	}
 	s := binary.Size(fwd_open)
 	_ = s
-	items0 := make([]CIPItem, 2)
-	items0[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
+	items0 := make([]cipItem, 2)
+	items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
-	hdr, dat, err := client.send_recv_data(CIPCommandSendRRData, MarshalItems(items0))
+	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, MarshalItems(items0))
 	if err != nil {
 		return err
 	}
@@ -194,7 +205,7 @@ type msgCIPMessageRouterResponse struct {
 }
 
 type msgEIPForwardOpen_Reply struct {
-	//Service        CIPService
+	//Service        cipService
 	//Reserved       byte // always 0
 	//Status         byte // result status
 	//Status_Len     byte // additional result word count - can be zero
@@ -254,8 +265,8 @@ type msgEIPForwardOpen_Large struct {
 	PathLen                byte
 }
 
-func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
-	item := CIPItem{Header: CIPItemHeader{ID: CIPItem_UnconnectedData}}
+func (client *Client) NewForwardOpenLarge() (cipItem, error) {
+	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Large
 
 	p, err := Serialize(
@@ -271,10 +282,10 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	ConnectionParams = ConnectionParams << 16 // for long packet
 	ConnectionParams += uint32(client.ConnectionSize)
 
-	msg.Service = CIPService_LargeForwardOpen
+	msg.Service = cipService_LargeForwardOpen
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
-	msg.ClassType = CIPClass_8bit
+	msg.ClassType = cipClass_8bit
 	msg.Class = byte(cipObject_ConnectionManager)
 	msg.InstanceType = cipInstance_8bit
 	msg.Instance = 0x01
@@ -285,8 +296,8 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	msg.OTConnectionID = rand.Uint32() //0x20000002
 	msg.TOConnectionID = rand.Uint32()
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
-	msg.VendorID = CIP_VendorID
-	msg.OriginatorSerialNumber = CIP_SerialNumber
+	msg.VendorID = client.VendorID
+	msg.OriginatorSerialNumber = client.SerialNumber
 	msg.Multiplier = 0x03
 	msg.OTRPI = 0x00201234
 	msg.OTNetworkConnParams = ConnectionParams

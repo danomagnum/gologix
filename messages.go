@@ -14,7 +14,7 @@ type msgCIPMultiIOIHeader struct {
 
 // this is the generic connected message.
 // it goes into an item (always item[1]?) and is followed up with
-// a valid path.  The item specifies the CIPService that goes with the message
+// a valid path.  The item specifies the cipService that goes with the message
 type msgCIPConnectedServiceReq struct {
 	SequenceCount uint16
 	Service       CIPService

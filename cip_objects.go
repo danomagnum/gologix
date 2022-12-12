@@ -11,20 +11,20 @@ type CIPObject uint16
 type CIPClassSize byte
 
 const (
-	CIPClass_8bit  CIPClassSize = 0x20
-	CIPClass_16bit CIPClassSize = 0x21
+	cipClass_8bit  CIPClassSize = 0x20
+	cipClass_16bit CIPClassSize = 0x21
 )
 
 func (p CIPObject) Bytes() []byte {
 	if p < 256 {
 		b := make([]byte, 2)
-		b[0] = byte(CIPClass_8bit)
+		b[0] = byte(cipClass_8bit)
 		b[1] = byte(p)
 		return b
 	} else {
 
 		b := make([]byte, 4)
-		b[0] = byte(CIPClass_16bit)
+		b[0] = byte(cipClass_16bit)
 		binary.LittleEndian.PutUint16(b[2:], uint16(p))
 		return b
 	}

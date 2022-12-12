@@ -9,7 +9,7 @@ import (
 
 // write a single value to a single tag.
 func (client *Client) Write(tag string, value any) error {
-	//service = 0x4D // CIPService_Write
+	//service = 0x4D // cipService_Write
 	datatype := GoVarToCIPType(value)
 	ioi, err := client.newIOI(tag, datatype)
 	if err != nil {
@@ -24,7 +24,7 @@ func (client *Client) Write(tag string, value any) error {
 
 	ioi_header := msgCIPIOIHeader{
 		Sequence: client.Sequencer(),
-		Service:  CIPService_Write,
+		Service:  cipService_Write,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}
 	ioi_footer := msgCIPWriteIOIFooter{
@@ -32,15 +32,15 @@ func (client *Client) Write(tag string, value any) error {
 		Elements: elements,
 	}
 
-	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
-	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
+	reqitems := make([]cipItem, 2)
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Marshal(ioi_header)
 	reqitems[1].Marshal(ioi.Buffer)
 	reqitems[1].Marshal(ioi_footer)
 	reqitems[1].Marshal(value)
 
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

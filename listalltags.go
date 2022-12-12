@@ -69,9 +69,9 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = 1
 	}
 
-	reqitems := make([]CIPItem, 2)
-	//reqitems[0] = CIPItem{Header: CIPItemHeader{ID: CIPItem_Null}}
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems := make([]cipItem, 2)
+	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		cipObject_Symbol, CIPInstance(start_instance),
@@ -82,12 +82,12 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
-		Service:       CIPService_GetInstanceAttributeList,
+		Service:       cipService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
 	// setup item
-	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	// add path
 	reqitems[1].Marshal(p.Bytes())
 	// add service specific data
@@ -100,7 +100,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	reqitems[1].Marshal(byte(0))
 	reqitems[1].Marshal(uint16(1))
 
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}

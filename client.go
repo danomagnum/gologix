@@ -12,6 +12,16 @@ type Client struct {
 	// ip address for connecting to the PLC comms module.
 	IPAddress string
 
+	// the port is always 44818
+	Port string // = ":44818"
+
+	// vendor ID should be provided by ODVA.  Since we probably don't have an
+	// official ID, we'll use the hex'd version of the founding of america.
+	VendorID uint16 //= 0x1776
+
+	// serial number for the device.
+	SerialNumber uint32
+
 	// path to the controller as a byte slice.
 	// The data in the path should be similar to how you set it up in a msg instruction.
 	// ex: 1, 0 where 1 -> backlane, 0 -> slot 0, etc...
@@ -67,6 +77,9 @@ func NewClient(ip string) *Client {
 		IPAddress:      ip,
 		ConnectionSize: 4000,
 		Path:           p,
+		Port:           ":44818",
+		VendorID:       0x1776,
+		SerialNumber:   42,
 	}
 
 }

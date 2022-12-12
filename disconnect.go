@@ -15,28 +15,28 @@ func (client *Client) Disconnect() error {
 	close(client.cancel_keepalive)
 	var err error
 
-	items := make([]CIPItem, 2)
-	items[0] = CIPItem{} // null item
+	items := make([]cipItem, 2)
+	items[0] = cipItem{} // null item
 
 	reg_msg := msgCIPMessage_UnRegister{
-		Service:                CIPService_ForwardClose,
+		Service:                cipService_ForwardClose,
 		CipPathSize:            0x02,
-		ClassType:              CIPClass_8bit,
+		ClassType:              cipClass_8bit,
 		Class:                  0x06,
 		InstanceType:           cipInstance_8bit,
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
 		ConnectionSerialNumber: client.ConnectionSerialNumber,
-		VendorID:               CIP_VendorID,
-		OriginatorSerialNumber: CIP_SerialNumber,
+		VendorID:               client.VendorID,
+		OriginatorSerialNumber: client.SerialNumber,
 		PathSize:               3,                                           // 16 bit words
 		Path:                   [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}, // TODO: generate paths automatically
 	}
 
-	items[1] = NewItem(CIPItem_UnconnectedData, reg_msg)
+	items[1] = NewItem(cipItem_UnconnectedData, reg_msg)
 
-	err = client.send(CIPCommandSendRRData, MarshalItems(items)) // 0x65 is register session
+	err = client.send(cipCommandSendRRData, MarshalItems(items)) // 0x65 is register session
 	if err != nil {
 		return fmt.Errorf("couldn't send unconnect req %w", err)
 	}

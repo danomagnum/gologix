@@ -286,23 +286,23 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 		return nil, err
 	}
 
-	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems := make([]cipItem, 2)
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: client.Sequencer(),
-		Service:       CIPService_Read,
+		Service:       cipService_Read,
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
 	// setup item
-	reqitems[1] = NewItem(CIPItem_ConnectedData, readmsg)
+	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	// add path
 	reqitems[1].Marshal(ioi.Bytes())
 	// add service specific data
 	reqitems[1].Marshal(elements)
 
-	//client.Send(CIPCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	//client.Send(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -500,12 +500,12 @@ func (client *Client) ReadMulti(tag_str any) error {
 	// won't get an error but it will return the last value you requested again.
 	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
 
-	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(CIPItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems := make([]cipItem, 2)
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     client.Sequencer(),
-		Service:      CIPService_MultipleService,
+		Service:      cipService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -520,7 +520,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
 		h := msgCIPMultiIOIHeader{
-			Service: CIPService_Read,
+			Service: cipService_Read,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{
@@ -534,12 +534,12 @@ func (client *Client) ReadMulti(tag_str any) error {
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
-	reqitems[1] = CIPItem{Header: CIPItemHeader{ID: CIPItem_ConnectedData}}
+	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Marshal(ioi_header)
 	reqitems[1].Marshal(jump_table)
 	reqitems[1].Marshal(b.Bytes())
 
-	hdr, data, err := client.send_recv_data(CIPCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
 		return err
 	}
