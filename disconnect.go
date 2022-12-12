@@ -10,6 +10,9 @@ func (client *Client) Disconnect() error {
 		return nil
 	}
 	client.Connected = false
+
+	// this will kill the keepalive goroutine
+	close(client.cancel_keepalive)
 	var err error
 
 	items := make([]CIPItem, 2)

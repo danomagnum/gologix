@@ -93,9 +93,10 @@ func TestReadMulti(t *testing.T) {
 }
 
 func TestReadTimeout(t *testing.T) {
-	t.Skip("requires timeout that is too long")
+	//t.Skip("requires timeout that is too long")
 
 	client := &Client{IPAddress: "192.168.2.241"}
+	client.SocketTimeout = time.Minute
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

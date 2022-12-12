@@ -29,6 +29,8 @@ type Client struct {
 	ConnectionSize         int
 	ConnectionSerialNumber uint16
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
+
+	cancel_keepalive chan struct{}
 }
 
 func (client *Client) Sequencer() uint16 {

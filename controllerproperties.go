@@ -38,6 +38,27 @@ type msgGetControllerPropList struct {
 	Attr5        uint32
 }
 
+func (old msgGetControllerPropList) Match(new msgGetControllerPropList) bool {
+	if new.Attr1 != old.Attr1 || new.Attr1_Status != old.Attr1_Status {
+		return false
+	}
+	if new.Attr2 != old.Attr2 || new.Attr2_Status != old.Attr2_Status {
+		return false
+	}
+	if new.Attr3 != old.Attr3 || new.Attr3_Status != old.Attr3_Status {
+		return false
+	}
+	if new.Attr4 != old.Attr4 || new.Attr4_Status != old.Attr4_Status {
+		return false
+	}
+	if new.Attr5 != old.Attr5 || new.Attr5_Status != old.Attr5_Status {
+		return false
+	}
+	return true
+}
+
+// read the general controller information.
+// these properties indicate if the controller has been modified.  Could indicate a logic change or a tag was added or removed.
 func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) {
 
 	reqitems := make([]CIPItem, 2)

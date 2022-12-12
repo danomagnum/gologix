@@ -51,30 +51,46 @@ func (client *Client) register_session() error {
 }
 
 func (client *Client) keepalive() {
-	og_props := msgGetControllerPropList{}
 	if client.SocketTimeout == 0 {
 		return
 	}
+	og_props, err := client.GetControllerPropList()
+	if err != nil {
+		log.Printf("keepalive prop list failed. %v", err)
+		return
+	}
+	err = client.ListAllTags(0)
+	if err != nil {
+		log.Printf("keepalive list tags failed. %v", err)
+		return
+	}
 	t := time.NewTicker(client.SocketTimeout / 4)
-	for range t.C {
-		if client.Connected {
-			new_props, err := client.GetControllerPropList()
-			if err != nil {
-				log.Printf("keepalive failed. %v", err)
-				return
-			}
-			if new_props != og_props {
-				log.Print("controller change detected. re-analyzing types.")
-				err := client.ListAllTags(0)
+	for {
+		select {
+		case <-t.C:
+			if client.Connected {
+				new_props, err := client.GetControllerPropList()
 				if err != nil {
-					log.Printf("keepalive read failed. %v", err)
+					log.Printf("keepalive failed. %v", err)
 					return
+				}
+				if !new_props.Match(og_props) {
+					log.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", og_props, new_props)
+					err := client.ListAllTags(0)
+					if err != nil {
+						log.Printf("keepalive list tags failed. %v", err)
+						return
+					}
+					og_props = new_props
+
 				}
 
 			}
+		case <-client.cancel_keepalive:
+			t.Stop()
+			return
 
 		}
-
 	}
 
 }
@@ -157,6 +173,9 @@ func (client *Client) connect() error {
 	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 
 	client.Connected = true
+
+	client.cancel_keepalive = make(chan struct{})
+	go client.keepalive()
 
 	return nil
 
