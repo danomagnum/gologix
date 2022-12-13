@@ -2,10 +2,11 @@ package gologix_tests
 
 import (
 	"fmt"
-	"gologix"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/danomagnum/gologix"
 )
 
 func TestReadArrNew(t *testing.T) {

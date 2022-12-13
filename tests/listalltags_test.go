@@ -1,9 +1,10 @@
 package gologix_tests
 
 import (
-	"gologix"
 	"log"
 	"testing"
+
+	"github.com/danomagnum/gologix"
 )
 
 func TestList(t *testing.T) {

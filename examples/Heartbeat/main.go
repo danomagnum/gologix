@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gologix"
 	"time"
+
+	"github.com/danomagnum/gologix"
 )
 
 // Demo program for readng an INT tag named "TestInt" in the controller.

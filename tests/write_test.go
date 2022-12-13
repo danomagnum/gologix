@@ -1,8 +1,9 @@
 package gologix_tests
 
 import (
-	"gologix"
 	"testing"
+
+	"github.com/danomagnum/gologix"
 )
 
 func TestWrite(t *testing.T) {

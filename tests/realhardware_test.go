@@ -2,9 +2,10 @@ package gologix_tests
 
 import (
 	"flag"
-	"gologix"
 	"log"
 	"testing"
+
+	"github.com/danomagnum/gologix"
 )
 
 func TestRealHardware(t *testing.T) {
