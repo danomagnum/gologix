@@ -231,7 +231,8 @@ func (client *Client) Read(tag string, data any) error {
 			return errors.New("couldn't convert to byte slice")
 		}
 		b := bytes.NewBuffer(cast)
-		err = binary.Read(b, binary.LittleEndian, data)
+		//err = binary.Read(b, binary.LittleEndian, data)
+		_, err = Unpack(b, CIPPack{}, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data. %w", err)
 		}
@@ -272,6 +273,7 @@ func (client *Client) Read(tag string, data any) error {
 		}
 
 		b := bytes.NewBuffer(dat)
+		//TODO: unpack here instead of just a read.
 		err = binary.Read(b, binary.LittleEndian, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data element %w", err)
@@ -622,7 +624,8 @@ func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 	// val should be a byte slice
 	b := bytes.NewBuffer(dat)
 	for i := 0; i < int(elements); i++ {
-		err := binary.Read(b, binary.LittleEndian, &t[i])
+		//err := binary.Read(b, binary.LittleEndian, &t[i])
+		_, err := Unpack(b, CIPPack{}, &t[i])
 		if err != nil {
 			return t, fmt.Errorf("couldn't parse str data. %w", err)
 		}
