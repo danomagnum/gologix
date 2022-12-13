@@ -7,8 +7,33 @@ import (
 	"reflect"
 )
 
+func (client *Client) WriteMulti(value any) error {
+	v := reflect.ValueOf(value)
+	if v.Kind() == reflect.Struct {
+		d, err := multi_to_dict(value)
+		if err != nil {
+			return fmt.Errorf("problem creating keyvalue dict %w", err)
+		}
+		return client.writeDict(d)
+	}
+	return fmt.Errorf("value must be a struct with gologix tags")
+}
+
 // write a single value to a single tag.
 func (client *Client) Write(tag string, value any) error {
+	v := reflect.ValueOf(value)
+	if v.Kind() == reflect.Struct {
+		d, err := udt_to_dict(tag, value)
+		if err != nil {
+			return fmt.Errorf("problem creating keyvalue dict %w", err)
+		}
+		return client.writeDict(d)
+	}
+	return client.write_single(tag, value)
+}
+
+// write a single value to a single tag.
+func (client *Client) write_single(tag string, value any) error {
 	//service = 0x4D // cipService_Write
 	datatype := GoVarToCIPType(value)
 	ioi, err := client.newIOI(tag, datatype)

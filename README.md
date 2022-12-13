@@ -40,17 +40,17 @@ func main() {
 
 ### Other Features
 
-You can read multiple tags at once by defining a struct with each field tagged with `gologix:"tagname"`.  see MultiRead in the examples directory.
+You can read/write multiple tags at once by defining a struct with each field tagged with `gologix:"tagname"`.  see MultiRead in the examples directory.
 
 To read multiple items from an array, pass a slice to the Read method.
 
-You can read UDTs in if you define an equivalent struct to blit the data into. Arrays of UDTs also works.
+You can read UDTs in if you define an equivalent struct to blit the data into. Arrays of UDTs also works. (see limitation below about UDTs with packed bools)
 
 ### Limitations
 
-You cannot write multiple items from an array at once, or write a whole UDT in the current version, but you can do them piecewise if needed.
+You cannot write multiple items from an array at once yet, but you can do them piecewise if needed.
 
-You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, but "MyDint.3" is NOT).  You can read from either just fine.
+You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, but "MyDint.3" is NOT).  You can read from either just fine.  I think there is a "write with mask" that I'll need to implement to do this.
 
 If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
 
