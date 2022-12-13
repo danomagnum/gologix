@@ -54,6 +54,8 @@ You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, 
 
 If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
 
+The library currently only does large forward opens.  It also only does connected reads/writes.  At some point regular forward opens may be added.
+
 ## License
 
 This project is licensed under the MIT license.
