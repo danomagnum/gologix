@@ -251,7 +251,9 @@ func (client *Client) Read(tag string, data any) error {
 			return errors.New("couldn't convert to byte slice")
 		}
 		b := bytes.NewBuffer(cast)
-		err = binary.Read(b, binary.LittleEndian, data)
+
+		//err = binary.Read(b, binary.LittleEndian, data)
+		_, err = Unpack(b, CIPPack{}, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data. %w", err)
 		}
@@ -462,7 +464,7 @@ type CIPStructHeader struct {
 	Unknown uint16
 }
 
-// tag_str is a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
+// tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
 func (client *Client) ReadMulti(tag_str any) error {
 

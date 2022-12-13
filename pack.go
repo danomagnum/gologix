@@ -134,10 +134,7 @@ func Pack(w io.Writer, p Packing, data any) int {
 	return pos
 }
 
-func Unpack(r io.Reader, p Packing, data any) int {
-
-	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
-	pos := 0
+func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 
 	// bitpos and bitpack are for packing bits into bytes.  bitpos is the position in the byte and bitpack is the packed bits that
 	// haven't been written to w yet.
@@ -172,7 +169,7 @@ func Unpack(r io.Reader, p Packing, data any) int {
 							br := []byte{0}
 							r.Read(br)
 							bitpack = br[0]
-							pos += 1
+							n += 1
 						}
 						val := bitpack & (1 << bitpos)
 						bval := val != 0
@@ -192,7 +189,7 @@ func Unpack(r io.Reader, p Packing, data any) int {
 					br := []byte{0}
 					r.Read(br)
 					bitpack = br[0]
-					pos += 1
+					n += 1
 				}
 				val := bitpack & (1 << bitpos)
 				bval := val != 0
@@ -215,26 +212,35 @@ func Unpack(r io.Reader, p Packing, data any) int {
 		}
 
 		// make sure we are writing the new data for this field to the properly aligned byte
-		rem := a - (pos % a)
+		rem := a - (n % a)
 		if rem < a && rem > 0 {
 			// need paddding bits
 			pad := make([]byte, rem)
-			r.Read(pad)
-			pos += rem
+			_, err = r.Read(pad)
+			if err != nil {
+				return
+			}
+			n += rem
 		}
 
 		// finally, if the field is some sub-structure, recurse.  Otherwise we will write the data out
 		if k != reflect.Struct {
 			//binary.Read(r, p.Order(), refVal.Field(i).Interface())
-			binary.Read(r, p.Order(), refVal.Field(i).Addr().Interface())
+			err = binary.Read(r, p.Order(), refVal.Field(i).Addr().Interface())
+			if err != nil {
+				return
+			}
 		} else {
 			val := refVal.Field(i).Addr().Interface()
-			s = Unpack(r, p, val)
+			s, err = Unpack(r, p, val)
+			if err != nil {
+				return
+			}
 		}
-		pos += s
+		n += s
 	}
 	// Last thing we need to do is check whether there are some packed bools that still need flushed out.
-	return pos
+	return
 }
 
 func ReadPacked[T any](client *Client, tag string) (T, error) {
