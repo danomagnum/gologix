@@ -1,6 +1,6 @@
 # gologix
 
-gologix is a communication driver that lets you easily read/write values from tags in Rockwell Automation ControlLogix, and CompactLogix PLC's over Ethernet I/P using GO.  Only PLC's that are programmed with RSLogix5000/Studio5000, models like PLC5, SLC, MicroLogix, or Micro800 are *not* supported.  They use a different protocol, which I have no plans to support at this time.
+gologix is a communication driver written in native go that lets you easily read/write values from tags in Rockwell Automation ControlLogix, and CompactLogix PLC's over Ethernet I/P using GO.  Only PLC's that are programmed with RSLogix5000/Studio5000, models like PLC5, SLC, MicroLogix, or Micro800 are *not* supported.  They use a different protocol, which I have no plans to support at this time.
 
 It is modeled after pylogix with changes to make it usable in go.
 
