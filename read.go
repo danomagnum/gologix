@@ -584,7 +584,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		}
 		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
-			value := readValue(rhdr.Type, &items[1])
+			value := readValue(rhdr.Type, mybytes)
 			val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
 			if err != nil {
 				log.Printf("problem reading value for this guy")
