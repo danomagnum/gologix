@@ -17,7 +17,7 @@ func TestReadArrNew(t *testing.T) {
 		return
 	}
 	defer client.Disconnect()
-	tag := "TestDintArr[0]"
+	tag := "Program:gologix_tests.ReadDints[0]"
 	have := make([]int32, 5)
 	want := []int32{4351, 4352, 4353, 4354, 4355}
 
@@ -41,7 +41,7 @@ func TestReadNewUDT(t *testing.T) {
 		return
 	}
 	defer client.Disconnect()
-	tag := "TestUDTArr[0]"
+	tag := "Program:gologix_tests.ReadUDTs[0]"
 	have := TestUDT{}
 	want := TestUDT{Field1: 20, Field2: 19.0}
 	err = client.Read(tag, &have)
@@ -60,7 +60,7 @@ func TestReadNewUDTArr(t *testing.T) {
 		return
 	}
 	defer client.Disconnect()
-	tag := "TestUDTArr[0]"
+	tag := "Program:gologix_tests.ReadUDTs[0]"
 	have := make([]TestUDT, 5)
 	want := []TestUDT{
 		{Field1: 20, Field2: 19.0},
@@ -99,20 +99,21 @@ func TestReadBoolPack(t *testing.T) {
 		Field2 int32
 	}
 
-	s, err := gologix.ReadPacked[udt2](client, "TestUDT2")
+	//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
+	var have udt2
+	err = client.Read("Program:gologix_tests.ReadUDT2", &have)
 	if err != nil {
 		t.Errorf("couldn't read. %v", err)
 	}
-	/*
-		b := make([]byte, 12)
-		err = client.Read("TestUDT2", &b)
-		if err != nil {
-			t.Errorf("couldn't read as bytes. %v", err)
-		}
-		fmt.Printf("bytes: %v\n", b)
-		gologix.Unpack(bytes.NewBuffer(b), gologix.CIPPack{}, &s)
-	*/
-	fmt.Printf("got %+v\n", s)
+	want := udt2{
+		Field1: 654321,
+		Flag1:  true,
+		Flag2:  false,
+		Field2: 123456,
+	}
+	if have != want {
+		t.Errorf("have %v want %v", have, want)
+	}
 
 }
 
@@ -125,41 +126,41 @@ func TestReadNew(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	testReadNew(t, client, "TestSint", byte(117))
-	testReadNew(t, client, "TestDint", int32(36))
-	testReadNew(t, client, "TestDint.0", false)
-	testReadNew(t, client, "TestDint.2", true)
-	testReadNew(t, client, "TestReal", float32(93.45))
-	testReadNew(t, client, "TestDintArr[0]", int32(4351))
-	testReadNew(t, client, "TestDintArr[0].0", true)
-	testReadNew(t, client, "TestDintArr[0].1", true)
-	testReadNew(t, client, "TestDintArr[0].2", true)
-	testReadNew(t, client, "TestDintArr[0].3", true)
-	testReadNew(t, client, "TestDintArr[0].4", true)
-	testReadNew(t, client, "TestDintArr[0].5", true)
-	testReadNew(t, client, "TestDintArr[0].6", true)
-	testReadNew(t, client, "TestDintArr[0].7", true)
-	testReadNew(t, client, "TestDintArr[0].8", false)
-	testReadNew(t, client, "TestDintArr[0].9", false)
-	testReadNew(t, client, "TestDintArr[0].10", false)
-	testReadNew(t, client, "TestDintArr[0].11", false)
-	testReadNew(t, client, "TestDintArr[0].12", true)
-	testReadNew(t, client, "TestDintArr[0].13", false)
-	testReadNew(t, client, "TestDintArr[0].14", false)
-	testReadNew(t, client, "TestDintArr[0].15", false)
-	testReadNew(t, client, "TestDintArr[2]", int32(4353))
-	testReadNew(t, client, "TestUDT.Field1", int32(85456))
-	testReadNew(t, client, "TestUDT.Field2", float32(123.456))
-	testReadNew(t, client, "TestUDTArr[2].Field1", int32(16))
-	testReadNew(t, client, "TestUDTArr[2].Field2", float32(15.0))
-	testReadNew(t, client, "TestString", "Something")
+	testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
+	testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
+	testReadNew(t, client, "Program:gologix_tests.ReadDint.0", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDint.2", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadReal", float32(93.45))
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0]", int32(4351))
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].0", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].1", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].2", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].3", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].4", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].5", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].6", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].7", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].8", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].9", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].10", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].11", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].12", true)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].13", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].14", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].15", false)
+	testReadNew(t, client, "Program:gologix_tests.ReadDints[2]", int32(4353))
+	testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field1", int32(85456))
+	testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field2", float32(123.456))
+	testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field1", int32(16))
+	testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field2", float32(15.0))
+	testReadNew(t, client, "Program:gologix_tests.ReadString", "Something")
 
 }
 
 func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
 
 	t.Run(tag, func(t *testing.T) {
-		//tag, want := "TestInt", int16(999)
+		//tag, want := "Program:gologix_tests:ReadInt", int16(999)
 		var have T
 
 		err := client.Read(tag, &have)
@@ -176,18 +177,18 @@ func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, t
 
 func TestReadMulti(t *testing.T) {
 	type test_str struct {
-		TestSint          byte    `gologix:"TestSint"`
-		TestInt           int16   `gologix:"TestInt"`
-		TestDint          int32   `gologix:"TestDint"`
-		TestReal          float32 `gologix:"TestReal"`
-		TestDintArr0      int32   `gologix:"testdintarr[0]"`
-		TestDintArr0_0    bool    `gologix:"testdintarr[0].0"`
-		TestDintArr0_9    bool    `gologix:"testdintarr[0].9"`
-		TestDintArr2      int32   `gologix:"testdintarr[2]"`
-		TestUDTField1     int32   `gologix:"testudt.field1"`
-		TestUDTField2     float32 `gologix:"testudt.field2"`
-		TestUDTArr2Field1 int32   `gologix:"testudtarr[2].field1"`
-		TestUDTArr2Field2 float32 `gologix:"testudtarr[2].field2"`
+		TestSint          byte    `gologix:"Program:gologix_tests.ReadSint"`
+		TestInt           int16   `gologix:"Program:gologix_tests.ReadInt"`
+		TestDint          int32   `gologix:"Program:gologix_tests.ReadDint"`
+		TestReal          float32 `gologix:"Program:gologix_tests.ReadReal"`
+		TestDintArr0      int32   `gologix:"Program:gologix_tests.Readdints[0]"`
+		TestDintArr0_0    bool    `gologix:"Program:gologix_tests.Readdints[0].0"`
+		TestDintArr0_9    bool    `gologix:"Program:gologix_tests.Readdints[0].9"`
+		TestDintArr2      int32   `gologix:"Program:gologix_tests.Readdints[2]"`
+		TestUDTField1     int32   `gologix:"Program:gologix_tests.Readudt.field1"`
+		TestUDTField2     float32 `gologix:"Program:gologix_tests.Readudt.field2"`
+		TestUDTArr2Field1 int32   `gologix:"Program:gologix_tests.Readudts[2].field1"`
+		TestUDTArr2Field2 float32 `gologix:"Program:gologix_tests.Readudts[2].field2"`
 	}
 	read := test_str{}
 	wants := test_str{
@@ -238,7 +239,7 @@ func TestReadTimeout(t *testing.T) {
 	//client.Conn.Close()
 	//fmt.Println("\nsleep complete")
 	var value int16
-	err = client.Read("testint", &value)
+	err = client.Read("Program:gologix_tests.Readint", &value)
 	if err != nil {
 		t.Errorf("problem reading. %v", err)
 	}

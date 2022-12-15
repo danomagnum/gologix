@@ -16,8 +16,7 @@ func TestSubList(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	client.ListSubTags("Program:Shed", 1)
-	client.ListSubTags("Program:Shed.fan_run_time", 1)
+	client.ListSubTags("Program:gologix_tests", 1)
 
 }
 
