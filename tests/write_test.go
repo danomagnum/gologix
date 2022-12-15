@@ -15,30 +15,14 @@ func TestWrite(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	write_and_check[int16](t, client, "writeint", 0, 10, 20)
-	write_and_check[int32](t, client, "writedint", 0, 10, 20)
+	write_and_check[int16](t, client, "program:gologix_tests.writeint", 0, 10, 20)
+	write_and_check[int32](t, client, "program:gologix_tests.writedint", 0, 10, 20)
 	//write_and_check[byte](t, client, "writesint", 0, 10, 20)
-	write_and_check(t, client, "writebool", false, true, false, true, false)
-	write_and_check[float32](t, client, "writereal", 0, 12.4, 5353.0281, 4)
+	write_and_check(t, client, "program:gologix_tests.writebool", false, true, false, true, false)
+	write_and_check[float32](t, client, "program:gologix_tests.writereal", 0, 12.4, 5353.0281, 4)
 
-	write_and_check[int32](t, client, "writeudt.field1", 0, 5, 281, 46)
-	write_and_check[float32](t, client, "writeudt.field2", 0, 12.4, 5353.0281, 4)
-
-	/*
-		have := []int32{12, 34, 56, 78}
-		err = client.Write("writedints", have)
-		if err != nil {
-			t.Errorf("failed to write dint array %v", err)
-		}
-	*/
-
-	/*
-		have := TestUDT{Field1: 5, Field2: 7.2}
-		err = client.Write("TestUDT", have)
-		if err != nil {
-			t.Errorf("failed to write udt %v", err)
-		}
-	*/
+	write_and_check[int32](t, client, "program:gologix_tests.writeudt.field1", 0, 5, 281, 46)
+	write_and_check[float32](t, client, "program:gologix_tests.writeudt.field2", 0, 12.4, 5353.0281, 4)
 
 }
 

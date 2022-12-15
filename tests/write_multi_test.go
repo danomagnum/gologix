@@ -15,11 +15,22 @@ func TestWriteMulti(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	udt := TestUDT{Field1: 215, Field2: 25.1}
+	want := TestUDT{Field1: 215, Field2: 25.1}
 
-	err = client.Write("WriteUDTs[2]", udt)
+	err = client.Write("Program:gologix_tests.WriteUDTs[2]", want)
 	if err != nil {
 		t.Errorf("error writing. %v", err)
+	}
+
+	have := TestUDT{}
+	err = client.Read("Program:gologix_tests.WriteUDTs[2]", &have)
+	if err != nil {
+		t.Errorf("error reading. %v", err)
+	}
+
+	if have != want {
+		t.Errorf("have %v. Want %v", have, want)
+
 	}
 
 }

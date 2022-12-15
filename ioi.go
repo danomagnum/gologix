@@ -114,8 +114,10 @@ func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Type)
 			return
 		}
-		ioi.Buffer = tag_info.Bytes()
-		return
+		if tag_info.Class != 0 {
+			ioi.Buffer = tag_info.Bytes()
+			return
+		}
 	}
 	extant, exists := ioi_cache[tagpath]
 	if exists {

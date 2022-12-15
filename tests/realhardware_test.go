@@ -16,17 +16,17 @@ func TestRealHardware(t *testing.T) {
 	//client.ReadAll(1)
 	//client.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 	//ReadAndPrint[float32](client, "program:Shed.Temp1")
-	read[int32](t, client, "TestDint") // 36
+	read[int32](t, client, "Program:gologix_tests.ReadDint") // 36
 
 	// these two tests don't work yet
-	read[bool](t, client, "TestDint.0") // should be false
-	read[bool](t, client, "TestDint.2") // should be true
+	read[bool](t, client, "Program:gologix_tests.ReadDint.0") // should be false
+	read[bool](t, client, "Program:gologix_tests.ReadDint.2") // should be true
 
-	read[int32](t, client, "TestDintArr[0]")
-	read[int32](t, client, "TestDintArr[2]")
-	read[int32](t, client, "TestUDT.Field1")
-	read[int16](t, client, "TestInt")
-	//v, err := client.read_single("TestDintArr[1]", CIPTypeDINT, 2)
+	read[int32](t, client, "Program:gologix_tests.ReadDints[0]")
+	read[int32](t, client, "Program:gologix_tests.ReadDints[2]")
+	read[int32](t, client, "Program:gologix_tests.ReadUDT.Field1")
+	read[int16](t, client, "Program:gologix_tests.ReadInt")
+	//v, err := client.read_single("Program:gologix_tests.ReadDintArr[1]", CIPTypeDINT, 2)
 	//if err != nil {
 	//log.Printf("Problem with reading two elements of array. %v\n", err)
 	//} else {
@@ -34,7 +34,7 @@ func TestRealHardware(t *testing.T) {
 	//}
 
 	/*
-		v2, err := readArray[int32](client, "TestDintArr", 9)
+		v2, err := readArray[int32](client, "Program:gologix_tests.ReadDintArr", 9)
 		if err != nil {
 			t.Errorf("Problem with reading two elements of array. %v\n", err)
 		}
@@ -46,7 +46,7 @@ func TestRealHardware(t *testing.T) {
 		}
 	*/
 	/*
-		v3, err := readArray[TestUDT](client, "TestUDTArr[2]", 2)
+		v3, err := readArray[TestUDT](client, "Program:gologix_tests.ReadUDTArr[2]", 2)
 		if err != nil {
 			t.Errorf("Problem with reading two elements of array. %v\n", err)
 		}
@@ -61,7 +61,7 @@ func TestRealHardware(t *testing.T) {
 		test_strarr := false
 		// string array read is untested:
 		if test_strarr {
-			v4, err := readArray[string](client, "TestStrArr", 3)
+			v4, err := readArray[string](client, "Program:gologix_tests.ReadStrArr", 3)
 			if err != nil {
 				t.Errorf("Problem with reading two elements of array. %v\n", err)
 			} else {
@@ -70,17 +70,17 @@ func TestRealHardware(t *testing.T) {
 		}
 	*/
 
-	//ReadAndPrint[bool](client, "TestBool")
-	//ReadAndPrint[float32](client, "TestReal")
-	read[string](t, client, "TestString")
+	//ReadAndPrint[bool](client, "Program:gologix_tests.ReadBool")
+	//ReadAndPrint[float32](client, "Program:gologix_tests.ReadReal")
+	read[string](t, client, "Program:gologix_tests.ReadString")
 
 	var ut TestUDT
-	err := client.Read("TestUDT", &ut)
+	err := client.Read("Program:gologix_tests.ReadUDT", &ut)
 	if err != nil {
 		t.Errorf("Problem reading udt. %v\n", err)
 	}
 
-	//tags := []string{"TestInt", "TestReal"}
+	//tags := []string{"Program:gologix_tests.ReadInt", "TestReal"}
 	tags := MultiReadStr{}
 
 	err = client.ReadMulti(&tags)
@@ -100,9 +100,9 @@ func read[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, path str
 }
 
 type MultiReadStr struct {
-	TI int16   `gologix:"TestInt"`
-	TD int32   `gologix:"TestDint"`
-	TR float32 `gologix:"TestReal"`
+	TI int16   `gologix:"Program:gologix_tests.ReadInt"`
+	TD int32   `gologix:"Program:gologix_tests.ReadDint"`
+	TR float32 `gologix:"Program:gologix_tests.ReadReal"`
 }
 
 type TestUDT struct {
@@ -122,13 +122,13 @@ func TestReadKnown(t *testing.T) {
 
 	client.ListAllTags(0)
 
-	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
+	log.Printf("Tags: %+v\n", client.KnownTags["program:gologix_tests.readint"])
 
 	v := int16(0)
-	err = client.Read("TestInt", &v)
+	err = client.Read("Program:gologix_tests.ReadInt", &v)
 
 	if err != nil {
-		t.Error(err)
+		t.Errorf("problem reading. %v", err)
 	}
 
 	if v != 999 {
