@@ -17,10 +17,14 @@ type Server struct {
 }
 
 type handler struct {
-	conn    net.Conn
-	handle  uint32
-	options uint32
-	context uint64
+	conn           net.Conn
+	handle         uint32
+	options        uint32
+	context        uint64
+	OTConnectionID uint32
+	TOConnectionID uint32
+
+	UnitDataSequencer uint16
 }
 
 func NewServer() *Server {
@@ -74,6 +78,8 @@ func (h *handler) serve(srv *Server) error {
 		if err != nil {
 			return fmt.Errorf("problem reading eip header. %w", err)
 		}
+		h.context = eiphdr.Context
+		fmt.Printf("context: %v\n", h.context)
 		switch eiphdr.Command {
 		case cipCommandRegisterSession:
 			err = h.registerSession(eiphdr)
@@ -81,9 +87,16 @@ func (h *handler) serve(srv *Server) error {
 				return fmt.Errorf("problem with register session %w", err)
 			}
 		case cipCommandSendRRData:
+			// this is things like forward opens
 			err = h.sendRRData(eiphdr)
 			if err != nil {
 				return fmt.Errorf("problem with sendrrdata %w", err)
+			}
+		case cipCommandSendUnitData:
+			// this is things like writes and reads
+			err = h.sendUnitData(eiphdr)
+			if err != nil {
+				return fmt.Errorf("problem with sendunitdata %w", err)
 			}
 
 		}
@@ -91,6 +104,113 @@ func (h *handler) serve(srv *Server) error {
 	}
 
 }
+
+func (h *handler) sendUnitData(hdr EIPHeader) error {
+	var interface_handle uint32
+	var timeout uint16
+	binary.Read(h.conn, binary.LittleEndian, interface_handle)
+	binary.Read(h.conn, binary.LittleEndian, timeout)
+	log.Printf("ih: %x. timeout: %x", interface_handle, timeout)
+	items, err := ReadItems(h.conn)
+	if err != nil {
+		return fmt.Errorf("problem reading items for rrdata %w", err)
+	}
+	log.Printf("items: %+v", items)
+	if len(items) != 2 {
+		return fmt.Errorf("expected 2 items. got %v", len(items))
+	}
+	// item 0 is the connected data item
+	if items[0].Header.ID != cipItem_ConnectionAddress {
+		return fmt.Errorf("should have had a connected data item in position 0. got %v", items[0].Header.ID)
+	}
+	var connid uint32
+	items[0].Unmarshal(&connid)
+
+	items[1].Unmarshal(&h.UnitDataSequencer)
+	var service CIPService
+	items[1].Unmarshal(&service)
+	switch service {
+	case cipService_Write:
+		err = h.cipWrite(&items[1])
+		if err != nil {
+			return fmt.Errorf("problem handling forward open. %w", err)
+		}
+	default:
+		log.Printf("Got unknown service %d", service)
+	}
+	log.Printf("service requested: %v", service)
+	return nil
+}
+
+func (h *handler) cipFragRead(item *cipItem) error {
+	if item.Header.ID != cipItem_UnconnectedData {
+		return fmt.Errorf("expected unconnected frag read. got %v", item.Header.ID)
+	}
+	fmt.Printf("frag read data: %v", item.Data)
+	//return h.sendUnitDataReply(cipService_FragRead)
+	return h.sendUnconnectedUnitDataReply(cipService_FragRead)
+
+}
+
+func (h *handler) cipWrite(item *cipItem) error {
+	var l byte // length in words
+	item.Unmarshal(l)
+	var path_type SegmentType
+	item.Unmarshal(&path_type)
+	if path_type != SegmentTypeExtendedSymbolic {
+		return fmt.Errorf("only support symbolic writes. got segment type %v", path_type)
+	}
+	var tag_length byte
+	item.Unmarshal(&tag_length)
+	tag_bytes := make([]byte, tag_length)
+	item.Unmarshal(&tag_bytes)
+	tag := string(tag_bytes)
+
+	// string will be padded with a null if odd length
+	if (tag_length % 2) == 1 {
+		var b byte
+		item.Unmarshal(&b)
+	}
+
+	var typ CIPType
+	item.Unmarshal(&typ)
+	var reserved byte
+	item.Unmarshal(&reserved)
+	var elements uint16
+	item.Unmarshal(&elements)
+
+	fmt.Printf("tag: %s", tag)
+	for i := 0; i < int(elements); i++ {
+		v := typ.readValue(item)
+		fmt.Printf("value: %v", v)
+	}
+	return h.sendUnitDataReply(cipService_Write)
+}
+
+func (h *handler) sendUnconnectedUnitDataReply(s CIPService) error {
+	items := make([]cipItem, 2)
+	items[0] = NewItem(cipItem_Null, nil)
+	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	resp := msgWriteResultHeader{
+		SequenceCount: h.UnitDataSequencer,
+		Service:       s.AsResponse(),
+	}
+	items[1].Marshal(resp)
+	return h.send(cipCommandSendUnitData, MarshalItems(items))
+}
+
+func (h *handler) sendUnitDataReply(s CIPService) error {
+	items := make([]cipItem, 2)
+	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)
+	items[1] = NewItem(cipItem_ConnectedData, nil)
+	resp := msgWriteResultHeader{
+		SequenceCount: h.UnitDataSequencer,
+		Service:       s.AsResponse(),
+	}
+	items[1].Marshal(resp)
+	return h.send(cipCommandSendUnitData, MarshalItems(items))
+}
+
 func (h *handler) sendRRData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
@@ -114,8 +234,13 @@ func (h *handler) sendRRData(hdr EIPHeader) error {
 		if err != nil {
 			return fmt.Errorf("problem handling forward open. %w", err)
 		}
+	case cipService_FragRead:
+		err = h.cipFragRead(&items[1])
+		if err != nil {
+			return fmt.Errorf("problem handling frag read. %w", err)
+		}
 	default:
-		log.Printf("Got unkown service %d", service)
+		log.Printf("Got unknown service %d", service)
 	}
 	log.Printf("service requested: %v", service)
 	return nil
@@ -130,14 +255,41 @@ func (h *handler) forwardOpen(i cipItem) error {
 	}
 	log.Printf("forward open msg: %v", fwd_open)
 
-	preitem := msgPreItemData{}
+	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]cipItem, 2)
 	items[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reply := msgEIPForwardOpen_Reply{
-		OTConnectionID: rand.Uint32(),
-		TOConnectionID: rand.Uint32(),
+	items[1] = NewItem(cipItem_UnconnectedData, nil)
+
+	if fwd_open.TOConnectionID == 0 {
+		h.TOConnectionID = rand.Uint32()
+	} else {
+		h.TOConnectionID = fwd_open.TOConnectionID
 	}
-	h.send(cipCommandSendRRData, preitem, reply)
+	if fwd_open.OTConnectionID == 0 {
+		h.OTConnectionID = rand.Uint32()
+	} else {
+		h.OTConnectionID = fwd_open.OTConnectionID
+	}
+	fwopenresphdr := msgEIPForwardOpen_Standard_Reply{
+		Service:                fwd_open.Service.AsResponse(),
+		OTConnectionID:         h.OTConnectionID,
+		TOConnectionID:         h.TOConnectionID,
+		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
+		VendorID:               fwd_open.VendorID,
+		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
+		OTAPI:                  0,
+		TOAPI:                  0,
+		//OTAPI:                  0x0072_70e0,
+		//TOAPI:                  0x0072_70e0,
+	}
+	//fwopenresphdr := msgCIPMessageRouterResponse{
+	//Service:    cipService_ForwardOpen.AsResponse(),
+	//Status:     0,
+	//Status_Len: 0,
+	//}
+	items[1].Marshal(fwopenresphdr)
+
+	h.send(cipCommandSendRRData, MarshalItems(items))
 
 	return nil
 }

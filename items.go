@@ -78,7 +78,9 @@ func NewItem(id CIPItemID, str any) cipItem {
 			ID: id,
 		},
 	}
-	c.Marshal(str)
+	if str != nil {
+		c.Marshal(str)
+	}
 	return c
 }
 

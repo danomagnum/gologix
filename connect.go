@@ -217,7 +217,7 @@ type msgEIPForwardOpen_Reply struct {
 // in this message T is for target and O is for originator so
 // TO is target -> originator and OT is originator -> target
 type msgEIPForwardOpen_Standard struct {
-	Service                byte
+	Service                CIPService
 	PathSize               byte
 	ClassType              byte
 	Class                  byte
@@ -236,6 +236,7 @@ type msgEIPForwardOpen_Standard struct {
 	TORPI                  uint32
 	TONetworkConnParams    uint16
 	TransportTrigger       byte
+	ConnPathSize           byte
 }
 
 type msgEIPForwardOpen_Large struct {
@@ -314,4 +315,63 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 type msgCIPRegister struct {
 	ProtocolVersion uint16
 	OptionFlag      uint16
+}
+
+func (client *Client) NewForwardOpenStandard() (cipItem, error) {
+	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
+	var msg msgEIPForwardOpen_Standard
+
+	p, err := Serialize(
+		client.Path,
+		cipObject_MessageRouter, CIPInstance(1))
+	if err != nil {
+		return item, fmt.Errorf("couldn't build path. %w", err)
+	}
+
+	client.ConnectionSerialNumber = uint16(rand.Uint32())
+	ConnectionParams := uint16(0x43F6)
+
+	msg.Service = cipService_ForwardOpen
+	// this next section is the path
+	msg.PathSize = 0x02 // length in words
+	msg.ClassType = byte(cipClass_8bit)
+	msg.Class = byte(cipObject_ConnectionManager)
+	msg.InstanceType = byte(cipInstance_8bit)
+	msg.Instance = 0x01
+	// end of path
+	msg.Priority = 0x07     // 0x0A means normal multiplier (about 1 second?)
+	msg.TimeoutTicks = 0xE9 // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
+	//msg.OTConnectionID = 0x05318008
+	msg.OTConnectionID = 0 //0x20000002
+	msg.TOConnectionID = rand.Uint32()
+	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
+	msg.VendorID = client.VendorID
+	msg.OriginatorSerialNumber = client.SerialNumber
+	msg.Multiplier = 0x00
+	msg.OTRPI = 0x007270E0
+	msg.OTNetworkConnParams = uint16(ConnectionParams)
+	msg.TORPI = 0x007270E0
+	msg.TONetworkConnParams = uint16(ConnectionParams)
+	msg.TransportTrigger = 0xA3
+	msg.ConnPathSize = byte(p.Len() / 2)
+	item.Marshal(msg)
+	item.Marshal(p.Bytes())
+
+	return item, nil
+}
+
+type msgEIPForwardOpen_Standard_Reply struct {
+	Service                CIPService
+	Reserved               byte
+	Status                 byte
+	StatusLen              byte
+	OTConnectionID         uint32
+	TOConnectionID         uint32
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	OTAPI                  uint32
+	TOAPI                  uint32
+	ReplySize              byte
+	Reserved2              byte
 }
