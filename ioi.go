@@ -97,6 +97,9 @@ func (ioi *tagIOI) Write(p []byte) (n int, err error) {
 func (ioi *tagIOI) Bytes() []byte {
 	return ioi.Buffer
 }
+func (ioi *tagIOI) Len() int {
+	return len(ioi.Buffer)
+}
 
 // this is the default buffer size for tag IOI generation.
 const defaultIOIBufferSize = 256

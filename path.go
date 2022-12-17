@@ -39,6 +39,10 @@ type CIPPort struct {
 	ExtensionLen byte
 }
 
+func (p CIPPort) Len() int {
+	return 2
+}
+
 func (p CIPPort) Bytes() []byte {
 	if p.ExtensionLen != 0 {
 		return []byte{p.PortNo, p.ExtensionLen}
@@ -89,6 +93,7 @@ func ParsePath(path string) (*bytes.Buffer, error) {
 
 type Serializable interface {
 	Bytes() []byte
+	Len() int
 }
 
 // given a list of structures, serialize them with the Bytes() method if available,

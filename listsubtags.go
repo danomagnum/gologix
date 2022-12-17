@@ -13,7 +13,8 @@ import (
 //
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
-func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
+func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]KnownTag, error) {
+	new_kts := make([]KnownTag, 0, 100)
 	if verbose {
 		log.Printf("readall for %v", start_instance)
 	}
@@ -25,7 +26,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 
 	ioi, err := client.newIOI(roottag, 16)
 	if err != nil {
-		return fmt.Errorf("bad IOI gen. %w", err)
+		return new_kts, fmt.Errorf("bad IOI gen. %w", err)
 	}
 
 	reqitems := make([]cipItem, 2)
@@ -37,7 +38,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		cipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
-		return fmt.Errorf("couldn't build path. %w", err)
+		return new_kts, fmt.Errorf("couldn't build path. %w", err)
 	}
 
 	readmsg := msgCIPConnectedServiceReq{
@@ -60,7 +61,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 
 	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
-		return err
+		return new_kts, err
 	}
 	_ = hdr
 	_ = data
@@ -73,7 +74,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
-		return fmt.Errorf("couldn't parse items. %w", err)
+		return new_kts, fmt.Errorf("couldn't parse items. %w", err)
 	}
 
 	// get ready to read tag info from item 1 data
@@ -120,6 +121,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 			kt.Array_Order = make([]int, 0)
 		}
 		client.KnownTags[strings.ToLower(newtag_name)] = kt
+		new_kts = append(new_kts, kt)
 
 		if verbose {
 			log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
@@ -143,5 +145,5 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) error {
 		client.ListSubTags(roottag, start_instance)
 	}
 
-	return nil
+	return new_kts, nil
 }

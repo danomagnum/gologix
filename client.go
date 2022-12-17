@@ -99,3 +99,7 @@ func (t KnownTag) Bytes() []byte {
 	b.Write(ins.Bytes())
 	return b.Bytes()
 }
+
+func (t KnownTag) Len() int {
+	return len(t.Bytes())
+}

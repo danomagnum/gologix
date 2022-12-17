@@ -36,3 +36,12 @@ func (p CIPElement) Bytes() []byte {
 		return b
 	}
 }
+
+func (p CIPElement) Len() int {
+	if p < 256 {
+		return 2
+	} else if p < 65535 {
+		return 4
+	}
+	return 6
+}

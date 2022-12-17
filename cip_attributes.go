@@ -29,6 +29,12 @@ func (p CIPAttribute) Bytes() []byte {
 		return b
 	}
 }
+func (p CIPAttribute) Len() int {
+	if p < 256 {
+		return 1
+	}
+	return 2
+}
 
 const (
 	cipAttribute_Data CIPAttribute = 0x03

@@ -6,7 +6,7 @@ import (
 )
 
 type EIPHeader struct {
-	Command       uint16
+	Command       CIPCommand
 	Length        uint16
 	SessionHandle uint32
 	Status        uint32
@@ -54,7 +54,7 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 }
 
 // sends one message and gets one response in a mutex-protected way.
-func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *bytes.Reader, error) {
+func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *bytes.Buffer, error) {
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 	err := client.send(cmd, msgs...)
@@ -66,7 +66,7 @@ func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *b
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
+func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 
 	hdr := EIPHeader{}
 	var err error
@@ -82,7 +82,7 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Reader, error) {
 		err = binary.Read(client.conn, binary.LittleEndian, &data)
 	}
 	//log.Printf("Buffer: %v", data)
-	buf := bytes.NewReader(data)
+	buf := bytes.NewBuffer(data)
 	return hdr, buf, err
 
 }
@@ -91,7 +91,7 @@ func (client *Client) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	client.HeaderSequenceCounter++
 
-	hdr.Command = uint16(cmd)
+	hdr.Command = cmd
 	//hdr.Command = 0x0070
 	hdr.Length = uint16(size)
 	hdr.SessionHandle = client.SessionHandle

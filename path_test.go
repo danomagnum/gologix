@@ -56,6 +56,7 @@ func check_bytes(s0, s1 []byte) bool {
 func TestPathBuild(t *testing.T) {
 	ioi_cache = make(map[string]*tagIOI)
 	client := Client{}
+	client.SocketTimeout = 0
 
 	pmp_ioi, err := client.newIOI("Program:MainProgram", 16)
 	if err != nil {

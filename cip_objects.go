@@ -29,6 +29,12 @@ func (p CIPObject) Bytes() []byte {
 		return b
 	}
 }
+func (p CIPObject) Len() int {
+	if p < 256 {
+		return 2
+	}
+	return 4
+}
 
 const (
 	cipObject_Assembly                     CIPObject = 0x04

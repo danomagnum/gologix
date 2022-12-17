@@ -27,6 +27,12 @@ func (p CIPInstance) Bytes() []byte {
 		return b
 	}
 }
+func (p CIPInstance) Len() int {
+	if p < 256 {
+		return 2
+	}
+	return 4
+}
 
 type JustBytes []byte
 
