@@ -36,7 +36,7 @@ func (client *Client) Write(tag string, value any) error {
 func (client *Client) write_single(tag string, value any) error {
 	//service = 0x4D // cipService_Write
 	datatype := GoVarToCIPType(value)
-	ioi, err := client.newIOI(tag, datatype)
+	ioi, err := client.NewIOI(tag, datatype)
 	if err != nil {
 		return fmt.Errorf("problem generating IOI. %w", err)
 	}
@@ -98,6 +98,13 @@ func (client *Client) write_single(tag string, value any) error {
 
 type msgWriteResultHeader struct {
 	SequenceCount  uint16
+	Service        CIPService
+	Reserved       byte
+	Status         byte
+	StatusExtended byte
+}
+
+type msgUnconnWriteResultHeader struct {
 	Service        CIPService
 	Reserved       byte
 	Status         byte

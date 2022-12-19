@@ -24,7 +24,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 		start_instance = 1
 	}
 
-	ioi, err := client.newIOI(roottag, 16)
+	ioi, err := client.NewIOI(roottag, 16)
 	if err != nil {
 		return new_kts, fmt.Errorf("bad IOI gen. %w", err)
 	}

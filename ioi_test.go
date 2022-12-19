@@ -91,7 +91,7 @@ func TestIOI(t *testing.T) {
 
 		testname := fmt.Sprintf("tag: %s", tt.path)
 		t.Run(testname, func(t *testing.T) {
-			res, err := client.newIOI(tt.path, tt.t)
+			res, err := client.NewIOI(tt.path, tt.t)
 			if err != nil {
 				t.Errorf("IOI Generation error. %v", err)
 			}

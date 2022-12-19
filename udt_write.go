@@ -93,7 +93,7 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.newIOI(tag, types[i])
+		iois[i], err = client.NewIOI(tag, types[i])
 		if err != nil {
 			return err
 		}

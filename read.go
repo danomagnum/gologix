@@ -284,7 +284,7 @@ func (client *Client) Read(tag string, data any) error {
 }
 
 func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
-	ioi, err := client.newIOI(tag, datatype)
+	ioi, err := client.NewIOI(tag, datatype)
 
 	if err != nil {
 		return nil, err
@@ -495,7 +495,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.newIOI(tag, types[i])
+		iois[i], err = client.NewIOI(tag, types[i])
 		if err != nil {
 			return err
 		}

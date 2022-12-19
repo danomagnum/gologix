@@ -106,7 +106,7 @@ const defaultIOIBufferSize = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
+func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
 	ioi = new(tagIOI)
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P

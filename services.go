@@ -140,6 +140,7 @@ const (
 	cipPCCCUnconnectedExplicit  CIPCommand = 0x0B
 	cipCommandListIdentity      CIPCommand = 0x63
 	cipCommandListInterfaces    CIPCommand = 0x64
+	cipCommandSendUnregistered  CIPCommand = 0x52
 	cipCommandRegisterSession   CIPCommand = 0x65
 	cipCommandUnRegisterSession CIPCommand = 0x66
 	cipCommandSendRRData        CIPCommand = 0x6F

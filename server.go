@@ -138,7 +138,7 @@ func (h *handler) sendUnitData(hdr EIPHeader) error {
 	default:
 		log.Printf("Got unknown service %d", service)
 	}
-	log.Printf("service requested: %v", service)
+	log.Printf("send unit data service requested: %v", service)
 	return nil
 }
 
@@ -187,6 +187,17 @@ func (h *handler) cipWrite(item *cipItem) error {
 	return h.sendUnitDataReply(cipService_Write)
 }
 
+func (h *handler) sendUnconnectedRRDataReply(s CIPService) error {
+	items := make([]cipItem, 2)
+	items[0] = NewItem(cipItem_Null, nil)
+	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	resp := msgUnconnWriteResultHeader{
+		Service: s.AsResponse(),
+	}
+	items[1].Marshal(resp)
+	return h.send(cipCommandSendRRData, MarshalItems(items))
+}
+
 func (h *handler) sendUnconnectedUnitDataReply(s CIPService) error {
 	items := make([]cipItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
@@ -225,25 +236,141 @@ func (h *handler) sendRRData(hdr EIPHeader) error {
 	if len(items) != 2 {
 		return fmt.Errorf("expected 2 items. got %v", len(items))
 	}
+	switch items[1].Header.ID {
+	case cipItem_ConnectedData:
+		return h.connectedData(items[1])
+	case cipItem_UnconnectedData:
+		return h.unconnectedData(items[1])
+	}
+	return nil
+}
+func (h *handler) connectedData(item cipItem) error {
 	var service CIPService
-	items[1].Unmarshal(&service)
-	items[1].Reset()
+	var err error
+	item.Unmarshal(&service)
+	item.Reset()
 	switch service {
-	case cipService_ForwardOpen:
-		err = h.forwardOpen(items[1])
-		if err != nil {
-			return fmt.Errorf("problem handling forward open. %w", err)
-		}
 	case cipService_FragRead:
-		err = h.cipFragRead(&items[1])
+		err = h.cipFragRead(&item)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	default:
 		log.Printf("Got unknown service %d", service)
 	}
-	log.Printf("service requested: %v", service)
+	log.Printf("sendrrdata service requested: %v", service)
 	return nil
+}
+func (h *handler) unconnectedData(item cipItem) error {
+	var service CIPService
+	var err error
+	item.Unmarshal(&service)
+	switch service {
+	case cipService_ForwardOpen:
+		item.Reset()
+		err = h.forwardOpen(item)
+		if err != nil {
+			return fmt.Errorf("problem handling forward open. %w", err)
+		}
+	case 0x52:
+		// unconnected send?
+		var pathsize byte
+		err = item.Unmarshal(&pathsize)
+		if err != nil {
+			return fmt.Errorf("error getting path size. %w", err)
+		}
+		path := make([]byte, pathsize*2)
+		err = item.Unmarshal(&path)
+		if err != nil {
+			return fmt.Errorf("error getting path. %w", err)
+		}
+		var timeout uint16
+		err = item.Unmarshal(&timeout)
+		if err != nil {
+			return fmt.Errorf("error getting timeout. %w", err)
+		}
+		var embedded_size uint16
+		err = item.Unmarshal(&embedded_size)
+		if err != nil {
+			return fmt.Errorf("error getting embedded size. %w", err)
+		}
+		var emService CIPService
+		err = item.Unmarshal(&emService)
+		if err != nil {
+			return fmt.Errorf("error getting embedded service. %w", err)
+		}
+		switch emService {
+		case cipService_Write:
+			return h.unconnectedServiceWrite(item)
+
+		}
+	}
+	return nil
+}
+
+func (h *handler) unconnectedServiceWrite(item cipItem) error {
+	var reserved byte
+	err := item.Unmarshal(&reserved)
+	if err != nil {
+		return fmt.Errorf("error getting reserved byte. %w", err)
+	}
+	tag, err := getTagFromPath(&item)
+	if err != nil {
+		return fmt.Errorf("couldn't parse path. %w", err)
+	}
+	var typ CIPType
+	err = item.Unmarshal(&typ)
+	if err != nil {
+		return fmt.Errorf("error getting write type. %w", err)
+	}
+	var pad byte
+	err = item.Unmarshal(&pad)
+	if err != nil {
+		return fmt.Errorf("error getting pad. %w", err)
+	}
+	var qty uint16
+	err = item.Unmarshal(&qty)
+	if err != nil {
+		return fmt.Errorf("error getting write qty. %w", err)
+	}
+	results := make([]any, qty)
+	for i := 0; i < int(qty); i++ {
+		results[i] = typ.readValue(&item)
+	}
+	fmt.Printf("read %s as %s * %v = %v", tag, typ, qty, results)
+
+	return h.sendUnconnectedRRDataReply(cipService_Write)
+
+}
+
+func getTagFromPath(item *cipItem) (string, error) {
+	var prefix byte
+	err := item.Unmarshal(&prefix)
+	if err != nil {
+		return "", fmt.Errorf("problem getting path prefix. %w", err)
+	}
+	if prefix != 0x91 {
+		return "", fmt.Errorf("only support reading by tag name. TODO: support other things?. %w", err)
+	}
+	var tag_len byte
+	err = item.Unmarshal(&tag_len)
+	if err != nil {
+		return "", fmt.Errorf("problem getting tag len. %w", err)
+	}
+	b := make([]byte, tag_len)
+	err = item.Unmarshal(b)
+	if err != nil {
+		return "", fmt.Errorf("problem reading tag path. %w", err)
+	}
+	if tag_len%2 == 1 {
+		var pad byte
+		err = item.Unmarshal(&pad)
+		if err != nil {
+			return "", fmt.Errorf("problem reading pad byte. %w", err)
+		}
+	}
+	return string(b), nil
+
 }
 
 func (h *handler) forwardOpen(i cipItem) error {

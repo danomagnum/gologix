@@ -1,11 +1,7 @@
 package gologix
 
-/*
-// the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
-// of the instance attribute list of the symbol objects.
-//
-// see 1756-PM020H-EN-P March 2022 page 39
-// also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
+import "fmt"
+
 func (client *Client) ArbitraryMessage(service CIPService, path Serializable, SendData Serializable) ([]cipItem, error) {
 
 	reqitems := make([]cipItem, 2)
@@ -31,7 +27,7 @@ func (client *Client) ArbitraryMessage(service CIPService, path Serializable, Se
 	reqitems[1].Marshal(SendData.Bytes())
 	reqitems[1].Marshal([3]uint16{1, 0, 1})
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnregistered, MarshalItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -51,4 +47,3 @@ func (client *Client) ArbitraryMessage(service CIPService, path Serializable, Se
 
 	return resp_items, nil
 }
-*/
