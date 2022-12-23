@@ -14,10 +14,12 @@ type Server struct {
 	Listener    net.Listener
 	Connections map[net.Addr]net.Conn
 	ConnMutex   sync.Mutex
+	Router      *PathRouter
 }
 
 type handler struct {
 	conn           net.Conn
+	server         *Server
 	handle         uint32
 	options        uint32
 	context        uint64
@@ -27,9 +29,10 @@ type handler struct {
 	UnitDataSequencer uint16
 }
 
-func NewServer() *Server {
+func NewServer(r *PathRouter) *Server {
 	s := Server{}
 	s.Connections = make(map[net.Addr]net.Conn)
+	s.Router = r
 	return &s
 }
 
@@ -51,7 +54,7 @@ func (srv *Server) Serve() error {
 		srv.ConnMutex.Lock()
 		srv.Connections[conn.RemoteAddr()] = conn
 		srv.ConnMutex.Unlock()
-		h := handler{conn: conn}
+		h := handler{conn: conn, server: srv}
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
@@ -131,9 +134,9 @@ func (h *handler) sendUnitData(hdr EIPHeader) error {
 	items[1].Unmarshal(&service)
 	switch service {
 	case cipService_Write:
-		err = h.cipWrite(&items[1])
+		err = h.cipConnectedWrite(items)
 		if err != nil {
-			return fmt.Errorf("problem handling forward open. %w", err)
+			return fmt.Errorf("problem handling write. %w", err)
 		}
 	default:
 		log.Printf("Got unknown service %d", service)
@@ -152,8 +155,9 @@ func (h *handler) cipFragRead(item *cipItem) error {
 
 }
 
-func (h *handler) cipWrite(item *cipItem) error {
+func (h *handler) cipConnectedWrite(items []cipItem) error {
 	var l byte // length in words
+	item := items[1]
 	item.Unmarshal(l)
 	var path_type SegmentType
 	item.Unmarshal(&path_type)
@@ -181,9 +185,12 @@ func (h *handler) cipWrite(item *cipItem) error {
 
 	fmt.Printf("tag: %s", tag)
 	for i := 0; i < int(elements); i++ {
-		v := typ.readValue(item)
+		v := typ.readValue(&item)
 		fmt.Printf("value: %v", v)
 	}
+
+	// path is part of the forward open we've previously received.
+
 	return h.sendUnitDataReply(cipService_Write)
 }
 
@@ -260,87 +267,6 @@ func (h *handler) connectedData(item cipItem) error {
 	}
 	log.Printf("sendrrdata service requested: %v", service)
 	return nil
-}
-func (h *handler) unconnectedData(item cipItem) error {
-	var service CIPService
-	var err error
-	item.Unmarshal(&service)
-	switch service {
-	case cipService_ForwardOpen:
-		item.Reset()
-		err = h.forwardOpen(item)
-		if err != nil {
-			return fmt.Errorf("problem handling forward open. %w", err)
-		}
-	case 0x52:
-		// unconnected send?
-		var pathsize byte
-		err = item.Unmarshal(&pathsize)
-		if err != nil {
-			return fmt.Errorf("error getting path size. %w", err)
-		}
-		path := make([]byte, pathsize*2)
-		err = item.Unmarshal(&path)
-		if err != nil {
-			return fmt.Errorf("error getting path. %w", err)
-		}
-		var timeout uint16
-		err = item.Unmarshal(&timeout)
-		if err != nil {
-			return fmt.Errorf("error getting timeout. %w", err)
-		}
-		var embedded_size uint16
-		err = item.Unmarshal(&embedded_size)
-		if err != nil {
-			return fmt.Errorf("error getting embedded size. %w", err)
-		}
-		var emService CIPService
-		err = item.Unmarshal(&emService)
-		if err != nil {
-			return fmt.Errorf("error getting embedded service. %w", err)
-		}
-		switch emService {
-		case cipService_Write:
-			return h.unconnectedServiceWrite(item)
-
-		}
-	}
-	return nil
-}
-
-func (h *handler) unconnectedServiceWrite(item cipItem) error {
-	var reserved byte
-	err := item.Unmarshal(&reserved)
-	if err != nil {
-		return fmt.Errorf("error getting reserved byte. %w", err)
-	}
-	tag, err := getTagFromPath(&item)
-	if err != nil {
-		return fmt.Errorf("couldn't parse path. %w", err)
-	}
-	var typ CIPType
-	err = item.Unmarshal(&typ)
-	if err != nil {
-		return fmt.Errorf("error getting write type. %w", err)
-	}
-	var pad byte
-	err = item.Unmarshal(&pad)
-	if err != nil {
-		return fmt.Errorf("error getting pad. %w", err)
-	}
-	var qty uint16
-	err = item.Unmarshal(&qty)
-	if err != nil {
-		return fmt.Errorf("error getting write qty. %w", err)
-	}
-	results := make([]any, qty)
-	for i := 0; i < int(qty); i++ {
-		results[i] = typ.readValue(&item)
-	}
-	fmt.Printf("read %s as %s * %v = %v", tag, typ, qty, results)
-
-	return h.sendUnconnectedRRDataReply(cipService_Write)
-
 }
 
 func getTagFromPath(item *cipItem) (string, error) {
