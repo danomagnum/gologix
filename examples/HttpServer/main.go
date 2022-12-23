@@ -31,7 +31,12 @@ func main() {
 
 	// this is the function that will handle the web requests
 	// we'll get a lock on the tag provider, marshal the data into json, and then return that
+	// you could get fancier and allow retrieving specific tag keys from the data map.
+	// you could also create a function that supports posting to specific keys that could be read back
+	// with "CIP Data Table Read" msgs in the controller.  You'd need to be careful with types though - the json
+	// library likes to use float64 for values.
 	send_json := func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		p1.Mutex.Lock()
 		defer p1.Mutex.Unlock()
 		enc := json.NewEncoder(w)
@@ -40,7 +45,6 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
 	}
 
 	// set up a web request handler and start the server
