@@ -46,6 +46,9 @@ To read multiple items from an array, pass a slice to the Read method.
 
 You can read UDTs in if you define an equivalent struct to blit the data into. Arrays of UDTs also works. (see limitation below about UDTs with packed bools)
 
+
+There is also a ```Server``` type that lets you recive msg instructions from the controller.  It currently handles reads and writes of atomic data types (SINT, INT, DINT, REAL).  You could use this to create a "push" mechanism instead of having ot poll the controller for data changes.
+
 ### Limitations
 
 You cannot write multiple items from an array at once yet, but you can do them piecewise if needed.
@@ -55,6 +58,9 @@ You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, 
 If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
 
 The library currently only does large forward opens.  It also only does connected reads/writes.  At some point regular forward opens may be added.
+
+
+No UDTs in the server yet.  This will eventually be implemented and that will greatly improve functionality.
 
 ## License
 
