@@ -194,29 +194,6 @@ func (h *handler) cipConnectedWrite(items []cipItem) error {
 	return h.sendUnitDataReply(cipService_Write)
 }
 
-func (h *handler) sendUnconnectedRRDataReply(s CIPService) error {
-	items := make([]cipItem, 2)
-	items[0] = NewItem(cipItem_Null, nil)
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
-	resp := msgUnconnWriteResultHeader{
-		Service: s.AsResponse(),
-	}
-	items[1].Marshal(resp)
-	return h.send(cipCommandSendRRData, MarshalItems(items))
-}
-
-func (h *handler) sendUnconnectedUnitDataReply(s CIPService) error {
-	items := make([]cipItem, 2)
-	items[0] = NewItem(cipItem_Null, nil)
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
-	resp := msgWriteResultHeader{
-		SequenceCount: h.UnitDataSequencer,
-		Service:       s.AsResponse(),
-	}
-	items[1].Marshal(resp)
-	return h.send(cipCommandSendUnitData, MarshalItems(items))
-}
-
 func (h *handler) sendUnitDataReply(s CIPService) error {
 	items := make([]cipItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)

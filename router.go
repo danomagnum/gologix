@@ -33,7 +33,7 @@ func (router *PathRouter) Resolve(path []byte) (TagProvider, error) {
 }
 
 type TagProvider interface {
-	Read(tag string) (any, error)
+	Read(tag string, qty int16) (any, error)
 	Write(tag string, value any) error
 }
 
@@ -42,7 +42,7 @@ type MapTagProvider struct {
 	Data  map[string]any
 }
 
-func (p *MapTagProvider) Read(tag string) (any, error) {
+func (p *MapTagProvider) Read(tag string, qty int16) (any, error) {
 	log.Printf("Trying to read %v from MapTagProvider", tag)
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
