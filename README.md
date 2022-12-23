@@ -6,7 +6,7 @@ It is modeled after pylogix with changes to make it usable in go.
 
 ### Your First Program:
 
-There are a few examples in the examples folder, here is an abriged version of the SimpleRead example. See the actual example for description of what is going on.
+There are a few examples in the examples folder, here is an abriged version of the SimpleRead example. See the actual example for a more thorough description of what is going on.
 
 ```go
 package main
@@ -47,7 +47,7 @@ To read multiple items from an array, pass a slice to the Read method.
 You can read UDTs in if you define an equivalent struct to blit the data into. Arrays of UDTs also works. (see limitation below about UDTs with packed bools)
 
 
-There is also a ```Server``` type that lets you recive msg instructions from the controller.  It currently handles reads and writes of atomic data types (SINT, INT, DINT, REAL).  You could use this to create a "push" mechanism instead of having ot poll the controller for data changes.
+There is also a ```Server``` type that lets you recive msg instructions from the controller.  See "LogixMsg_HttpServer" in the examples folder.  It currently handles reads and writes of atomic data types (SINT, INT, DINT, REAL).  You could use this to create a "push" mechanism instead of having ot poll the controller for data changes.
 
 ### Limitations
 
