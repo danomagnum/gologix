@@ -11,8 +11,9 @@ import (
 )
 
 type Server struct {
-	Listener    net.Listener
-	Connections map[net.Addr]net.Conn
+	TCPListener net.Listener
+	UDPListener net.PacketConn
+	Connections map[uint32]*handler
 	ConnMutex   sync.Mutex
 	Router      *PathRouter
 }
@@ -25,13 +26,14 @@ type handler struct {
 	context        uint64
 	OTConnectionID uint32
 	TOConnectionID uint32
+	Path           []byte
 
 	UnitDataSequencer uint16
 }
 
 func NewServer(r *PathRouter) *Server {
 	s := Server{}
-	s.Connections = make(map[net.Addr]net.Conn)
+	s.Connections = make(map[uint32]*handler)
 	s.Router = r
 	return &s
 }
@@ -39,21 +41,29 @@ func NewServer(r *PathRouter) *Server {
 func (srv *Server) Serve() error {
 
 	var err error
-	log.Printf("Listening on port 44818")
-	srv.Listener, err = net.Listen("tcp", "0.0.0.0:44818")
+	srv.TCPListener, err = net.Listen("tcp", "0.0.0.0:44818")
+	log.Printf("Listening on TCP port 44818")
 	if err != nil {
-		return fmt.Errorf("couldn't open listener. %v", err)
+		return fmt.Errorf("couldn't open tcp listener. %v", err)
 	}
 
+	srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
+	log.Printf("Listening on UDP port 2222")
+	if err != nil {
+		return fmt.Errorf("couldn't open udp listener. %v", err)
+	}
+	go srv.serveUDP()
+	return srv.serveTCP()
+
+}
+
+func (srv *Server) serveTCP() error {
 	for {
-		conn, err := srv.Listener.Accept()
+		conn, err := srv.TCPListener.Accept()
 		if err != nil {
-			log.Printf("problem with accept. %v", err)
+			log.Printf("problem with tcp accept. %v", err)
 			continue
 		}
-		srv.ConnMutex.Lock()
-		srv.Connections[conn.RemoteAddr()] = conn
-		srv.ConnMutex.Unlock()
 		h := handler{conn: conn, server: srv}
 		go func() {
 			err := h.serve(srv)
@@ -62,7 +72,72 @@ func (srv *Server) Serve() error {
 			}
 		}()
 	}
+}
 
+type cipIOSeqAccessData struct {
+	ConnectionID  uint32
+	SequenceCount uint32
+}
+
+func (srv *Server) serveUDP() error {
+	bufsize := 4096
+	for {
+		b := make([]byte, 4096)
+		buf := bytes.NewBuffer(b)
+		n, addr, err := srv.UDPListener.ReadFrom(b)
+		if n == 0 {
+			log.Print("Read 0 bytes on udp listener.")
+			continue
+		}
+		if n == bufsize {
+			log.Print("udp buffer size not big enough!")
+			continue
+		}
+		if err != nil {
+			log.Printf("problem with udp accept. %v", err)
+			continue
+		}
+		_ = addr // don't need this yet.
+		// we've read a packet on udp so we need to parse the eip data
+
+		items, err := ReadItems(buf)
+		if err != nil {
+			log.Printf("problem reading udp items. %v", err)
+			continue
+		}
+		if len(items) != 2 {
+			log.Printf("expected 2 items but got %v", len(items))
+			continue
+		}
+		log.Printf("got %v on udp items.", items)
+		if items[0].Header.ID == cipItem_SequenceAddress {
+			// this is an IO message (output data from the controller to us as an "io adapter")
+			io_info := cipIOSeqAccessData{}
+			err := items[0].Unmarshal(&io_info)
+			if err != nil {
+				log.Printf("problem reading sequence address info.")
+				continue
+			}
+			h, ok := srv.Connections[io_info.ConnectionID]
+			if !ok {
+				log.Printf("couldn't find handler for connection %v to handle IO message", io_info.ConnectionID)
+				continue
+			}
+
+			tp, err := srv.Router.Resolve(h.Path)
+			if err != nil {
+				log.Printf("couldn't find tag provider for connection %v at path %v to handle IO message", io_info.ConnectionID, h.Path)
+				continue
+			}
+			err = tp.IOWrite(items)
+			if err != nil {
+				log.Printf("Problem writing IO to tag provider. %v", err)
+				continue
+			}
+
+		}
+
+	}
 }
 
 func (h *handler) serve(srv *Server) error {
@@ -71,7 +146,7 @@ func (h *handler) serve(srv *Server) error {
 	defer func() {
 		h.conn.Close()
 		srv.ConnMutex.Lock()
-		delete(srv.Connections, h.conn.RemoteAddr())
+		delete(srv.Connections, h.OTConnectionID)
 		srv.ConnMutex.Unlock()
 	}()
 
@@ -283,7 +358,13 @@ func (h *handler) forwardOpen(i cipItem) error {
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
 	}
-	log.Printf("forward open msg: %v", fwd_open)
+	fwd_path := make([]byte, fwd_open.ConnPathSize*2)
+	err = i.Unmarshal(&fwd_path)
+	if err != nil {
+		return fmt.Errorf("problem with fwd open path parsing %w", err)
+	}
+	log.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
+	h.Path = fwd_path[:2]
 
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]cipItem, 2)
@@ -295,11 +376,13 @@ func (h *handler) forwardOpen(i cipItem) error {
 	} else {
 		h.TOConnectionID = fwd_open.TOConnectionID
 	}
+	fwd_open.TOConnectionID = h.TOConnectionID
 	if fwd_open.OTConnectionID == 0 {
 		h.OTConnectionID = rand.Uint32()
 	} else {
 		h.OTConnectionID = fwd_open.OTConnectionID
 	}
+	fwd_open.OTConnectionID = h.OTConnectionID
 	fwopenresphdr := msgEIPForwardOpen_Standard_Reply{
 		Service:                fwd_open.Service.AsResponse(),
 		OTConnectionID:         h.OTConnectionID,
@@ -320,6 +403,21 @@ func (h *handler) forwardOpen(i cipItem) error {
 	items[1].Marshal(fwopenresphdr)
 
 	h.send(cipCommandSendRRData, MarshalItems(items))
+
+	// set us up as the connection handler for this connection ID
+	h.server.ConnMutex.Lock()
+	h.server.Connections[h.OTConnectionID] = h
+	h.server.ConnMutex.Unlock()
+
+	if fwd_open.TransportTrigger == 1 {
+		// this is a cyclic IO connection
+		tp, err := h.server.Router.Resolve(h.Path[:2])
+		if err != nil {
+			log.Printf("No tag provider for path %v", h.Path[:2])
+			return fmt.Errorf("no tag provider for path %v", h.Path[:2])
+		}
+		tp.IORead(fwd_open, fwd_path)
+	}
 
 	return nil
 }

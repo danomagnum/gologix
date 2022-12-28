@@ -33,16 +33,27 @@ func (router *PathRouter) Resolve(path []byte) (TagProvider, error) {
 }
 
 type TagProvider interface {
-	Read(tag string, qty int16) (any, error)
-	Write(tag string, value any) error
-}
+	TagRead(tag string, qty int16) (any, error)
+	TagWrite(tag string, value any) error
 
+	// this function gets called when the IO setup forward open comes in.  It has the data that specifies the
+	// io RPI and connection ID and such.
+	IORead(fwd_open msgEIPForwardOpen_Standard, path []byte) error
+	IOWrite(items []cipItem) error
+}
 type MapTagProvider struct {
 	Mutex sync.Mutex
 	Data  map[string]any
 }
 
-func (p *MapTagProvider) Read(tag string, qty int16) (any, error) {
+func (p *MapTagProvider) IORead(fwd_open msgEIPForwardOpen_Standard, path []byte) error {
+	return nil
+}
+func (p *MapTagProvider) IOWrite(items []cipItem) error {
+	return nil
+}
+
+func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	log.Printf("Trying to read %v from MapTagProvider", tag)
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
@@ -57,7 +68,7 @@ func (p *MapTagProvider) Read(tag string, qty int16) (any, error) {
 	return val, nil
 }
 
-func (p *MapTagProvider) Write(tag string, value any) error {
+func (p *MapTagProvider) TagWrite(tag string, value any) error {
 	log.Printf("Trying to set %v=%v from MapTagProvider", tag, value)
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()

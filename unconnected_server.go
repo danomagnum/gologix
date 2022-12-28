@@ -111,9 +111,9 @@ func (h *handler) unconnectedServiceWrite(item cipItem) error {
 	}
 	p := provider
 	if qty > 1 {
-		p.Write(tag, results)
+		p.TagWrite(tag, results)
 	} else {
-		p.Write(tag, results[0])
+		p.TagWrite(tag, results[0])
 	}
 
 	return h.sendUnconnectedRRDataReply(cipService_Write)
@@ -153,7 +153,7 @@ func (h *handler) unconnectedServiceRead(item cipItem) error {
 		return fmt.Errorf("problem finding tag provider for %v. %w", path, err)
 	}
 	p := provider
-	result, err := p.Read(tag, int16(qty))
+	result, err := p.TagRead(tag, int16(qty))
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
