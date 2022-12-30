@@ -36,7 +36,7 @@ func (p *IOProvider) ioRead(fwd_open msgEIPForwardOpen_Standard, rpi time.Durati
 		items[0].Marshal(seq)
 		items[1] = NewItem(cipItem_ConnectedData, nil)
 		items[1].Marshal(uint16(seq))
-		items[1].Marshal(uint32(1)) // connection properties. 1 = running.
+		//items[1].Marshal(uint32(1)) // connection properties. 1 = running. (not used on response)
 		items[1].Marshal(dat)
 
 		conn, err := net.Dial("udp", "192.168.2.241:2222")
