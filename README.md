@@ -36,6 +36,47 @@ func main() {
 
 ```
 
+### Your First Server Program:
+
+There are a few examples in the examples folder, here is an abriged version of the Server_Class3 example. See the actual example(s) for a more thorough description of what is going on.  Basically it listens to incoming MSG instructions doing CIP Data Table Writes and CIP Data Table Reads and maps the data to/from an internal golang map.  You can then access the data through that map as long as you get the lock on it.
+
+```go
+package main
+
+import (
+	"fmt"
+	"gologix"
+	"os"
+
+)
+
+func main() {
+	r := gologix.PathRouter{}
+
+	p1 := gologix.MapTagProvider{}
+	path1, err := gologix.ParsePath("1,0")
+	if err != nil {
+		fmt.Printf("problem parsing path. %v", err)
+		os.Exit(1)
+	}
+	r.AddHandler(path1.Bytes(), &p1)
+
+
+	s := gologix.NewServer(&r)
+	go s.Serve()
+
+	t := time.NewTicker(time.Second * 5)
+	for {
+		<-t.C
+		p1.Mutex.Lock()
+		log.Printf("Data 1: %v", p1.Data)
+		p1.Mutex.Unlock()
+
+
+	}
+}
+
+```
 
 
 ### Other Features
