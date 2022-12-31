@@ -16,6 +16,13 @@ func (h *handler) unconnectedData(item cipItem) error {
 		if err != nil {
 			return fmt.Errorf("problem handling forward open. %w", err)
 		}
+	case cipService_ForwardClose:
+		item.Reset()
+		err = h.forwardClose(item)
+		if err != nil {
+			return fmt.Errorf("problem handling forward close. %w", err)
+		}
+
 	case 0x52:
 		// unconnected send?
 		var pathsize byte

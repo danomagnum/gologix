@@ -13,15 +13,18 @@ type IOProvider struct {
 	Data  map[string]any
 }
 
-// this gets called with the IO setup forward open as the items
-func (p *IOProvider) IORead(fwd_open msgEIPForwardOpen_Standard, path []byte) error {
-	rpi := time.Duration(fwd_open.TORPI) * time.Microsecond
-	log.Printf("IO RPI of %v", rpi)
-	go p.ioRead(fwd_open, rpi)
+var io_read_test_counter byte = 0
 
-	return nil
+// this gets called with the IO setup forward open as the items
+func (p *IOProvider) IORead() ([]byte, error) {
+	io_read_test_counter++
+	return []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, io_read_test_counter}, nil
 }
 
+// TODO: handle connection closing.
+// it looks like a forward close will come in which has a connection serial number that should have been in the foward open to start with.
+// we'll have to know that is tied to the correct io provider
+// also if we don't get an input IO message in a certain time we should abandon the output IO messages
 func (p *IOProvider) ioRead(fwd_open msgEIPForwardOpen_Standard, rpi time.Duration) {
 	dat := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	t := time.NewTicker(rpi)
@@ -39,6 +42,7 @@ func (p *IOProvider) ioRead(fwd_open msgEIPForwardOpen_Standard, rpi time.Durati
 		//items[1].Marshal(uint32(1)) // connection properties. 1 = running. (not used on response)
 		items[1].Marshal(dat)
 
+		// TODO: stop hardcoding the IP address.  Get it from the connection handler that starts the comms.
 		conn, err := net.Dial("udp", "192.168.2.241:2222")
 		if err != nil {
 			log.Printf("problem connecting UDP. %v", err)

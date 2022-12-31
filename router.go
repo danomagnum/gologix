@@ -38,7 +38,7 @@ type TagProvider interface {
 
 	// this function gets called when the IO setup forward open comes in.  It has the data that specifies the
 	// io RPI and connection ID and such.
-	IORead(fwd_open msgEIPForwardOpen_Standard, path []byte) error
+	IORead() ([]byte, error)
 	IOWrite(items []cipItem) error
 }
 type MapTagProvider struct {
@@ -46,8 +46,8 @@ type MapTagProvider struct {
 	Data  map[string]any
 }
 
-func (p *MapTagProvider) IORead(fwd_open msgEIPForwardOpen_Standard, path []byte) error {
-	return nil
+func (p *MapTagProvider) IORead() ([]byte, error) {
+	return nil, nil
 }
 func (p *MapTagProvider) IOWrite(items []cipItem) error {
 	return nil

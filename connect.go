@@ -214,6 +214,21 @@ type msgEIPForwardOpen_Reply struct {
 	Unknown3       uint16
 }
 
+type msgEIPForwardClose struct {
+	Service                CIPService
+	PathSize               byte
+	ClassType              byte
+	Class                  byte
+	InstanceType           byte
+	Instance               byte
+	Priority               byte
+	TimeoutTicks           byte
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	ConnPathSize           byte
+}
+
 // in this message T is for target and O is for originator so
 // TO is target -> originator and OT is originator -> target
 type msgEIPForwardOpen_Standard struct {

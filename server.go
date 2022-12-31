@@ -7,15 +7,127 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"sync"
+	"time"
 )
 
+type serverConnection struct {
+	ID   uint16
+	OT   uint32
+	TO   uint32
+	RPI  time.Duration
+	Path []byte
+	Open bool
+}
+
+type serverConnectionManager struct {
+	Connections []*serverConnection
+	Lock        sync.RWMutex
+}
+
+func (cm *serverConnectionManager) Init() {
+	cm.Connections = make([]*serverConnection, 0, 32)
+}
+
+func (cm *serverConnectionManager) Add(conn *serverConnection) {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
+	cm.Connections = append(cm.Connections, conn)
+}
+
+func (cm *serverConnectionManager) GetByID(ID uint16) (*serverConnection, error) {
+	cm.Lock.RLock()
+	defer cm.Lock.RUnlock()
+	for _, conn := range cm.Connections {
+		if conn.ID == ID {
+			return conn, nil
+		}
+	}
+	return nil, fmt.Errorf("couldn't find connection %v by ID", ID)
+}
+
+func (cm *serverConnectionManager) GetByOT(OT uint32) (*serverConnection, error) {
+	cm.Lock.RLock()
+	defer cm.Lock.RUnlock()
+	for _, conn := range cm.Connections {
+		if conn.OT == OT {
+			return conn, nil
+		}
+	}
+	return nil, fmt.Errorf("couldn't find connection %v by OT", OT)
+}
+func (cm *serverConnectionManager) GetByTO(TO uint32) (*serverConnection, error) {
+	cm.Lock.RLock()
+	defer cm.Lock.RUnlock()
+	for _, conn := range cm.Connections {
+		if conn.TO == TO {
+			return conn, nil
+		}
+	}
+	return nil, fmt.Errorf("couldn't find connection %v by TO", TO)
+}
+
+func (cm *serverConnectionManager) CloseByID(ID uint16) error {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
+	for i, conn := range cm.Connections {
+		if conn.ID == ID {
+			conn.Open = false
+			if len(cm.Connections) == 1 {
+				cm.Connections = make([]*serverConnection, 0, 32)
+				return nil
+			}
+			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
+			cm.Connections = cm.Connections[:len(cm.Connections)-1]
+			return nil
+		}
+	}
+	return fmt.Errorf("couldn't find connection %v by ID", ID)
+}
+
+func (cm *serverConnectionManager) CloseByOT(OT uint32) error {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
+	for i, conn := range cm.Connections {
+		if conn.OT == OT {
+			conn.Open = false
+			if len(cm.Connections) == 1 {
+				cm.Connections = make([]*serverConnection, 0, 32)
+				return nil
+			}
+			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
+			cm.Connections = cm.Connections[:len(cm.Connections)-1]
+			return nil
+		}
+	}
+	return fmt.Errorf("couldn't find connection %v by OT", OT)
+}
+func (cm *serverConnectionManager) CloseByTO(TO uint32) error {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
+	for i, conn := range cm.Connections {
+		if conn.TO == TO {
+			conn.Open = false
+			if len(cm.Connections) == 1 {
+				cm.Connections = make([]*serverConnection, 0, 32)
+				return nil
+			}
+			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
+			cm.Connections = cm.Connections[:len(cm.Connections)-1]
+			return nil
+		}
+	}
+	return fmt.Errorf("couldn't find connection %v by TO", TO)
+}
+
 type Server struct {
-	TCPListener net.Listener
-	UDPListener net.PacketConn
-	Connections map[uint32]*handler
-	ConnMutex   sync.Mutex
-	Router      *PathRouter
+	TCPListener   net.Listener
+	UDPListener   net.PacketConn
+	OTConnections map[uint32]*handler
+	ConnMgr       serverConnectionManager
+	ConnMutex     sync.Mutex
+	Router        *PathRouter
 }
 
 type handler struct {
@@ -33,12 +145,13 @@ type handler struct {
 
 func NewServer(r *PathRouter) *Server {
 	s := Server{}
-	s.Connections = make(map[uint32]*handler)
+	s.OTConnections = make(map[uint32]*handler)
 	s.Router = r
 	return &s
 }
 
 func (srv *Server) Serve() error {
+	srv.ConnMgr.Init()
 
 	var err error
 	srv.TCPListener, err = net.Listen("tcp", "0.0.0.0:44818")
@@ -118,7 +231,7 @@ func (srv *Server) serveUDP() error {
 				log.Printf("problem reading sequence address info.")
 				continue
 			}
-			h, ok := srv.Connections[io_info.ConnectionID]
+			h, ok := srv.OTConnections[io_info.ConnectionID]
 			if !ok {
 				log.Printf("couldn't find handler for connection %v to handle IO message", io_info.ConnectionID)
 				continue
@@ -146,7 +259,7 @@ func (h *handler) serve(srv *Server) error {
 	defer func() {
 		h.conn.Close()
 		srv.ConnMutex.Lock()
-		delete(srv.Connections, h.OTConnectionID)
+		delete(srv.OTConnections, h.OTConnectionID)
 		srv.ConnMutex.Unlock()
 	}()
 
@@ -351,6 +464,30 @@ func getTagFromPath(item *cipItem) (string, error) {
 
 }
 
+func (h *handler) forwardClose(i cipItem) error {
+	log.Printf("got forward close from %v", h.conn.RemoteAddr())
+	var fwd_close msgEIPForwardClose
+	err := i.Unmarshal(&fwd_close)
+	if err != nil {
+		log.Printf("problem parsing forward close. %v", err)
+		return fmt.Errorf("problem parsing forward close %w", err)
+	}
+	log.Printf("Closing connection %v", fwd_close.ConnectionSerialNumber)
+	err = h.server.ConnMgr.CloseByID(fwd_close.ConnectionSerialNumber)
+	if err != nil {
+		log.Printf("couldn't close open connection with ID %v. %v", fwd_close.ConnectionSerialNumber, err)
+		return fmt.Errorf("couldn't close open connection with ID %v. %v", fwd_close.ConnectionSerialNumber, err)
+	}
+
+	path := make([]byte, fwd_close.PathSize*2)
+	err = i.Unmarshal(&path)
+	if err != nil {
+		log.Printf("problem parsing forward close path. %v", err)
+		return fmt.Errorf("problem parsing forward close path %w", err)
+	}
+	return nil
+}
+
 func (h *handler) forwardOpen(i cipItem) error {
 	log.Printf("got small forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Standard
@@ -392,21 +529,25 @@ func (h *handler) forwardOpen(i cipItem) error {
 		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
 		OTAPI:                  0,
 		TOAPI:                  0,
-		//OTAPI:                  0x0072_70e0,
-		//TOAPI:                  0x0072_70e0,
 	}
-	//fwopenresphdr := msgCIPMessageRouterResponse{
-	//Service:    cipService_ForwardOpen.AsResponse(),
-	//Status:     0,
-	//Status_Len: 0,
-	//}
+
 	items[1].Marshal(fwopenresphdr)
 
 	h.send(cipCommandSendRRData, MarshalItems(items))
 
+	cipConnection := &serverConnection{
+		TO:   fwd_open.TOConnectionID,
+		OT:   fwd_open.OTConnectionID,
+		ID:   fwd_open.ConnectionSerialNumber,
+		RPI:  time.Duration(fwd_open.TORPI) * time.Microsecond,
+		Open: true,
+	}
+
+	h.server.ConnMgr.Add(cipConnection)
+
 	// set us up as the connection handler for this connection ID
 	h.server.ConnMutex.Lock()
-	h.server.Connections[h.OTConnectionID] = h
+	h.server.OTConnections[h.OTConnectionID] = h
 	h.server.ConnMutex.Unlock()
 
 	if fwd_open.TransportTrigger == 1 {
@@ -416,10 +557,62 @@ func (h *handler) forwardOpen(i cipItem) error {
 			log.Printf("No tag provider for path %v", h.Path[:2])
 			return fmt.Errorf("no tag provider for path %v", h.Path[:2])
 		}
-		tp.IORead(fwd_open, fwd_path)
+		go h.ioConnection(fwd_open, tp, cipConnection)
 	}
 
 	return nil
+}
+
+func (h *handler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp TagProvider, conn *serverConnection) {
+	rpi := time.Duration(fwd_open.TORPI) * time.Microsecond
+	log.Printf("IO RPI of %v", rpi)
+	t := time.NewTicker(rpi)
+	seq := uint32(0)
+	for {
+		seq++
+		<-t.C
+		if !conn.Open {
+			log.Printf("connection %+v closed. no longer sending IO messages", *conn)
+			return
+
+		}
+
+		dat, err := tp.IORead()
+		if err != nil {
+			log.Printf("problem getting IO data from provider %v", err)
+			continue
+		}
+
+		// every RPI send the message.
+		items := make([]cipItem, 2)
+		items[0] = NewItem(cipItem_SequenceAddress, nil)
+		items[0].Marshal(fwd_open.TOConnectionID)
+		items[0].Marshal(seq)
+		items[1] = NewItem(cipItem_ConnectedData, nil)
+		items[1].Marshal(uint16(seq))
+		items[1].Marshal(dat)
+
+		// get the address to send the response back to, trim off the port number, and add the eip udp port number (2222) back on.
+		remote := h.conn.RemoteAddr().String()
+		remote = strings.Split(remote, ":")[0]
+		addr := fmt.Sprintf("%s:2222", remote)
+
+		conn, err := net.Dial("udp", addr)
+		if err != nil {
+			log.Printf("problem connecting UDP. %v", err)
+			continue
+		}
+
+		payload := *MarshalItems(items)
+		payload = payload[6:]
+		log.Printf("writing udp io payload %v", payload)
+		_, err = conn.Write(payload)
+		if err != nil {
+			log.Printf("problem writing %v", err)
+		}
+		conn.Close()
+
+	}
 }
 
 func (h *handler) registerSession(hdr EIPHeader) error {
