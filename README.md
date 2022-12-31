@@ -4,7 +4,7 @@ gologix is a communication driver written in native go that lets you easily read
 
 It is modeled after pylogix with changes to make it usable in go.
 
-### Your First Program:
+### Your First Client Program:
 
 There are a few examples in the examples folder, here is an abriged version of the SimpleRead example. See the actual example for a more thorough description of what is going on.
 
@@ -39,6 +39,8 @@ func main() {
 
 
 ### Other Features
+
+Can behave as a class 1 or class 3 server allowing push messages from a PLC (class 3 via MSG instruction) or implicit messaging (class 1).  See the *server examples.
 
 You can read/write multiple tags at once by defining a struct with each field tagged with `gologix:"tagname"`.  see MultiRead in the examples directory.
 
