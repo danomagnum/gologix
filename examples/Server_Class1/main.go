@@ -9,6 +9,9 @@
 // I think you should be able to have class 3 tag providers AND class 1 tag providers at the same time for the same path, BUT you'll have to
 // combine their logic into a single class since the router will resolve all messages to the same place.  For this reason it might be easiest
 // to keep class 3 tag providers and class 1 tag providers segregated to different "slots" on the "backplane"
+//
+// Note that you won't be able to have multiple servers on a single computer.  They bind to the EIP ports on TCP and UDP so you'll need
+// to multiplex multiple connections through one program.
 package main
 
 import (

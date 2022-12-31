@@ -11,6 +11,9 @@
 // If you look at the screenshots of MSG insructions in this folder you'll see how the read and write are setup.  Note that on the
 // connection tab of the msg setup the path is "gologix, 1, 0" this is because there is a generic ethernet module in the IO config
 // with the same address as the computer used for the screenshots.  You can just type the IP address in here instead of "gologix".
+//
+// Note that you won't be able to have multiple servers on a single computer.  They bind to the EIP ports on TCP and UDP so you'll need
+// to multiplex multiple connections through one program.
 package main
 
 import (
