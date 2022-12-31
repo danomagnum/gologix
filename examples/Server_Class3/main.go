@@ -1,3 +1,16 @@
+// This example shows how to create a server that can handle incoming "class 3" cip messages.
+// These are messages generated in a program from a msg instruction.
+// From the PLCs perspective we are just another PLC.  When it does a write request to a specific tag we accept that data
+// and when it does a read we send it the data associated with that tag on our end.
+//
+// Because all cip messages come in on the same port, we have to support various independent messages coming in from multiple controllers.
+// otherwise you'd never be able to communicate with more than one controller per computer.  As you'll see below this is actually
+// fairly simple and takes advantage of the CIP routing path in a msg instruction.  All messages come to our IP address and then we split them
+// up based on the cip path after that.  The example uses 1, 0 and 1,1 which equates to backplane slot 0 and backplane slot 1 respectively.
+//
+// If you look at the screenshots of MSG insructions in this folder you'll see how the read and write are setup.  Note that on the
+// connection tab of the msg setup the path is "gologix, 1, 0" this is because there is a generic ethernet module in the IO config
+// with the same address as the computer used for the screenshots.  You can just type the IP address in here instead of "gologix".
 package main
 
 import (
@@ -36,7 +49,7 @@ func main() {
 	}
 	r.AddHandler(path1.Bytes(), &p1)
 
-	// a different memory based tag provider at slot 1 on the virtual "backplane"
+	// a different memory based tag provider at slot 1 on the virtual "backplane" this would be "2,xxx.xxx.xxx.xxx,1,1" in the msg connection path
 	p2 := gologix.MapTagProvider{}
 	path2, err := gologix.ParsePath("1,1")
 	if err != nil {
@@ -45,18 +58,8 @@ func main() {
 	}
 	r.AddHandler(path2.Bytes(), &p2)
 
-	// an IO handler in slot 2
-	p3 := gologix.IOProvider{}
-	path3, err := gologix.ParsePath("1,2")
-	if err != nil {
-		fmt.Printf("problem parsing path. %v", err)
-		os.Exit(1)
-	}
-	r.AddHandler(path3.Bytes(), &p3)
-
 	s := gologix.NewServer(&r)
 	go s.Serve()
-	select {}
 
 	t := time.NewTicker(time.Second * 5)
 	for {
