@@ -60,7 +60,8 @@ func main() {
 		os.Exit(1)
 	}
 	r.AddHandler(path3.Bytes(), &p3)
-	1 got IO input [0 0 0 0 0 0 0 0 0 0]
+
+	s := gologix.NewServer(&r)
 	go s.Serve()
 
 	t := time.NewTicker(time.Second)
