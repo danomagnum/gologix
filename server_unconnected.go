@@ -35,7 +35,6 @@ func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 		if err != nil {
 			return fmt.Errorf("error getting path. %w", err)
 		}
-		log.Printf("Path 312: %v", path)
 		var timeout uint16
 		err = item.Unmarshal(&timeout)
 		if err != nil {
@@ -109,8 +108,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
-	log.Printf("Path write: %v\n", path)
-	log.Printf("write %s to %v as %s * %v = %v", tag, path, typ, qty, results)
+	log.Printf("Got Unconn Write from %v. Tag: %s Path:%v Type:%s Qty:%v Value:%v", h.conn.RemoteAddr(), tag, path, typ, qty, results)
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {

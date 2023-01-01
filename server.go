@@ -193,7 +193,7 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	if err != nil {
 		return fmt.Errorf("problem reading items for rrdata %w", err)
 	}
-	log.Printf("items: %+v", items)
+	//log.Printf("items: %+v", items)
 	if len(items) != 2 {
 		return fmt.Errorf("expected 2 items. got %v", len(items))
 	}
@@ -497,7 +497,6 @@ func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
 		}
 		written += n
 	}
-	//log.Printf("Sent: %v", b)
 	return nil
 
 }
