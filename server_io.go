@@ -3,7 +3,6 @@ package gologix
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -52,7 +51,6 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 	if err != nil {
 		return fmt.Errorf("problem getting raw data. %w", err)
 	}
-	log.Printf("got IO output %v", payload)
 	b := bytes.NewBuffer(payload)
 	_, err = Unpack(b, CIPPack{}, p.Out)
 	if err != nil {

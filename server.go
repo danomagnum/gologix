@@ -111,7 +111,6 @@ func (srv *Server) serveUDP() error {
 			log.Printf("expected 2 items but got %v", len(items))
 			continue
 		}
-		log.Printf("got %v on udp items.", items)
 		if items[0].Header.ID == cipItem_SequenceAddress {
 			// this is an IO message (output data from the controller to us as an "io adapter")
 			io_info := cipIOSeqAccessData{}
@@ -431,7 +430,6 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 
 		payload := *MarshalItems(items)
 		payload = payload[6:]
-		log.Printf("writing udp io payload %v", payload)
 		_, err = conn.Write(payload)
 		if err != nil {
 			log.Printf("problem writing %v", err)
