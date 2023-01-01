@@ -418,6 +418,7 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		items[1].Marshal(dat)
 
 		// get the address to send the response back to, trim off the port number, and add the eip udp port number (2222) back on.
+		// I suspect this will break with IPV6 since it uses colons in the IP address itself.
 		remote := h.conn.RemoteAddr().String()
 		remote = strings.Split(remote, ":")[0]
 		addr := fmt.Sprintf("%s:2222", remote)
