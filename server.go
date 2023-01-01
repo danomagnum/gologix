@@ -8,129 +8,19 @@ import (
 	"math/rand"
 	"net"
 	"strings"
-	"sync"
 	"time"
 )
 
-type serverConnection struct {
-	ID   uint16
-	OT   uint32
-	TO   uint32
-	RPI  time.Duration
-	Path []byte
-	Open bool
-}
-
-type serverConnectionManager struct {
-	Connections []*serverConnection
-	Lock        sync.RWMutex
-}
-
-func (cm *serverConnectionManager) Init() {
-	cm.Connections = make([]*serverConnection, 0, 32)
-}
-
-func (cm *serverConnectionManager) Add(conn *serverConnection) {
-	cm.Lock.Lock()
-	defer cm.Lock.Unlock()
-	cm.Connections = append(cm.Connections, conn)
-}
-
-func (cm *serverConnectionManager) GetByID(ID uint16) (*serverConnection, error) {
-	cm.Lock.RLock()
-	defer cm.Lock.RUnlock()
-	for _, conn := range cm.Connections {
-		if conn.ID == ID {
-			return conn, nil
-		}
-	}
-	return nil, fmt.Errorf("couldn't find connection %v by ID", ID)
-}
-
-func (cm *serverConnectionManager) GetByOT(OT uint32) (*serverConnection, error) {
-	cm.Lock.RLock()
-	defer cm.Lock.RUnlock()
-	for _, conn := range cm.Connections {
-		if conn.OT == OT {
-			return conn, nil
-		}
-	}
-	return nil, fmt.Errorf("couldn't find connection %v by OT", OT)
-}
-func (cm *serverConnectionManager) GetByTO(TO uint32) (*serverConnection, error) {
-	cm.Lock.RLock()
-	defer cm.Lock.RUnlock()
-	for _, conn := range cm.Connections {
-		if conn.TO == TO {
-			return conn, nil
-		}
-	}
-	return nil, fmt.Errorf("couldn't find connection %v by TO", TO)
-}
-
-func (cm *serverConnectionManager) CloseByID(ID uint16) error {
-	cm.Lock.Lock()
-	defer cm.Lock.Unlock()
-	for i, conn := range cm.Connections {
-		if conn.ID == ID {
-			conn.Open = false
-			if len(cm.Connections) == 1 {
-				cm.Connections = make([]*serverConnection, 0, 32)
-				return nil
-			}
-			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
-			cm.Connections = cm.Connections[:len(cm.Connections)-1]
-			return nil
-		}
-	}
-	return fmt.Errorf("couldn't find connection %v by ID", ID)
-}
-
-func (cm *serverConnectionManager) CloseByOT(OT uint32) error {
-	cm.Lock.Lock()
-	defer cm.Lock.Unlock()
-	for i, conn := range cm.Connections {
-		if conn.OT == OT {
-			conn.Open = false
-			if len(cm.Connections) == 1 {
-				cm.Connections = make([]*serverConnection, 0, 32)
-				return nil
-			}
-			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
-			cm.Connections = cm.Connections[:len(cm.Connections)-1]
-			return nil
-		}
-	}
-	return fmt.Errorf("couldn't find connection %v by OT", OT)
-}
-func (cm *serverConnectionManager) CloseByTO(TO uint32) error {
-	cm.Lock.Lock()
-	defer cm.Lock.Unlock()
-	for i, conn := range cm.Connections {
-		if conn.TO == TO {
-			conn.Open = false
-			if len(cm.Connections) == 1 {
-				cm.Connections = make([]*serverConnection, 0, 32)
-				return nil
-			}
-			cm.Connections[i] = cm.Connections[len(cm.Connections)-1]
-			cm.Connections = cm.Connections[:len(cm.Connections)-1]
-			return nil
-		}
-	}
-	return fmt.Errorf("couldn't find connection %v by TO", TO)
-}
-
+// this is the main server object for handling incoming EIP messages.
+// After setting up the server use the Serve() method to listen on the appropriate TCP and UDP ports
 type Server struct {
-	TCPListener   net.Listener
-	UDPListener   net.PacketConn
-	OTConnections map[uint32]*handler
-	ConnMgr       serverConnectionManager
-	ConnMutex     sync.Mutex
-	Router        *PathRouter
+	TCPListener net.Listener
+	UDPListener net.PacketConn
+	ConnMgr     serverConnectionManager
+	Router      *PathRouter
 }
 
-type handler struct {
+type serverTCPHandler struct {
 	conn           net.Conn
 	server         *Server
 	handle         uint32
@@ -144,10 +34,10 @@ type handler struct {
 }
 
 func NewServer(r *PathRouter) *Server {
-	s := Server{}
-	s.OTConnections = make(map[uint32]*handler)
-	s.Router = r
-	return &s
+	srv := Server{}
+	srv.ConnMgr.Init()
+	srv.Router = r
+	return &srv
 }
 
 func (srv *Server) Serve() error {
@@ -177,7 +67,7 @@ func (srv *Server) serveTCP() error {
 			log.Printf("problem with tcp accept. %v", err)
 			continue
 		}
-		h := handler{conn: conn, server: srv}
+		h := serverTCPHandler{conn: conn, server: srv}
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
@@ -231,8 +121,8 @@ func (srv *Server) serveUDP() error {
 				log.Printf("problem reading sequence address info.")
 				continue
 			}
-			h, ok := srv.OTConnections[io_info.ConnectionID]
-			if !ok {
+			h, err := srv.ConnMgr.GetByOT(io_info.ConnectionID)
+			if err != nil {
 				log.Printf("couldn't find handler for connection %v to handle IO message", io_info.ConnectionID)
 				continue
 			}
@@ -253,14 +143,11 @@ func (srv *Server) serveUDP() error {
 	}
 }
 
-func (h *handler) serve(srv *Server) error {
+func (h *serverTCPHandler) serve(srv *Server) error {
 	log.Printf("new connection from %v", h.conn.RemoteAddr().String())
 	// if this function ends, close and remove ourselves from the server's open connection list.
 	defer func() {
 		h.conn.Close()
-		srv.ConnMutex.Lock()
-		delete(srv.OTConnections, h.OTConnectionID)
-		srv.ConnMutex.Unlock()
 	}()
 
 	for {
@@ -296,7 +183,7 @@ func (h *handler) serve(srv *Server) error {
 
 }
 
-func (h *handler) sendUnitData(hdr EIPHeader) error {
+func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
 	binary.Read(h.conn, binary.LittleEndian, interface_handle)
@@ -333,7 +220,7 @@ func (h *handler) sendUnitData(hdr EIPHeader) error {
 	return nil
 }
 
-func (h *handler) cipFragRead(item *cipItem) error {
+func (h *serverTCPHandler) cipFragRead(item *cipItem) error {
 	if item.Header.ID != cipItem_UnconnectedData {
 		return fmt.Errorf("expected unconnected frag read. got %v", item.Header.ID)
 	}
@@ -343,46 +230,7 @@ func (h *handler) cipFragRead(item *cipItem) error {
 
 }
 
-func (h *handler) cipConnectedWrite(items []cipItem) error {
-	var l byte // length in words
-	item := items[1]
-	item.Unmarshal(l)
-	var path_type SegmentType
-	item.Unmarshal(&path_type)
-	if path_type != SegmentTypeExtendedSymbolic {
-		return fmt.Errorf("only support symbolic writes. got segment type %v", path_type)
-	}
-	var tag_length byte
-	item.Unmarshal(&tag_length)
-	tag_bytes := make([]byte, tag_length)
-	item.Unmarshal(&tag_bytes)
-	tag := string(tag_bytes)
-
-	// string will be padded with a null if odd length
-	if (tag_length % 2) == 1 {
-		var b byte
-		item.Unmarshal(&b)
-	}
-
-	var typ CIPType
-	item.Unmarshal(&typ)
-	var reserved byte
-	item.Unmarshal(&reserved)
-	var elements uint16
-	item.Unmarshal(&elements)
-
-	fmt.Printf("tag: %s", tag)
-	for i := 0; i < int(elements); i++ {
-		v := typ.readValue(&item)
-		fmt.Printf("value: %v", v)
-	}
-
-	// path is part of the forward open we've previously received.
-
-	return h.sendUnitDataReply(cipService_Write)
-}
-
-func (h *handler) sendUnitDataReply(s CIPService) error {
+func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 	items := make([]cipItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)
 	items[1] = NewItem(cipItem_ConnectedData, nil)
@@ -394,7 +242,7 @@ func (h *handler) sendUnitDataReply(s CIPService) error {
 	return h.send(cipCommandSendUnitData, MarshalItems(items))
 }
 
-func (h *handler) sendRRData(hdr EIPHeader) error {
+func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
 	binary.Read(h.conn, binary.LittleEndian, interface_handle)
@@ -414,23 +262,6 @@ func (h *handler) sendRRData(hdr EIPHeader) error {
 	case cipItem_UnconnectedData:
 		return h.unconnectedData(items[1])
 	}
-	return nil
-}
-func (h *handler) connectedData(item cipItem) error {
-	var service CIPService
-	var err error
-	item.Unmarshal(&service)
-	item.Reset()
-	switch service {
-	case cipService_FragRead:
-		err = h.cipFragRead(&item)
-		if err != nil {
-			return fmt.Errorf("problem handling frag read. %w", err)
-		}
-	default:
-		log.Printf("Got unknown service %d", service)
-	}
-	log.Printf("sendrrdata service requested: %v", service)
 	return nil
 }
 
@@ -464,7 +295,7 @@ func getTagFromPath(item *cipItem) (string, error) {
 
 }
 
-func (h *handler) forwardClose(i cipItem) error {
+func (h *serverTCPHandler) forwardClose(i cipItem) error {
 	log.Printf("got forward close from %v", h.conn.RemoteAddr())
 	var fwd_close msgEIPForwardClose
 	err := i.Unmarshal(&fwd_close)
@@ -488,7 +319,7 @@ func (h *handler) forwardClose(i cipItem) error {
 	return nil
 }
 
-func (h *handler) forwardOpen(i cipItem) error {
+func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 	log.Printf("got small forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Standard
 	err := i.Unmarshal(&fwd_open)
@@ -545,11 +376,6 @@ func (h *handler) forwardOpen(i cipItem) error {
 
 	h.server.ConnMgr.Add(cipConnection)
 
-	// set us up as the connection handler for this connection ID
-	h.server.ConnMutex.Lock()
-	h.server.OTConnections[h.OTConnectionID] = h
-	h.server.ConnMutex.Unlock()
-
 	if fwd_open.TransportTrigger == 1 {
 		// this is a cyclic IO connection
 		tp, err := h.server.Router.Resolve(h.Path[:2])
@@ -563,7 +389,7 @@ func (h *handler) forwardOpen(i cipItem) error {
 	return nil
 }
 
-func (h *handler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp TagProvider, conn *serverConnection) {
+func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp TagProvider, conn *serverConnection) {
 	rpi := time.Duration(fwd_open.TORPI) * time.Microsecond
 	log.Printf("IO RPI of %v", rpi)
 	t := time.NewTicker(rpi)
@@ -615,7 +441,7 @@ func (h *handler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp TagProvid
 	}
 }
 
-func (h *handler) registerSession(hdr EIPHeader) error {
+func (h *serverTCPHandler) registerSession(hdr EIPHeader) error {
 
 	reg_msg := msgCIPRegister{}
 	err := binary.Read(h.conn, binary.LittleEndian, &reg_msg)
@@ -641,7 +467,7 @@ func (h *handler) registerSession(hdr EIPHeader) error {
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (h *handler) send(cmd CIPCommand, msgs ...any) error {
+func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -676,7 +502,7 @@ func (h *handler) send(cmd CIPCommand, msgs ...any) error {
 
 }
 
-func (h *handler) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (h *serverTCPHandler) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
 
 	hdr.Command = cmd
 	//hdr.Command = 0x0070

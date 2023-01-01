@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (h *handler) unconnectedData(item cipItem) error {
+func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 	var service CIPService
 	var err error
 	item.Unmarshal(&service)
@@ -65,7 +65,7 @@ func (h *handler) unconnectedData(item cipItem) error {
 	return nil
 }
 
-func (h *handler) unconnectedServiceWrite(item cipItem) error {
+func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 	var reserved byte
 	err := item.Unmarshal(&reserved)
 	if err != nil {
@@ -127,7 +127,7 @@ func (h *handler) unconnectedServiceWrite(item cipItem) error {
 
 }
 
-func (h *handler) unconnectedServiceRead(item cipItem) error {
+func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
 	var reserved byte
 	err := item.Unmarshal(&reserved)
 	if err != nil {
@@ -171,7 +171,7 @@ func (h *handler) unconnectedServiceRead(item cipItem) error {
 
 }
 
-func (h *handler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
+func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
 	items := make([]cipItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
@@ -185,7 +185,7 @@ func (h *handler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error
 	return h.send(cipCommandSendRRData, MarshalItems(items))
 }
 
-func (h *handler) sendUnconnectedUnitDataReply(s CIPService) error {
+func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 	items := make([]cipItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
