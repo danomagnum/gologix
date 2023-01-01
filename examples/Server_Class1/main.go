@@ -16,10 +16,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"github.com/danomagnum/gologix"
 )
+
+type InStr struct {
+	Data  [9]byte
+	Count byte
+}
+type OutStr struct {
+	Data [10]byte
+}
 
 func main() {
 
@@ -34,17 +44,32 @@ func main() {
 
 	r := gologix.PathRouter{}
 
+	// define the Input and Output instances.  (Input and output here is from the plc's perspective)
+	inInstance := InStr{}
+	outInstance := OutStr{}
+
 	// an IO handler in slot 2
-	p3 := gologix.IOProvider{}
+	//p3 := gologix.IOProvider[InStr, OutStr]{}
+	p3 := gologix.IOProvider[InStr, OutStr]{
+		In:  &inInstance,
+		Out: &outInstance,
+	}
 	path3, err := gologix.ParsePath("1,2")
 	if err != nil {
 		fmt.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
 	r.AddHandler(path3.Bytes(), &p3)
-
-	s := gologix.NewServer(&r)
+	1 got IO input [0 0 0 0 0 0 0 0 0 0]
 	go s.Serve()
-	select {}
+
+	t := time.NewTicker(time.Second)
+
+	for {
+		<-t.C
+		inInstance.Count++
+		log.Printf("PLC Input: %v", inInstance)
+		log.Printf("PLC Output: %v", outInstance)
+	}
 
 }

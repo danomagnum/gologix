@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -24,6 +25,7 @@ func (cm *serverConnectionManager) Init() {
 	cm.Connections = make([]*serverConnection, 0, 32)
 }
 func (cm *serverConnectionManager) Add(conn *serverConnection) {
+	log.Printf("New Managed Connection. %+v", *conn)
 	cm.Lock.Lock()
 	defer cm.Lock.Unlock()
 	cm.Connections = append(cm.Connections, conn)

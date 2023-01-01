@@ -28,7 +28,6 @@ type serverTCPHandler struct {
 	context        uint64
 	OTConnectionID uint32
 	TOConnectionID uint32
-	Path           []byte
 
 	UnitDataSequencer uint16
 }
@@ -332,7 +331,7 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
 	log.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
-	h.Path = fwd_path[:2]
+	path := fwd_path[:2]
 
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]cipItem, 2)
@@ -371,6 +370,7 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 		OT:   fwd_open.OTConnectionID,
 		ID:   fwd_open.ConnectionSerialNumber,
 		RPI:  time.Duration(fwd_open.TORPI) * time.Microsecond,
+		Path: path,
 		Open: true,
 	}
 
@@ -378,10 +378,10 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 
 	if fwd_open.TransportTrigger == 1 {
 		// this is a cyclic IO connection
-		tp, err := h.server.Router.Resolve(h.Path[:2])
+		tp, err := h.server.Router.Resolve(path)
 		if err != nil {
-			log.Printf("No tag provider for path %v", h.Path[:2])
-			return fmt.Errorf("no tag provider for path %v", h.Path[:2])
+			log.Printf("No tag provider for path %v", path)
+			return fmt.Errorf("no tag provider for path %v", path)
 		}
 		go h.ioConnection(fwd_open, tp, cipConnection)
 	}
