@@ -96,9 +96,14 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	attr2_symbol_type := 2
 	attr8_arraydims := 8
 	reqitems[1].Marshal([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
-	reqitems[1].Marshal(byte(1))
-	reqitems[1].Marshal(byte(0))
-	reqitems[1].Marshal(uint16(1))
+
+	// if we have an empty path, we don't include this (for micro800)
+	// TODO: figure out what this is
+	if client.Path.Len() != 0 {
+		reqitems[1].Marshal(byte(1))
+		reqitems[1].Marshal(byte(0))
+		reqitems[1].Marshal(uint16(1))
+	}
 
 	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {

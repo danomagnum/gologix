@@ -13,13 +13,8 @@ func main() {
 
 	// setup the client.  If you need a different path you'll have to set that.
 	client := gologix.NewClient("192.168.2.244")
-	// micro8xx use no path?
+	// micro8xx use no path.  So an empty buffer will give us that.
 	client.Path = &bytes.Buffer{}
-
-	// for example, to have a controller on slot 1 instead of 0 you could do this
-	// client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
-	// or this
-	// client.Path, err = gologix.ParsePath("1,1")
 
 	// connect using parameters in the client struct
 	err = client.Connect()
@@ -34,16 +29,29 @@ func main() {
 
 	// define a variable with a type that matches the tag you want to read.  In this case it is an INT so
 	// int16 or uint16 will work.
-	var input_dat int32
+	input_dat := make([]int32, 8)
+
 	// call the read function.
 	// note that tag names are case insensitive.
 	// also note that for atomic types and structs you need to use a pointer.
 	// for slices you don't use a pointer.
-	err = client.Read("inputs[0]", &input_dat)
+	//
+	// As far as I can tell you can't read program scope tags
+	err = client.Read("inputs", input_dat)
 	if err != nil {
 		fmt.Printf("error reading 'input' tag. %v\n", err)
 	}
 	// do whatever you want with the value
 	fmt.Printf("input_dat has value %d\n", input_dat)
+
+	err = client.ListAllTags(0)
+	if err != nil {
+		fmt.Printf("problem listing tags. %v\n", err)
+		return
+	}
+	fmt.Printf("found %v tags\n", len(client.KnownTags))
+	for i := range client.KnownTags {
+		fmt.Printf("Tag: %v\n", client.KnownTags[i])
+	}
 
 }
