@@ -171,7 +171,56 @@ func (client *Client) connect() error {
 	}
 
 	if fwopenresphdr.Status != 0x00 {
-		return fmt.Errorf("bad status on forward open header. got %x", fwopenresphdr.Status)
+		log.Printf("bad status on large forward open header. got %x. Falling back to small forard open", fwopenresphdr.Status)
+		client.ConnectionSize = 502
+
+		// we have to do something different for small connection sizes.
+		fwd_open, err := client.NewForwardOpenStandard()
+		if err != nil {
+			return fmt.Errorf("couldn't create forward open. %w", err)
+		}
+		s := binary.Size(fwd_open)
+		_ = s
+		items0 := make([]cipItem, 2)
+		items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+		items0[1] = fwd_open
+		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, MarshalItems(items0))
+		if err != nil {
+			return err
+		}
+		_ = hdr
+		if hdr.Status != 0x00 {
+			return fmt.Errorf("small Forward Open Failed. code %v", hdr.Status)
+		}
+		// header before items
+		preitem = msgPreItemData{}
+		err = binary.Read(dat, binary.LittleEndian, &preitem)
+		if err != nil {
+			return fmt.Errorf("problem reading items header from forward open req. %w", err)
+		}
+
+		items, err = ReadItems(dat)
+		if err != nil {
+			return fmt.Errorf("problem reading items from forward open req. %w", err)
+		}
+
+		fwopenresphdr = msgCIPMessageRouterResponse{}
+		err = items[1].Unmarshal(&fwopenresphdr)
+		if err != nil {
+			return fmt.Errorf("error unmarshaling forward open response header. %w", err)
+		}
+		extended_status = make([]byte, fwopenresphdr.Status_Len*2)
+		if fwopenresphdr.Status_Len != 0 {
+			err = items[1].Unmarshal(&extended_status)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling forward open response header extended status. %w", err)
+			}
+		}
+
+		if fwopenresphdr.Status != 0x00 {
+			return fmt.Errorf("bad status on both forward opens. got %x", fwopenresphdr.Status)
+		}
+
 	}
 
 	forwardopenresp := msgEIPForwardOpen_Reply{}
@@ -284,6 +333,7 @@ type msgEIPForwardOpen_Large struct {
 func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Large
+	rand.Seed(time.Now().Unix())
 
 	p, err := Serialize(
 		client.Path,
@@ -335,6 +385,8 @@ type msgCIPRegister struct {
 func (client *Client) NewForwardOpenStandard() (cipItem, error) {
 	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Standard
+
+	rand.Seed(time.Now().Unix())
 
 	p, err := Serialize(
 		client.Path,
