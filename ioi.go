@@ -156,17 +156,29 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 				if order_size < 256 {
 					// byte, byte
 					index_part := []byte{byte(cipElement_8bit), byte(order_size)}
-					binary.Write(ioi, binary.LittleEndian, index_part)
+					err = binary.Write(ioi, binary.LittleEndian, index_part)
+					if err != nil {
+						return nil, fmt.Errorf("problem reading index part. %w", err)
+					}
 				} else if order_size < 65536 {
 					// uint16, uint16
 					index_part := []uint16{uint16(cipElement_16bit), uint16(order_size)}
-					binary.Write(ioi, binary.LittleEndian, index_part)
+					err = binary.Write(ioi, binary.LittleEndian, index_part)
+					if err != nil {
+						return nil, fmt.Errorf("problem reading index part. %w", err)
+					}
 				} else {
 					// uint16, uint32
 					index_part0 := []uint16{uint16(cipElement_32bit)}
-					binary.Write(ioi, binary.LittleEndian, index_part0)
+					err = binary.Write(ioi, binary.LittleEndian, index_part0)
+					if err != nil {
+						return nil, err
+					}
 					index_part1 := []uint32{uint32(order_size)}
-					binary.Write(ioi, binary.LittleEndian, index_part1)
+					err = binary.Write(ioi, binary.LittleEndian, index_part1)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 
@@ -182,7 +194,10 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 				continue
 			}
 			ioi_part := marshalIOIPart(tag_part)
-			ioi.Write(ioi_part)
+			_, err = ioi.Write(ioi_part)
+			if err != nil {
+				return nil, err
+			}
 
 		}
 

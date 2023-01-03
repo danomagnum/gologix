@@ -116,7 +116,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return fmt.Errorf("problem getting padding bytes. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
@@ -127,15 +130,24 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 	//data2.Next(4)
 	data_hdr := msgListInstanceHeader{}
-	binary.Read(data2, binary.LittleEndian, &data_hdr)
+	err = binary.Read(data2, binary.LittleEndian, &data_hdr)
+	if err != nil {
+		return fmt.Errorf("problem reading list instance header. %w", err)
+	}
 
 	tag_hdr := new(msgtagResultDataHeader)
 	tag_ftr := new(msgtagResultDataFooter)
 	for data2.Len() > 0 {
 
-		binary.Read(data2, binary.LittleEndian, tag_hdr)
+		err = binary.Read(data2, binary.LittleEndian, tag_hdr)
+		if err != nil {
+			return fmt.Errorf("problem reading tag header. %w", err)
+		}
 		tag_name := make([]byte, tag_hdr.NameLength)
-		binary.Read(data2, binary.LittleEndian, &tag_name)
+		err = binary.Read(data2, binary.LittleEndian, &tag_name)
+		if err != nil {
+			return fmt.Errorf("problem reading tag name. %w", err)
+		}
 		tag_string := string(tag_name)
 
 		// the end of the tagname has to be aligned on a 16 bit word
@@ -143,7 +155,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		//if tagname_alignment != 0 {
 		//data2.Next(int(tagname_alignment))
 		//}
-		binary.Read(data2, binary.LittleEndian, tag_ftr)
+		err = binary.Read(data2, binary.LittleEndian, tag_ftr)
+		if err != nil {
+			return fmt.Errorf("problem reading tag footer. %w", err)
+		}
 
 		kt := KnownTag{
 			Name:     string(tag_name),
@@ -190,7 +205,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		if len(tag_string) > 8 {
 			if tag_string[:8] == "Program:" {
-				client.ListSubTags(tag_string, 1)
+				_, err = client.ListSubTags(tag_string, 1)
+				if err != nil {
+					return err
+				}
 				continue
 			}
 		}
@@ -199,7 +217,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			if verbose {
 				log.Printf("Looking up template for Tag: '%s' ", tag_string)
 			}
-			client.ListMembers(uint32(tag_ftr.Template_ID()))
+			_, err = client.ListMembers(uint32(tag_ftr.Template_ID()))
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -225,7 +246,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		client.ListAllTags(start_instance)
+		err = client.ListAllTags(start_instance)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

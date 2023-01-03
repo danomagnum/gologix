@@ -115,8 +115,16 @@ func (item *cipItem) Unmarshal(str any) error {
 
 func (item *cipItem) Bytes() []byte {
 	b := bytes.Buffer{}
-	binary.Write(&b, binary.LittleEndian, item.Header)
-	b.Write(item.Data)
+	err := binary.Write(&b, binary.LittleEndian, item.Header)
+	if err != nil {
+		log.Printf("problem writing data. %v", err)
+		return b.Bytes()
+	}
+	_, err = b.Write(item.Data)
+	if err != nil {
+		log.Printf("problem writing item data. %v", err)
+		return b.Bytes()
+	}
 	return b.Bytes()
 }
 
@@ -172,7 +180,10 @@ func MarshalItems(items []cipItem) *[]byte {
 		SequenceCounter: 0,
 		Count:           uint16(len(items)),
 	}
-	binary.Write(b, binary.LittleEndian, item_hdr)
+	err := binary.Write(b, binary.LittleEndian, item_hdr)
+	if err != nil {
+		log.Printf("problem marshaling item header into b. %v", err)
+	}
 
 	for _, item := range items {
 		b.Write(item.Bytes())

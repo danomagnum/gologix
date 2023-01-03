@@ -10,10 +10,11 @@ import (
 // this is specifically the response for a GetAttrList service on a
 // template object with requested attributes of 4,5,2,1
 // where
-//      4 = Size of the template in 32 bit words
-//      5 = Size of the data in the template (when sent in a read response)
-//      2 = Number of fields/members in the template
-//      1 = The handle of the template. not sure what this is for yet
+//
+//	4 = Size of the template in 32 bit words
+//	5 = Size of the data in the template (when sent in a read response)
+//	2 = Number of fields/members in the template
+//	1 = The handle of the template. not sure what this is for yet
 type msgGetTemplateAttrListResponse struct {
 	SequenceCount   uint16
 	Service         CIPService
@@ -99,7 +100,10 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem reading padding. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
@@ -110,7 +114,10 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 
 	result := msgGetTemplateAttrListResponse{}
-	binary.Read(data2, binary.LittleEndian, &result)
+	err = binary.Read(data2, binary.LittleEndian, &result)
+	if err != nil {
+		return result, fmt.Errorf("problem reading result. %w", err)
+	}
 	if verbose {
 		log.Printf("Result: %+v\n\n", result)
 	}
@@ -181,7 +188,10 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("couldn't read padding. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
@@ -195,7 +205,10 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	binary.Read(data2, binary.LittleEndian, &mihdr)
 
 	memberInfos := make([]msgMemberInfo, template_info.MemberCount)
-	binary.Read(data2, binary.LittleEndian, &memberInfos)
+	err = binary.Read(data2, binary.LittleEndian, &memberInfos)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("couldn't read memberinfos. %w", err)
+	}
 	if verbose {
 		log.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
 	}
