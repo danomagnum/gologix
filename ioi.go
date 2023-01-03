@@ -3,6 +3,7 @@ package gologix
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,7 +75,11 @@ func (tag *tagPartDescriptor) Parse(tagpath string) error {
 
 // parse the tag name into its base tag (remove array index or bit) and get the array index if it exists
 func parse_tag_name(tagpath string) (tag tagPartDescriptor) {
-	tag.Parse(tagpath)
+	err := tag.Parse(tagpath)
+	if err != nil {
+		log.Printf("problem parsing path. %v", err)
+		return
+	}
 	return
 
 }
@@ -139,7 +144,11 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 			// part of an array
 			start_index := strings.Index(tag_part, "[")
 			ioi_part := marshalIOIPart(tag_part[0:start_index])
-			ioi.Write(ioi_part)
+			_, err = ioi.Write(ioi_part)
+			if err != nil {
+				return ioi, fmt.Errorf("problem writing ioi part %w", err)
+
+			}
 
 			t := parse_tag_name(tag_part)
 

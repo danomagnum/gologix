@@ -105,7 +105,10 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return msgGetControllerPropList{}, fmt.Errorf("couldn't read data. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
@@ -116,7 +119,10 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 
 	result := msgGetControllerPropList{}
-	binary.Read(data2, binary.LittleEndian, &result)
+	err = binary.Read(data2, binary.LittleEndian, &result)
+	if err != nil {
+		return msgGetControllerPropList{}, fmt.Errorf("couldn't read data. %w", err)
+	}
 	if verbose {
 		log.Printf("Result: %+v\n\n", result)
 	}

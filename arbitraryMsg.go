@@ -38,7 +38,10 @@ func (client *Client) ArbitraryMessage(service CIPService, path Serializable, Se
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return nil, fmt.Errorf("douldn't read data. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
