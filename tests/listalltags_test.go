@@ -17,7 +17,11 @@ func TestList(t *testing.T) {
 	}
 	defer client.Disconnect()
 
-	client.ListAllTags(0)
+	err = client.ListAllTags(0)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	log.Printf("Tags: %+v\n", client.KnownTags["testdintarr"])
 

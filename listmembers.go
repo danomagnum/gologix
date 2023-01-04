@@ -116,7 +116,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	result := msgGetTemplateAttrListResponse{}
 	err = binary.Read(data2, binary.LittleEndian, &result)
 	if err != nil {
-		return result, fmt.Errorf("problem reading result. %w", err)
+		//return result, fmt.Errorf("problem reading result. %w", err)
 	}
 	if verbose {
 		log.Printf("Result: %+v\n\n", result)

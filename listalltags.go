@@ -213,13 +213,14 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			}
 		}
 
-		if tag_ftr.Template_ID() != 0 {
+		if tag_ftr.Template_ID() != 0 && !tag_ftr.PreDefined() {
 			if verbose {
 				log.Printf("Looking up template for Tag: '%s' ", tag_string)
 			}
 			_, err = client.ListMembers(uint32(tag_ftr.Template_ID()))
 			if err != nil {
-				return err
+				log.Printf("problem reading member list for %v, %+v, %+v, %v, %v", tag_string, tag_hdr, tag_ftr, tag_ftr.Template_ID(), tag_ftr.PreDefined())
+				//return err
 			}
 			continue
 		}
