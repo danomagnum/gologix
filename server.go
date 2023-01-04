@@ -202,11 +202,11 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
-	err := binary.Read(h.conn, binary.LittleEndian, interface_handle)
+	err := binary.Read(h.conn, binary.LittleEndian, &interface_handle)
 	if err != nil {
 		return fmt.Errorf("problem reading interface handle %w", err)
 	}
-	err = binary.Read(h.conn, binary.LittleEndian, timeout)
+	err = binary.Read(h.conn, binary.LittleEndian, &timeout)
 	if err != nil {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
@@ -244,6 +244,16 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		if err != nil {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
+	case cipService_FragRead:
+		err = h.connectedData(items[1])
+		if err != nil {
+			return fmt.Errorf("problem handling frag read. %w", err)
+		}
+	case cipService_Read:
+		err = h.connectedData(items[1])
+		if err != nil {
+			return fmt.Errorf("problem handling frag read. %w", err)
+		}
 	default:
 		log.Printf("Got unknown service %d", service)
 	}
@@ -276,11 +286,11 @@ func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
-	err := binary.Read(h.conn, binary.LittleEndian, interface_handle)
+	err := binary.Read(h.conn, binary.LittleEndian, &interface_handle)
 	if err != nil {
 		return fmt.Errorf("problem reading interface handle %w", err)
 	}
-	err = binary.Read(h.conn, binary.LittleEndian, timeout)
+	err = binary.Read(h.conn, binary.LittleEndian, &timeout)
 	if err != nil {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
@@ -317,7 +327,7 @@ func getTagFromPath(item *cipItem) (string, error) {
 		return "", fmt.Errorf("problem getting tag len. %w", err)
 	}
 	b := make([]byte, tag_len)
-	err = item.Unmarshal(b)
+	err = item.Unmarshal(&b)
 	if err != nil {
 		return "", fmt.Errorf("problem reading tag path. %w", err)
 	}
@@ -353,6 +363,74 @@ func (h *serverTCPHandler) forwardClose(i cipItem) error {
 		log.Printf("problem parsing forward close path. %v", err)
 		return fmt.Errorf("problem parsing forward close path %w", err)
 	}
+	return nil
+}
+
+func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
+	log.Printf("got large forward open from %v", h.conn.RemoteAddr())
+	var fwd_open msgEIPForwardOpen_Large
+	err := i.Unmarshal(&fwd_open)
+	if err != nil {
+		return fmt.Errorf("problem with fwd open parsing %w", err)
+	}
+	fwd_path := make([]byte, fwd_open.ConnPathSize*2)
+	err = i.Unmarshal(&fwd_path)
+	if err != nil {
+		return fmt.Errorf("problem with fwd open path parsing %w", err)
+	}
+	log.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
+	path := fwd_path[:2]
+
+	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
+	items := make([]cipItem, 2)
+	items[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	items[1] = NewItem(cipItem_UnconnectedData, nil)
+
+	if fwd_open.TOConnectionID == 0 {
+		h.TOConnectionID = rand.Uint32()
+	} else {
+		h.TOConnectionID = fwd_open.TOConnectionID
+	}
+	fwd_open.TOConnectionID = h.TOConnectionID
+	if fwd_open.OTConnectionID == 0 {
+		h.OTConnectionID = rand.Uint32()
+	} else {
+		h.OTConnectionID = fwd_open.OTConnectionID
+	}
+	fwd_open.OTConnectionID = h.OTConnectionID
+	fwopenresphdr := msgEIPForwardOpen_Standard_Reply{
+		Service:                fwd_open.Service.AsResponse(),
+		OTConnectionID:         h.OTConnectionID,
+		TOConnectionID:         h.TOConnectionID,
+		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
+		VendorID:               fwd_open.VendorID,
+		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
+		OTAPI:                  0,
+		TOAPI:                  0,
+	}
+
+	items[1].Marshal(fwopenresphdr)
+
+	err = h.send(cipCommandSendRRData, MarshalItems(items))
+	if err != nil {
+		return fmt.Errorf("problem sending response data %w", err)
+	}
+
+	cipConnection := &serverConnection{
+		TO:   fwd_open.TOConnectionID,
+		OT:   fwd_open.OTConnectionID,
+		ID:   fwd_open.ConnectionSerialNumber,
+		RPI:  time.Duration(fwd_open.TORPI) * time.Microsecond,
+		Path: path,
+		Open: true,
+	}
+
+	h.server.ConnMgr.Add(cipConnection)
+
+	if fwd_open.TransportTrigger == 1 {
+		log.Printf("Large Forward Open IO Connections Not Yet Supported")
+	}
+
 	return nil
 }
 

@@ -327,7 +327,7 @@ type msgEIPForwardOpen_Large struct {
 	TORPI                  uint32
 	TONetworkConnParams    uint32
 	TransportTrigger       byte
-	PathLen                byte
+	ConnPathSize           byte
 }
 
 func (client *Client) NewForwardOpenLarge() (cipItem, error) {
@@ -370,7 +370,7 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	msg.TORPI = 0x00204001
 	msg.TONetworkConnParams = ConnectionParams
 	msg.TransportTrigger = 0xA3
-	msg.PathLen = byte(p.Len() / 2)
+	msg.ConnPathSize = byte(p.Len() / 2)
 	item.Marshal(msg)
 	item.Marshal(p.Bytes())
 

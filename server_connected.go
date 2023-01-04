@@ -8,7 +8,7 @@ import (
 func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	var l byte // length in words
 	item := items[1]
-	err := item.Unmarshal(l)
+	err := item.Unmarshal(&l)
 	if err != nil {
 		return fmt.Errorf("problem unmarshaling item length %w", err)
 	}
@@ -51,16 +51,48 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	if err != nil {
 		return fmt.Errorf("problem unmarshaling reserved byte %w", err)
 	}
-	var elements uint16
-	err = item.Unmarshal(&elements)
+	var qty uint16
+	err = item.Unmarshal(&qty)
 	if err != nil {
 		return fmt.Errorf("problem unmarshaling element count %w", err)
 	}
 
-	fmt.Printf("tag: %s", tag)
-	for i := 0; i < int(elements); i++ {
-		v := typ.readValue(&item)
-		fmt.Printf("value: %v", v)
+	results := make([]any, qty)
+	log.Printf("tag: %s", tag)
+	for i := 0; i < int(qty); i++ {
+		results[i] = typ.readValue(&item)
+	}
+	log.Printf("value: %v", results)
+
+	if items[0].Header.ID != cipItem_ConnectionAddress {
+		return fmt.Errorf("expected a connection address item in item 0. got %v", items[0].Header.ID)
+	}
+	items[0].Reset()
+	var connID uint32
+	err = items[0].Unmarshal(&connID)
+	if err != nil {
+		return fmt.Errorf("problem unmarshaling connection ID (%+v) %w", items[0], err)
+	}
+
+	conn, err := h.server.ConnMgr.GetByOT(connID)
+	if err != nil {
+		return fmt.Errorf("no server handler for %v. %w", connID, err)
+	}
+
+	p, err := h.server.Router.Resolve(conn.Path)
+	if err != nil {
+		return fmt.Errorf("problem finding tag provider for %v(%v). %w", connID, conn.Path, err)
+	}
+	if qty > 1 {
+		err = p.TagWrite(tag, results)
+		if err != nil {
+			return fmt.Errorf("problem writing tag %v. %w", tag, err)
+		}
+	} else {
+		err = p.TagWrite(tag, results[0])
+		if err != nil {
+			return fmt.Errorf("problem writing tag %v. %w", tag, err)
+		}
 	}
 
 	// path is part of the forward open we've previously received.
