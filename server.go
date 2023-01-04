@@ -54,8 +54,26 @@ func (srv *Server) Serve() error {
 	if err != nil {
 		return fmt.Errorf("couldn't open udp listener. %v", err)
 	}
-	go srv.serveUDP()
-	return srv.serveTCP()
+
+	// we'll start two server goroutines and then wait for either of them to error out on the error channel.
+
+	errch := make(chan error)
+
+	go func() {
+		err := srv.serveUDP()
+		if err != nil {
+			errch <- fmt.Errorf("problem serving UDP. %w", err)
+		}
+	}()
+
+	go func() {
+		err := srv.serveTCP()
+		if err != nil {
+			errch <- fmt.Errorf("problem serving TCP. %w", err)
+		}
+	}()
+
+	return <-errch
 
 }
 
@@ -184,8 +202,14 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
-	binary.Read(h.conn, binary.LittleEndian, interface_handle)
-	binary.Read(h.conn, binary.LittleEndian, timeout)
+	err := binary.Read(h.conn, binary.LittleEndian, interface_handle)
+	if err != nil {
+		return fmt.Errorf("problem reading interface handle %w", err)
+	}
+	err = binary.Read(h.conn, binary.LittleEndian, timeout)
+	if err != nil {
+		return fmt.Errorf("problem reading timeout %w", err)
+	}
 	log.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := ReadItems(h.conn)
 	if err != nil {
@@ -200,11 +224,20 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		return fmt.Errorf("should have had a connected data item in position 0. got %v", items[0].Header.ID)
 	}
 	var connid uint32
-	items[0].Unmarshal(&connid)
+	err = items[0].Unmarshal(&connid)
+	if err != nil {
+		return fmt.Errorf("problem unmarshaling connection ID %w", err)
+	}
 
-	items[1].Unmarshal(&h.UnitDataSequencer)
+	err = items[1].Unmarshal(&h.UnitDataSequencer)
+	if err != nil {
+		return fmt.Errorf("problem unmarshaling unit data seq %w", err)
+	}
 	var service CIPService
-	items[1].Unmarshal(&service)
+	err = items[1].Unmarshal(&service)
+	if err != nil {
+		return fmt.Errorf("problem unmarshaling service %w", err)
+	}
 	switch service {
 	case cipService_Write:
 		err = h.cipConnectedWrite(items)
@@ -243,8 +276,14 @@ func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	var interface_handle uint32
 	var timeout uint16
-	binary.Read(h.conn, binary.LittleEndian, interface_handle)
-	binary.Read(h.conn, binary.LittleEndian, timeout)
+	err := binary.Read(h.conn, binary.LittleEndian, interface_handle)
+	if err != nil {
+		return fmt.Errorf("problem reading interface handle %w", err)
+	}
+	err = binary.Read(h.conn, binary.LittleEndian, timeout)
+	if err != nil {
+		return fmt.Errorf("problem reading timeout %w", err)
+	}
 	log.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := ReadItems(h.conn)
 	if err != nil {
@@ -362,7 +401,10 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 
 	items[1].Marshal(fwopenresphdr)
 
-	h.send(cipCommandSendRRData, MarshalItems(items))
+	err = h.send(cipCommandSendRRData, MarshalItems(items))
+	if err != nil {
+		return fmt.Errorf("problem sending response data %w", err)
+	}
 
 	cipConnection := &serverConnection{
 		TO:   fwd_open.TOConnectionID,
@@ -479,11 +521,17 @@ func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
 	// the 24 is from the header size
 	b := make([]byte, 0, size+24)
 	buf := bytes.NewBuffer(b)
-	binary.Write(buf, binary.LittleEndian, hdr)
+	err := binary.Write(buf, binary.LittleEndian, hdr)
+	if err != nil {
+		return fmt.Errorf("problem writing header to buffer. %w", err)
+	}
 
 	// add all message components to the buffer.
 	for _, msg := range msgs {
-		binary.Write(buf, binary.LittleEndian, msg)
+		err = binary.Write(buf, binary.LittleEndian, msg)
+		if err != nil {
+			return fmt.Errorf("problem writing message to buffer. %w", err)
+		}
 	}
 
 	b = buf.Bytes()

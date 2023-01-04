@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 )
 
@@ -65,7 +66,11 @@ func Pack(w io.Writer, p Packing, data any) int {
 						bitpos++
 						// when we have a full byte, flush it.
 						if bitpos >= 8 {
-							w.Write([]byte{bitpack})
+							_, err := w.Write([]byte{bitpack})
+							if err != nil {
+								//TODO: make this function return error?
+								log.Printf("problem writing bitpack to buffer. %v", err)
+							}
 							bitpos = 0
 							bitpack = 0
 							pos += 1
@@ -85,7 +90,10 @@ func Pack(w io.Writer, p Packing, data any) int {
 				bitpos++
 				// when we have a full byte, flush it.
 				if bitpos >= 8 {
-					w.Write([]byte{bitpack})
+					_, err := w.Write([]byte{bitpack})
+					if err != nil {
+						log.Printf("problem writing bitpacked byte. %v", err)
+					}
 					bitpos = 0
 					bitpack = 0
 					pos += 1
@@ -99,7 +107,10 @@ func Pack(w io.Writer, p Packing, data any) int {
 		// we don't have a packable bool.  First thing we need to do is check whether there are some packed bools that still need flushed out.
 		if bitpos > 0 {
 			// we have at least one bit that needs flushed.
-			w.Write([]byte{bitpack})
+			_, err := w.Write([]byte{bitpack})
+			if err != nil {
+				log.Printf("problem writing bitpacked byte. %v", err)
+			}
 			bitpos = 0
 			bitpack = 0
 			pos += 1
@@ -110,13 +121,20 @@ func Pack(w io.Writer, p Packing, data any) int {
 		if rem < a && rem > 0 {
 			// need paddding bits
 			pad := make([]byte, rem)
-			w.Write(pad)
+			_, err := w.Write(pad)
+			if err != nil {
+				log.Printf("problem writing pad to buffer. %v", err)
+			}
 			pos += rem
 		}
 
 		// finally, if the field is some sub-structure, recurse.  Otherwise we will write the data out
 		if k != reflect.Struct {
-			binary.Write(w, p.Order(), refVal.Field(i).Interface())
+			err := binary.Write(w, p.Order(), refVal.Field(i).Interface())
+			if err != nil {
+				log.Printf("problem reading sub-structure. %v", err)
+			}
+
 		} else {
 			s = Pack(w, p, refVal.Field(i).Interface())
 		}
@@ -125,9 +143,10 @@ func Pack(w io.Writer, p Packing, data any) int {
 	// Last thing we need to do is check whether there are some packed bools that still need flushed out.
 	if bitpos > 0 {
 		// we have at least one bit that needs flushed.
-		w.Write([]byte{bitpack})
-		bitpos = 0
-		bitpack = 0
+		_, err := w.Write([]byte{bitpack})
+		if err != nil {
+			log.Printf("problem flushing bitpack, %v", err)
+		}
 		pos += 1
 	}
 
@@ -167,7 +186,10 @@ func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 					for ai := 0; ai < l; ai++ {
 						if bitpos == 0 {
 							br := []byte{0}
-							r.Read(br)
+							_, err = r.Read(br)
+							if err != nil {
+								return n, fmt.Errorf("problem reading bool. %w", err)
+							}
 							bitpack = br[0]
 							n += 1
 						}
@@ -187,7 +209,10 @@ func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 				// try to pack bools
 				if bitpos == 0 {
 					br := []byte{0}
-					r.Read(br)
+					_, err = r.Read(br)
+					if err != nil {
+						return n, fmt.Errorf("problem reading packed bool. %w", err)
+					}
 					bitpack = br[0]
 					n += 1
 				}
@@ -253,7 +278,11 @@ func ReadPacked[T any](client *Client, tag string) (T, error) {
 	if err != nil {
 		return data, fmt.Errorf("couldn't read %s as bytes. %v", tag, err)
 	}
-	Unpack(bytes.NewBuffer(b), CIPPack{}, &data)
+	_, err = Unpack(bytes.NewBuffer(b), CIPPack{}, &data)
+	if err != nil {
+		return data, fmt.Errorf("problem unpacking from buffer. %w", err)
+	}
+
 	return data, nil
 
 }

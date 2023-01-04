@@ -8,7 +8,10 @@ import (
 func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 	var service CIPService
 	var err error
-	item.Unmarshal(&service)
+	err = item.Unmarshal(&service)
+	if err != nil {
+		return fmt.Errorf("problem unmarshling service %w", err)
+	}
 	switch service {
 	case cipService_ForwardOpen:
 		item.Reset()
@@ -116,9 +119,15 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 	}
 	p := provider
 	if qty > 1 {
-		p.TagWrite(tag, results)
+		err = p.TagWrite(tag, results)
+		if err != nil {
+			return fmt.Errorf("problem writing tag %v. %w", tag, err)
+		}
 	} else {
-		p.TagWrite(tag, results[0])
+		err = p.TagWrite(tag, results[0])
+		if err != nil {
+			return fmt.Errorf("problem writing tag %v. %w", tag, err)
+		}
 	}
 
 	return h.sendUnconnectedRRDataReply(cipService_Write)

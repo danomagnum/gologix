@@ -16,7 +16,12 @@ func TestReadArrNew(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 	tag := "Program:gologix_tests.ReadDints[0]"
 	have := make([]int32, 5)
 	want := []int32{4351, 4352, 4353, 4354, 4355}
@@ -40,7 +45,12 @@ func TestReadNewUDT(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 	tag := "Program:gologix_tests.ReadUDTs[0]"
 	have := TestUDT{}
 	want := TestUDT{Field1: 20, Field2: 19.0}
@@ -59,7 +69,12 @@ func TestReadNewUDTArr(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 	tag := "Program:gologix_tests.ReadUDTs[0]"
 	have := make([]TestUDT, 5)
 	want := []TestUDT{
@@ -90,7 +105,12 @@ func TestReadBoolPack(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	type udt2 struct {
 		Field1 int32
@@ -124,7 +144,12 @@ func TestReadNew(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
 	testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
@@ -207,10 +232,19 @@ func TestReadMulti(t *testing.T) {
 	}
 
 	client := gologix.NewClient("192.168.2.241")
-	client.Connect()
-	defer client.Disconnect()
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
-	err := client.ReadMulti(&read)
+	err = client.ReadMulti(&read)
 	if err != nil {
 		t.Errorf("Problem reading. %v", err)
 		return
@@ -230,7 +264,12 @@ func TestReadTimeout(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 	fmt.Println("sleeping for 2 minutes. to let the comms timeout")
 	for t := 0; t < 24; t++ {
 		log.Printf("%d\n", t*5)

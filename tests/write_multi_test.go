@@ -13,7 +13,12 @@ func TestWriteMulti(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	want := TestUDT{Field1: 215, Field2: 25.1}
 

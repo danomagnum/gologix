@@ -110,7 +110,10 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 				return nil, err
 			}
 		case any:
-			binary.Write(b, binary.LittleEndian, str)
+			err := binary.Write(b, binary.LittleEndian, str)
+			if err != nil {
+				return nil, fmt.Errorf("problem writing str to buffer. %w", err)
+			}
 		}
 	}
 	return b, nil

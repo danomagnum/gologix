@@ -14,7 +14,12 @@ func TestMembersList(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	_, err = client.ListMembers(1658)
 	if err != nil {

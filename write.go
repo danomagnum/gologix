@@ -89,7 +89,13 @@ func (client *Client) write_single(tag string, value any) error {
 	if hdr2.Status != 0 {
 		extended := uint16(0)
 		if hdr2.StatusExtended == 1 {
-			items[1].Unmarshal(&extended)
+			err = items[1].Unmarshal(&extended)
+			return fmt.Errorf("got status %d:%d:%d instead of 0 in write response.  Problem getting extended status %w",
+				hdr2.Status,
+				hdr2.StatusExtended,
+				extended,
+				err)
+
 		}
 		return fmt.Errorf("got status %d:%d:%d instead of 0 in write response", hdr2.Status, hdr2.StatusExtended, extended)
 	}

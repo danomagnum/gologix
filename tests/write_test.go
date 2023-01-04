@@ -13,7 +13,12 @@ func TestWrite(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	write_and_check[int16](t, client, "program:gologix_tests.writeint", 0, 10, 20)
 	write_and_check[int32](t, client, "program:gologix_tests.writedint", 0, 10, 20)

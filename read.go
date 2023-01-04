@@ -530,9 +530,15 @@ func (client *Client) ReadMulti(tag_str any) error {
 		f := msgCIPIOIFooter{
 			Elements: 1,
 		}
-		binary.Write(&b, binary.LittleEndian, h)
+		err := binary.Write(&b, binary.LittleEndian, h)
+		if err != nil {
+			return fmt.Errorf("problem writing cip IO header to buffer. %w", err)
+		}
 		b.Write(ioi.Buffer)
-		binary.Write(&b, binary.LittleEndian, f)
+		err = binary.Write(&b, binary.LittleEndian, f)
+		if err != nil {
+			return fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
+		}
 	}
 
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
@@ -563,16 +569,25 @@ func (client *Client) ReadMulti(tag_str any) error {
 	}
 	ritem := items[1]
 	var reply_hdr msgMultiReadResultHeader
-	binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
+	err = binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
+	if err != nil {
+		return fmt.Errorf("problem reading reply header. %w", err)
+	}
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
-	binary.Read(&ritem, binary.LittleEndian, &offset_table)
+	err = binary.Read(&ritem, binary.LittleEndian, &offset_table)
+	if err != nil {
+		return fmt.Errorf("problem reading offset table. %w", err)
+	}
 	rb := ritem.Bytes()
 	result_values := make([]interface{}, reply_hdr.Reply_Count)
 	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
 		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
 		mybytes := bytes.NewBuffer(rb[offset:])
 		rhdr := msgMultiReadResult{}
-		binary.Read(mybytes, binary.LittleEndian, &rhdr)
+		err = binary.Read(mybytes, binary.LittleEndian, &rhdr)
+		if err != nil {
+			return fmt.Errorf("problem reading multi result header. %w", err)
+		}
 
 		// bit 8 of the service indicates whether it is a response service
 		if !rhdr.Service.IsResponse() {

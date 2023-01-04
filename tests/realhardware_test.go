@@ -11,8 +11,17 @@ import (
 func TestRealHardware(t *testing.T) {
 	flag.Parse()
 	client := gologix.NewClient("192.168.2.241")
-	client.Connect()
-	defer client.Disconnect()
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 	//client.ReadAll(1)
 	//client.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 	//ReadAndPrint[float32](client, "program:Shed.Temp1")
@@ -75,7 +84,7 @@ func TestRealHardware(t *testing.T) {
 	read[string](t, client, "Program:gologix_tests.ReadString")
 
 	var ut TestUDT
-	err := client.Read("Program:gologix_tests.ReadUDT", &ut)
+	err = client.Read("Program:gologix_tests.ReadUDT", &ut)
 	if err != nil {
 		t.Errorf("Problem reading udt. %v\n", err)
 	}
@@ -118,9 +127,18 @@ func TestReadKnown(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
-	client.ListAllTags(0)
+	err = client.ListAllTags(0)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	log.Printf("Tags: %+v\n", client.KnownTags["program:gologix_tests.readint"])
 

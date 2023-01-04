@@ -15,7 +15,12 @@ func TestList(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
 	err = client.ListAllTags(0)
 	if err != nil {

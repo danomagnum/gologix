@@ -14,9 +14,18 @@ func TestSubList(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer client.Disconnect()
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
 
-	client.ListSubTags("Program:gologix_tests", 1)
+	_, err = client.ListSubTags("Program:gologix_tests", 1)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 }
 

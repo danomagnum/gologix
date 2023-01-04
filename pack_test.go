@@ -70,7 +70,10 @@ func TestPack(t *testing.T) {
 	}
 
 	have2 := S{}
-	Unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	_, err := Unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	if err != nil {
+		t.Errorf("problem unpacking bytes. %v", err)
+	}
 	if have2 != s {
 		t.Errorf("ResultMismatch.\n Have \n%v\n Want \n%v\n", have2, s)
 

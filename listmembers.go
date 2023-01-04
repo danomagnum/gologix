@@ -116,7 +116,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	result := msgGetTemplateAttrListResponse{}
 	err = binary.Read(data2, binary.LittleEndian, &result)
 	if err != nil {
-		//return result, fmt.Errorf("problem reading result. %w", err)
+		return result, fmt.Errorf("problem reading result. %w", err)
 	}
 	if verbose {
 		log.Printf("Result: %+v\n\n", result)
@@ -202,7 +202,10 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 
 	mihdr := msgMemberInfoHdr{}
-	binary.Read(data2, binary.LittleEndian, &mihdr)
+	err = binary.Read(data2, binary.LittleEndian, &mihdr)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("couldn't read member info header. %w", err)
+	}
 
 	memberInfos := make([]msgMemberInfo, template_info.MemberCount)
 	err = binary.Read(data2, binary.LittleEndian, &memberInfos)

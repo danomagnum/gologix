@@ -46,9 +46,12 @@ func (p CIPAttribute) Len() int {
 	return 2
 }
 
+// currently unused
+/*
 const (
 	cipAttribute_Data CIPAttribute = 0x03
 )
+*/
 
 // Here are the objects
 
@@ -273,7 +276,8 @@ const (
 // Here are predefined profiles
 // "Any device that does not fall into the scope of one of the specialized
 //  Device Profiles must use the Generic Device profile (0x2B) or a vendor-specific profile"
-
+// commented out because they are currently unused
+/*
 type CIPDeviceProfile byte
 
 const (
@@ -318,3 +322,5 @@ const (
 	cipDevice_VacuumPump                       CIPDeviceProfile = 0x21
 	cipDevice_PressureGauge                    CIPDeviceProfile = 0x1C
 )
+
+*/

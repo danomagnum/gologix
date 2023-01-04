@@ -70,7 +70,10 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)
-	data.Read(padding)
+	_, err = data.Read(padding)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading padding. %w", err)
+	}
 
 	resp_items, err := ReadItems(data)
 	if err != nil {
@@ -81,15 +84,24 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	data2 := bytes.NewBuffer(resp_items[1].Data)
 	//data2.Next(4)
 	data_hdr := msgListInstanceHeader{}
-	binary.Read(data2, binary.LittleEndian, &data_hdr)
+	err = binary.Read(data2, binary.LittleEndian, &data_hdr)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading tag header. %w", err)
+	}
 
 	tag_hdr := new(msgtagResultDataHeader)
 	tag_ftr := new(msgtagResultDataFooter)
 	for data2.Len() > 0 {
 
-		binary.Read(data2, binary.LittleEndian, tag_hdr)
+		err = binary.Read(data2, binary.LittleEndian, tag_hdr)
+		if err != nil {
+			return nil, fmt.Errorf("problem reading tag header. %w", err)
+		}
 		newtag_bytes := make([]byte, tag_hdr.NameLength)
-		binary.Read(data2, binary.LittleEndian, &newtag_bytes)
+		err = binary.Read(data2, binary.LittleEndian, &newtag_bytes)
+		if err != nil {
+			return nil, fmt.Errorf("problem reading tag header. %w", err)
+		}
 		newtag_name := fmt.Sprintf("%s.%s", roottag, string(newtag_bytes))
 
 		// the end of the tagname has to be aligned on a 16 bit word
@@ -97,7 +109,10 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 		//if tagname_alignment != 0 {
 		//data2.Next(int(tagname_alignment))
 		//}
-		binary.Read(data2, binary.LittleEndian, tag_ftr)
+		err = binary.Read(data2, binary.LittleEndian, tag_ftr)
+		if err != nil {
+			return nil, fmt.Errorf("problem reading tag footer. %w", err)
+		}
 
 		kt := KnownTag{
 			Name:     newtag_name,
@@ -142,7 +157,10 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		client.ListSubTags(roottag, start_instance)
+		_, err = client.ListSubTags(roottag, start_instance)
+		if err != nil {
+			return new_kts, fmt.Errorf("problem listing subtags. %v", err)
+		}
 	}
 
 	return new_kts, nil

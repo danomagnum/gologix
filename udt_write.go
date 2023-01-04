@@ -129,10 +129,19 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 		//f := msgCIPIOIFooter{
 		//Elements: 1,
 		//}
-		binary.Write(&b, binary.LittleEndian, h)
+		err := binary.Write(&b, binary.LittleEndian, h)
+		if err != nil {
+			return fmt.Errorf("Problem writing udt item header to buffer. %w", err)
+		}
 		b.Write(ioi.Buffer)
-		binary.Write(&b, binary.LittleEndian, f)
-		binary.Write(&b, binary.LittleEndian, tag_str[tags[i]])
+		err = binary.Write(&b, binary.LittleEndian, f)
+		if err != nil {
+			return fmt.Errorf("Problem writing udt item footer to buffer. %w", err)
+		}
+		err = binary.Write(&b, binary.LittleEndian, tag_str[tags[i]])
+		if err != nil {
+			return fmt.Errorf("Problem writing udt tag name to buffer. %w", err)
+		}
 	}
 
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is

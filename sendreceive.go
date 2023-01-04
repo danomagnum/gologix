@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 )
 
 type EIPHeader struct {
@@ -31,11 +32,17 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	// the 24 is from the header size
 	b := make([]byte, 0, size+24)
 	buf := bytes.NewBuffer(b)
-	binary.Write(buf, binary.LittleEndian, hdr)
+	err := binary.Write(buf, binary.LittleEndian, hdr)
+	if err != nil {
+		return fmt.Errorf("problem writing header to buffer. %w", err)
+	}
 
 	// add all message components to the buffer.
 	for _, msg := range msgs {
-		binary.Write(buf, binary.LittleEndian, msg)
+		err = binary.Write(buf, binary.LittleEndian, msg)
+		if err != nil {
+			return fmt.Errorf("problem writing msg to buffer. %w", err)
+		}
 	}
 
 	b = buf.Bytes()

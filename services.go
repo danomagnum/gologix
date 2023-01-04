@@ -151,10 +151,14 @@ const (
 
 type CIPClass byte
 
+// currently unused
+/*
 const (
 	cipClass_Identiy        CIPClass = 0x01
 	cipClass_AssemblyObject CIPClass = 0x04
 )
+*/
+//
 
 func SizeOf(strs ...any) int {
 	t := 0 // total
