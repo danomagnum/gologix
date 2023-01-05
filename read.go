@@ -470,7 +470,7 @@ type CIPStructHeader struct {
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
 func (client *Client) ReadMulti(tag_str any) error {
 
-	// build the tag list from the structure
+	// build the tag list from the structure by reflecing through the tags on the fields of the struct.
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
@@ -500,9 +500,6 @@ func (client *Client) ReadMulti(tag_str any) error {
 			return err
 		}
 	}
-	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
-	// won't get an error but it will return the last value you requested again.
-	// You don't have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
 
 	reqitems := make([]cipItem, 2)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
@@ -547,7 +544,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Marshal(ioi_header)
 	reqitems[1].Marshal(jump_table)
-	reqitems[1].Marshal(b.Bytes())
+	reqitems[1].Marshal(&b)
 
 	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
 	if err != nil {
