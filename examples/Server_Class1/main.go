@@ -12,6 +12,9 @@
 //
 // Note that you won't be able to have multiple servers on a single computer.  They bind to the EIP ports on TCP and UDP so you'll need
 // to multiplex multiple connections through one program.
+//
+// In the current inarnation of this server it doesn't matter what assembly instance IDs you select in the controller, although you could create your own
+// TagProvider that changed behavior based on that.
 package main
 
 import (
@@ -23,6 +26,12 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
+// these types will be the input and output data section for the io connection.
+// the input/output nomenclature is from the PLC's point of view - Input goes to the PLC and output
+// comes to us.
+//
+// the size (in bytes) of these structures has to match the size you set up in the IO tree for the IO connection.
+// presumably you can also use other formats than bytes for the data type, but the sizes still have to match.
 type InStr struct {
 	Data  [9]byte
 	Count byte
