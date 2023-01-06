@@ -60,12 +60,12 @@ func (client *Client) write_single(tag string, value any) error {
 	reqitems := make([]cipItem, 2)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Marshal(ioi_header)
-	reqitems[1].Marshal(ioi.Buffer)
-	reqitems[1].Marshal(ioi_footer)
-	reqitems[1].Marshal(value)
+	reqitems[1].Serialize(ioi_header)
+	reqitems[1].Serialize(ioi.Buffer)
+	reqitems[1].Serialize(ioi_footer)
+	reqitems[1].Serialize(value)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}
@@ -82,14 +82,14 @@ func (client *Client) write_single(tag string, value any) error {
 		return fmt.Errorf("problem reading items from write, %w", err)
 	}
 	var hdr2 msgWriteResultHeader
-	err = items[1].Unmarshal(&hdr2)
+	err = items[1].DeSerialize(&hdr2)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling write response header, %w", err)
+		return fmt.Errorf("problem deserializing write response header, %w", err)
 	}
 	if hdr2.Status != 0 {
 		extended := uint16(0)
 		if hdr2.StatusExtended == 1 {
-			err = items[1].Unmarshal(&extended)
+			err = items[1].DeSerialize(&extended)
 			return fmt.Errorf("got status %d:%d:%d instead of 0 in write response.  Problem getting extended status %w",
 				hdr2.Status,
 				hdr2.StatusExtended,

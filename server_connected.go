@@ -8,53 +8,53 @@ import (
 func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	var l byte // length in words
 	item := items[1]
-	err := item.Unmarshal(&l)
+	err := item.DeSerialize(&l)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling item length %w", err)
+		return fmt.Errorf("problem deserializing item length %w", err)
 	}
 	var path_type SegmentType
-	err = item.Unmarshal(&path_type)
+	err = item.DeSerialize(&path_type)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling path type %w", err)
+		return fmt.Errorf("problem deserializing path type %w", err)
 	}
 	if path_type != SegmentTypeExtendedSymbolic {
 		return fmt.Errorf("only support symbolic writes. got segment type %v", path_type)
 	}
 	var tag_length byte
-	err = item.Unmarshal(&tag_length)
+	err = item.DeSerialize(&tag_length)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling tag length %w", err)
+		return fmt.Errorf("problem deserializing tag length %w", err)
 	}
 	tag_bytes := make([]byte, tag_length)
-	err = item.Unmarshal(&tag_bytes)
+	err = item.DeSerialize(&tag_bytes)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling tag bytes %w", err)
+		return fmt.Errorf("problem deserializing tag bytes %w", err)
 	}
 	tag := string(tag_bytes)
 
 	// string will be padded with a null if odd length
 	if (tag_length % 2) == 1 {
 		var b byte
-		err = item.Unmarshal(&b)
+		err = item.DeSerialize(&b)
 		if err != nil {
-			return fmt.Errorf("problem unmarshaling odd length pad byte %w", err)
+			return fmt.Errorf("problem deserializing odd length pad byte %w", err)
 		}
 	}
 
 	var typ CIPType
-	err = item.Unmarshal(&typ)
+	err = item.DeSerialize(&typ)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling cip type %w", err)
+		return fmt.Errorf("problem deserializing cip type %w", err)
 	}
 	var reserved byte
-	err = item.Unmarshal(&reserved)
+	err = item.DeSerialize(&reserved)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling reserved byte %w", err)
+		return fmt.Errorf("problem deserializing reserved byte %w", err)
 	}
 	var qty uint16
-	err = item.Unmarshal(&qty)
+	err = item.DeSerialize(&qty)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling element count %w", err)
+		return fmt.Errorf("problem deserializing element count %w", err)
 	}
 
 	results := make([]any, qty)
@@ -69,9 +69,9 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	}
 	items[0].Reset()
 	var connID uint32
-	err = items[0].Unmarshal(&connID)
+	err = items[0].DeSerialize(&connID)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling connection ID (%+v) %w", items[0], err)
+		return fmt.Errorf("problem deserializing connection ID (%+v) %w", items[0], err)
 	}
 
 	conn, err := h.server.ConnMgr.GetByOT(connID)
@@ -103,9 +103,9 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 func (h *serverTCPHandler) connectedData(item cipItem) error {
 	var service CIPService
 	var err error
-	err = item.Unmarshal(&service)
+	err = item.DeSerialize(&service)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling service %w", err)
+		return fmt.Errorf("problem deserializing service %w", err)
 	}
 	item.Reset()
 	switch service {

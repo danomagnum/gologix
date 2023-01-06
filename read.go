@@ -301,12 +301,11 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	// setup item
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	// add path
-	reqitems[1].Marshal(ioi.Bytes())
+	reqitems[1].Serialize(ioi.Bytes())
 	// add service specific data
-	reqitems[1].Marshal(elements)
+	reqitems[1].Serialize(elements)
 
-	//client.Send(cipCommandSendUnitData, MarshalItems(reqitems))
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +325,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	var hdr2 msgCIPReadResultData
-	err = items[1].Unmarshal(&hdr2)
+	err = items[1].DeSerialize(&hdr2)
 	if err != nil {
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}
@@ -334,19 +333,19 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 	if hdr2.Type == CIPTypeStruct {
 		if datatype == CIPTypeSTRING {
 			str_hdr := CIPStringHeader{}
-			err = items[1].Unmarshal(&str_hdr)
+			err = items[1].DeSerialize(&str_hdr)
 			if err != nil {
 				return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 			}
 			str := make([]byte, str_hdr.Length)
-			err = items[1].Unmarshal(&str)
+			err = items[1].DeSerialize(&str)
 			if err != nil {
 				return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 			}
 			return str, nil
 		}
 		str_hdr := CIPStructHeader{}
-		err = items[1].Unmarshal(&str_hdr)
+		err = items[1].DeSerialize(&str_hdr)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 		}
@@ -542,11 +541,11 @@ func (client *Client) ReadMulti(tag_str any) error {
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Marshal(ioi_header)
-	reqitems[1].Marshal(jump_table)
-	reqitems[1].Marshal(&b)
+	reqitems[1].Serialize(ioi_header)
+	reqitems[1].Serialize(jump_table)
+	reqitems[1].Serialize(&b)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}

@@ -48,25 +48,22 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	}
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Marshal(p.Bytes())
+	reqitems[1].Serialize(p.Bytes())
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
 	attr8_arraydims := 8
-	//reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
-	reqitems[1].Marshal([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
-	reqitems[1].Marshal(byte(1))
-	reqitems[1].Marshal(byte(0))
-	reqitems[1].Marshal(uint16(1))
+	reqitems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
+	reqitems[1].Serialize(byte(1))
+	reqitems[1].Serialize(byte(0))
+	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return new_kts, err
 	}
 	_ = hdr
 	_ = data
-	//data_hdr := ListInstanceHeader{}
-	//binary.Read(data, binary.LittleEndian, &data_hdr)
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)

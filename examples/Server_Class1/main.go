@@ -4,7 +4,7 @@
 // I think multiple readers should work.  Multiple writers would also appear to work but they would step on each other.
 //
 // You should create your own class that fulfills the TagProvider interface with the IORead and IOWrite methods completed where you handle the
-// marshaling and unmarshaling of data properly.
+// serializing and deserializing of data properly.
 //
 // I think you should be able to have class 3 tag providers AND class 1 tag providers at the same time for the same path, BUT you'll have to
 // combine their logic into a single class since the router will resolve all messages to the same place.  For this reason it might be easiest

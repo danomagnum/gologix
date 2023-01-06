@@ -11,7 +11,9 @@ import (
 	"time"
 )
 
-// this is the main server object for handling incoming EIP messages.
+// use NewServer() to get a new server object that is properly initialized.
+//
+// This is the main server object for handling incoming EIP messages.
 // After setting up the server use the Serve() method to listen on the appropriate TCP and UDP ports
 type Server struct {
 	TCPListener net.Listener
@@ -20,6 +22,9 @@ type Server struct {
 	Router      *PathRouter
 }
 
+// an instance of serverTCPHandler will be created for every incomming connection to the EIP tcp port.
+// it handles receiving messages, figuring out what kind they are, and using the associated server's ConnMgr and Router to
+// dispatch the appropriate code
 type serverTCPHandler struct {
 	conn           net.Conn
 	server         *Server
@@ -32,6 +37,8 @@ type serverTCPHandler struct {
 	UnitDataSequencer uint16
 }
 
+// Sets up a main server object for handling incoming EIP messages according to PathRouter r
+// After setting up the server use the Serve() method to listen on the appropriate TCP and UDP ports
 func NewServer(r *PathRouter) *Server {
 	srv := Server{}
 	srv.ConnMgr.Init()
@@ -39,6 +46,9 @@ func NewServer(r *PathRouter) *Server {
 	return &srv
 }
 
+// Start listening on the TCP and UDP ports associated with the Ethernet/IP protocol.
+// these are 44818 and 2222 respectively
+// as far as I can tell there is never an option to change this on any devices so it is hard coded here.
 func (srv *Server) Serve() error {
 	srv.ConnMgr.Init()
 
@@ -73,10 +83,25 @@ func (srv *Server) Serve() error {
 		}
 	}()
 
-	return <-errch
+	// we will wait forever for one of the serve goroutines to let us know they crased.
+	// then we'll close them both and check for errors, combining them all toghether and returning it.
+	err = <-errch
+	final_err := NewMultiError(err)
+
+	err = srv.TCPListener.Close()
+	if err != nil {
+		final_err.Add(fmt.Errorf("err on tcp close: %w", err))
+	}
+	err = srv.UDPListener.Close()
+	if err != nil {
+		final_err.Add(fmt.Errorf("err on udp close: %w", err))
+	}
+
+	return final_err
 
 }
 
+// this will listen on the EIP tcp port and kick off a serverTCPHandler for each connection
 func (srv *Server) serveTCP() error {
 	for {
 		conn, err := srv.TCPListener.Accept()
@@ -84,6 +109,7 @@ func (srv *Server) serveTCP() error {
 			log.Printf("problem with tcp accept. %v", err)
 			continue
 		}
+		// create a new handler and kick off its serve method to handle the connection
 		h := serverTCPHandler{conn: conn, server: srv}
 		go func() {
 			err := h.serve(srv)
@@ -99,6 +125,9 @@ type cipIOSeqAccessData struct {
 	SequenceCount uint32
 }
 
+// this listens on the eip udp port and handles incoming messages.
+// for each message that comes it it figures out which connection it belongs to and
+// dispatches it accordingly to the proper router engpoint.
 func (srv *Server) serveUDP() error {
 	bufsize := 4096
 	for {
@@ -130,9 +159,9 @@ func (srv *Server) serveUDP() error {
 			continue
 		}
 		if items[0].Header.ID == cipItem_SequenceAddress {
-			// this is an IO message (output data from the controller to us as an "io adapter")
+			// this is an IO message (output data from the controller to us as an "io adapter" in the hardware tree)
 			io_info := cipIOSeqAccessData{}
-			err := items[0].Unmarshal(&io_info)
+			err := items[0].DeSerialize(&io_info)
 			if err != nil {
 				log.Printf("problem reading sequence address info.")
 				continue
@@ -224,19 +253,19 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		return fmt.Errorf("should have had a connected data item in position 0. got %v", items[0].Header.ID)
 	}
 	var connid uint32
-	err = items[0].Unmarshal(&connid)
+	err = items[0].DeSerialize(&connid)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling connection ID %w", err)
+		return fmt.Errorf("problem deserializing connection ID %w", err)
 	}
 
-	err = items[1].Unmarshal(&h.UnitDataSequencer)
+	err = items[1].DeSerialize(&h.UnitDataSequencer)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling unit data seq %w", err)
+		return fmt.Errorf("problem deserializing unit data seq %w", err)
 	}
 	var service CIPService
-	err = items[1].Unmarshal(&service)
+	err = items[1].DeSerialize(&service)
 	if err != nil {
-		return fmt.Errorf("problem unmarshaling service %w", err)
+		return fmt.Errorf("problem deserializing service %w", err)
 	}
 	switch service {
 	case cipService_Write:
@@ -279,8 +308,8 @@ func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 		SequenceCount: h.UnitDataSequencer,
 		Service:       s.AsResponse(),
 	}
-	items[1].Marshal(resp)
-	return h.send(cipCommandSendUnitData, MarshalItems(items))
+	items[1].Serialize(resp)
+	return h.send(cipCommandSendUnitData, SerializeItems(items))
 }
 
 func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
@@ -314,7 +343,7 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 
 func getTagFromPath(item *cipItem) (string, error) {
 	var prefix byte
-	err := item.Unmarshal(&prefix)
+	err := item.DeSerialize(&prefix)
 	if err != nil {
 		return "", fmt.Errorf("problem getting path prefix. %w", err)
 	}
@@ -322,18 +351,18 @@ func getTagFromPath(item *cipItem) (string, error) {
 		return "", fmt.Errorf("only support reading by tag name. TODO: support other things?. %w", err)
 	}
 	var tag_len byte
-	err = item.Unmarshal(&tag_len)
+	err = item.DeSerialize(&tag_len)
 	if err != nil {
 		return "", fmt.Errorf("problem getting tag len. %w", err)
 	}
 	b := make([]byte, tag_len)
-	err = item.Unmarshal(&b)
+	err = item.DeSerialize(&b)
 	if err != nil {
 		return "", fmt.Errorf("problem reading tag path. %w", err)
 	}
 	if tag_len%2 == 1 {
 		var pad byte
-		err = item.Unmarshal(&pad)
+		err = item.DeSerialize(&pad)
 		if err != nil {
 			return "", fmt.Errorf("problem reading pad byte. %w", err)
 		}
@@ -345,7 +374,7 @@ func getTagFromPath(item *cipItem) (string, error) {
 func (h *serverTCPHandler) forwardClose(i cipItem) error {
 	log.Printf("got forward close from %v", h.conn.RemoteAddr())
 	var fwd_close msgEIPForwardClose
-	err := i.Unmarshal(&fwd_close)
+	err := i.DeSerialize(&fwd_close)
 	if err != nil {
 		log.Printf("problem parsing forward close. %v", err)
 		return fmt.Errorf("problem parsing forward close %w", err)
@@ -358,7 +387,7 @@ func (h *serverTCPHandler) forwardClose(i cipItem) error {
 	}
 
 	path := make([]byte, fwd_close.PathSize*2)
-	err = i.Unmarshal(&path)
+	err = i.DeSerialize(&path)
 	if err != nil {
 		log.Printf("problem parsing forward close path. %v", err)
 		return fmt.Errorf("problem parsing forward close path %w", err)
@@ -369,12 +398,12 @@ func (h *serverTCPHandler) forwardClose(i cipItem) error {
 func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
 	log.Printf("got large forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Large
-	err := i.Unmarshal(&fwd_open)
+	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
 	}
 	fwd_path := make([]byte, fwd_open.ConnPathSize*2)
-	err = i.Unmarshal(&fwd_path)
+	err = i.DeSerialize(&fwd_path)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
@@ -409,9 +438,9 @@ func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
 		TOAPI:                  0,
 	}
 
-	items[1].Marshal(fwopenresphdr)
+	items[1].Serialize(fwopenresphdr)
 
-	err = h.send(cipCommandSendRRData, MarshalItems(items))
+	err = h.send(cipCommandSendRRData, SerializeItems(items))
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -437,12 +466,12 @@ func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
 func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 	log.Printf("got small forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Standard
-	err := i.Unmarshal(&fwd_open)
+	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
 	}
 	fwd_path := make([]byte, fwd_open.ConnPathSize*2)
-	err = i.Unmarshal(&fwd_path)
+	err = i.DeSerialize(&fwd_path)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
@@ -477,9 +506,9 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 		TOAPI:                  0,
 	}
 
-	items[1].Marshal(fwopenresphdr)
+	items[1].Serialize(fwopenresphdr)
 
-	err = h.send(cipCommandSendRRData, MarshalItems(items))
+	err = h.send(cipCommandSendRRData, SerializeItems(items))
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -531,11 +560,11 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		// every RPI send the message.
 		items := make([]cipItem, 2)
 		items[0] = NewItem(cipItem_SequenceAddress, nil)
-		items[0].Marshal(fwd_open.TOConnectionID)
-		items[0].Marshal(seq)
+		items[0].Serialize(fwd_open.TOConnectionID)
+		items[0].Serialize(seq)
 		items[1] = NewItem(cipItem_ConnectedData, nil)
-		items[1].Marshal(uint16(seq))
-		items[1].Marshal(dat)
+		items[1].Serialize(uint16(seq))
+		items[1].Serialize(dat)
 
 		// get the address to send the response back to, trim off the port number, and add the eip udp port number (2222) back on.
 		// I suspect this will break with IPV6 since it uses colons in the IP address itself.
@@ -549,7 +578,7 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 			continue
 		}
 
-		payload := *MarshalItems(items)
+		payload := *SerializeItems(items)
 		payload = payload[6:]
 		_, err = conn.Write(payload)
 		if err != nil {

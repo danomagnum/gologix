@@ -8,7 +8,7 @@ import (
 func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 	var service CIPService
 	var err error
-	err = item.Unmarshal(&service)
+	err = item.DeSerialize(&service)
 	if err != nil {
 		return fmt.Errorf("problem unmarshling service %w", err)
 	}
@@ -36,27 +36,27 @@ func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 	case 0x52:
 		// unconnected send?
 		var pathsize byte
-		err = item.Unmarshal(&pathsize)
+		err = item.DeSerialize(&pathsize)
 		if err != nil {
 			return fmt.Errorf("error getting path size 305. %w", err)
 		}
 		path := make([]byte, pathsize*2)
-		err = item.Unmarshal(&path)
+		err = item.DeSerialize(&path)
 		if err != nil {
 			return fmt.Errorf("error getting path. %w", err)
 		}
 		var timeout uint16
-		err = item.Unmarshal(&timeout)
+		err = item.DeSerialize(&timeout)
 		if err != nil {
 			return fmt.Errorf("error getting timeout. %w", err)
 		}
 		var embedded_size uint16
-		err = item.Unmarshal(&embedded_size)
+		err = item.DeSerialize(&embedded_size)
 		if err != nil {
 			return fmt.Errorf("error getting embedded size. %w", err)
 		}
 		var emService CIPService
-		err = item.Unmarshal(&emService)
+		err = item.DeSerialize(&emService)
 		if err != nil {
 			return fmt.Errorf("error getting embedded service. %w", err)
 		}
@@ -76,7 +76,7 @@ func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 
 func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 	var reserved byte
-	err := item.Unmarshal(&reserved)
+	err := item.DeSerialize(&reserved)
 	if err != nil {
 		return fmt.Errorf("error getting reserved byte. %w", err)
 	}
@@ -85,17 +85,17 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}
 	var typ CIPType
-	err = item.Unmarshal(&typ)
+	err = item.DeSerialize(&typ)
 	if err != nil {
 		return fmt.Errorf("error getting write type. %w", err)
 	}
 	var pad byte
-	err = item.Unmarshal(&pad)
+	err = item.DeSerialize(&pad)
 	if err != nil {
 		return fmt.Errorf("error getting pad. %w", err)
 	}
 	var qty uint16
-	err = item.Unmarshal(&qty)
+	err = item.DeSerialize(&qty)
 	if err != nil {
 		return fmt.Errorf("error getting write qty. %w", err)
 	}
@@ -109,12 +109,12 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 		results[i] = typ.readValue(&item)
 	}
 	var path_size uint16
-	err = item.Unmarshal(&path_size)
+	err = item.DeSerialize(&path_size)
 	if err != nil {
 		return fmt.Errorf("couldn't get path size 374. %w", err)
 	}
 	path := make([]byte, 2*path_size)
-	err = item.Unmarshal(&path)
+	err = item.DeSerialize(&path)
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
@@ -143,7 +143,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 
 func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
 	var reserved byte
-	err := item.Unmarshal(&reserved)
+	err := item.DeSerialize(&reserved)
 	if err != nil {
 		return fmt.Errorf("error getting reserved byte. %w", err)
 	}
@@ -152,17 +152,17 @@ func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}
 	var qty uint16
-	err = item.Unmarshal(&qty)
+	err = item.DeSerialize(&qty)
 	if err != nil {
 		return fmt.Errorf("error getting write qty. %w", err)
 	}
 	var path_size uint16
-	err = item.Unmarshal(&path_size)
+	err = item.DeSerialize(&path_size)
 	if err != nil {
 		return fmt.Errorf("couldn't get path size 374. %w", err)
 	}
 	path := make([]byte, 2*path_size)
-	err = item.Unmarshal(&path)
+	err = item.DeSerialize(&path)
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
@@ -192,11 +192,11 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 	resp := msgUnconnWriteResultHeader{
 		Service: s.AsResponse(),
 	}
-	items[1].Marshal(resp)
+	items[1].Serialize(resp)
 	for i := range payload {
-		items[1].Marshal(payload[i])
+		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendRRData, MarshalItems(items))
+	return h.send(cipCommandSendRRData, SerializeItems(items))
 }
 
 func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
@@ -207,6 +207,6 @@ func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 		SequenceCount: h.UnitDataSequencer,
 		Service:       s.AsResponse(),
 	}
-	items[1].Marshal(resp)
-	return h.send(cipCommandSendUnitData, MarshalItems(items))
+	items[1].Serialize(resp)
+	return h.send(cipCommandSendUnitData, SerializeItems(items))
 }

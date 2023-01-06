@@ -71,25 +71,24 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	}
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Marshal(p.Bytes())
+	reqitems[1].Serialize(p.Bytes())
 	number_of_attr_to_receive := 4
 	attr_Size_32bitWords := 4
 	attr_Size_Bytes := 5
 	attr_MemberCount := 2
 	attr_symbol_type := 1
-	//reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
-	reqitems[1].Marshal([5]uint16{
+	reqitems[1].Serialize([5]uint16{
 		uint16(number_of_attr_to_receive),
 		uint16(attr_Size_32bitWords),
 		uint16(attr_Size_Bytes),
 		uint16(attr_MemberCount),
 		uint16(attr_symbol_type),
 	})
-	reqitems[1].Marshal(byte(1))
-	reqitems[1].Marshal(byte(0))
-	reqitems[1].Marshal(uint16(1))
+	reqitems[1].Serialize(byte(1))
+	reqitems[1].Serialize(byte(0))
+	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -167,17 +166,16 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	}
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Marshal(p.Bytes())
+	reqitems[1].Serialize(p.Bytes())
 	start_offset := uint32(0)
 	read_length := uint16(template_info.SizeWords*4 - 23)
-	//reqitems[1].Marshal([4]uint16{3, 1, 2, 8})
-	reqitems[1].Marshal(start_offset)
-	reqitems[1].Marshal(read_length)
-	reqitems[1].Marshal(byte(1))
-	reqitems[1].Marshal(byte(0))
-	reqitems[1].Marshal(uint16(1))
+	reqitems[1].Serialize(start_offset)
+	reqitems[1].Serialize(read_length)
+	reqitems[1].Serialize(byte(1))
+	reqitems[1].Serialize(byte(0))
+	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return UDTDescriptor{}, err
 	}

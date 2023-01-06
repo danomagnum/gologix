@@ -148,11 +148,11 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Marshal(ioi_header)
-	reqitems[1].Marshal(jump_table)
-	reqitems[1].Marshal(b.Bytes())
+	reqitems[1].Serialize(ioi_header)
+	reqitems[1].Serialize(jump_table)
+	reqitems[1].Serialize(b.Bytes())
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}

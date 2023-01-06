@@ -137,7 +137,7 @@ func (client *Client) connect() error {
 	items0 := make([]cipItem, 2)
 	items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
-	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, MarshalItems(items0))
+	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
 	if err != nil {
 		return err
 	}
@@ -158,15 +158,15 @@ func (client *Client) connect() error {
 	}
 
 	fwopenresphdr := msgCIPMessageRouterResponse{}
-	err = items[1].Unmarshal(&fwopenresphdr)
+	err = items[1].DeSerialize(&fwopenresphdr)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling forward open response header. %w", err)
+		return fmt.Errorf("error deserializing forward open response header. %w", err)
 	}
 	extended_status := make([]byte, fwopenresphdr.Status_Len*2)
 	if fwopenresphdr.Status_Len != 0 {
-		err = items[1].Unmarshal(&extended_status)
+		err = items[1].DeSerialize(&extended_status)
 		if err != nil {
-			return fmt.Errorf("error unmarshaling forward open response header extended status. %w", err)
+			return fmt.Errorf("error deserializing forward open response header extended status. %w", err)
 		}
 	}
 
@@ -184,7 +184,7 @@ func (client *Client) connect() error {
 		items0 := make([]cipItem, 2)
 		items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 		items0[1] = fwd_open
-		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, MarshalItems(items0))
+		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
 		if err != nil {
 			return err
 		}
@@ -205,15 +205,15 @@ func (client *Client) connect() error {
 		}
 
 		fwopenresphdr = msgCIPMessageRouterResponse{}
-		err = items[1].Unmarshal(&fwopenresphdr)
+		err = items[1].DeSerialize(&fwopenresphdr)
 		if err != nil {
-			return fmt.Errorf("error unmarshaling forward open response header. %w", err)
+			return fmt.Errorf("error deserializing forward open response header. %w", err)
 		}
 		extended_status = make([]byte, fwopenresphdr.Status_Len*2)
 		if fwopenresphdr.Status_Len != 0 {
-			err = items[1].Unmarshal(&extended_status)
+			err = items[1].DeSerialize(&extended_status)
 			if err != nil {
-				return fmt.Errorf("error unmarshaling forward open response header extended status. %w", err)
+				return fmt.Errorf("error deserializing forward open response header extended status. %w", err)
 			}
 		}
 
@@ -224,7 +224,7 @@ func (client *Client) connect() error {
 	}
 
 	forwardopenresp := msgEIPForwardOpen_Reply{}
-	err = items[1].Unmarshal(&forwardopenresp)
+	err = items[1].DeSerialize(&forwardopenresp)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling forward open response. %w", err)
 	}
@@ -371,8 +371,8 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	msg.TONetworkConnParams = ConnectionParams
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(p.Len() / 2)
-	item.Marshal(msg)
-	item.Marshal(p.Bytes())
+	item.Serialize(msg)
+	item.Serialize(p.Bytes())
 
 	return item, nil
 }
@@ -421,8 +421,8 @@ func (client *Client) NewForwardOpenStandard() (cipItem, error) {
 	msg.TONetworkConnParams = uint16(ConnectionParams)
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(p.Len() / 2)
-	item.Marshal(msg)
-	item.Marshal(p.Bytes())
+	item.Serialize(msg)
+	item.Serialize(p.Bytes())
 
 	return item, nil
 }

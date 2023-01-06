@@ -38,16 +38,16 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 	// ..0. COO?
 	// ...1 // Run/Idle (1 = run)
 	var header uint16
-	err := items[1].Unmarshal(&seq_counter)
+	err := items[1].DeSerialize(&seq_counter)
 	if err != nil {
 		return fmt.Errorf("problem getting sequence counter. %w", err)
 	}
-	err = items[1].Unmarshal(&header)
+	err = items[1].DeSerialize(&header)
 	if err != nil {
 		return fmt.Errorf("problem getting header. %w", err)
 	}
 	payload := make([]byte, items[1].Header.Length-6)
-	err = items[1].Unmarshal(&payload)
+	err = items[1].DeSerialize(&payload)
 	if err != nil {
 		return fmt.Errorf("problem getting raw data. %w", err)
 	}

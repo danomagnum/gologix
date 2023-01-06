@@ -80,9 +80,9 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	}
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Marshal(p.Bytes())
+	reqitems[1].Serialize(p.Bytes())
 	number_of_attr_to_receive := 5
-	reqitems[1].Marshal([]uint16{
+	reqitems[1].Serialize([]uint16{
 		uint16(number_of_attr_to_receive),
 		uint16(1),
 		uint16(2),
@@ -90,11 +90,11 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 		uint16(4),
 		uint16(10),
 	})
-	reqitems[1].Marshal(byte(1))
-	reqitems[1].Marshal(byte(0))
-	reqitems[1].Marshal(uint16(1))
+	reqitems[1].Serialize(byte(1))
+	reqitems[1].Serialize(byte(0))
+	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return msgGetControllerPropList{}, err
 	}

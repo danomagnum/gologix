@@ -1,6 +1,9 @@
 package gologix
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type CIPError struct {
 	Code     byte
@@ -45,4 +48,46 @@ func (err *CIPError) Error() string {
 	}
 
 	return ec + "Unknown Error"
+}
+
+func NewMultiError(err error) MultiError {
+	if err != nil {
+		return MultiError{[]error{err}}
+	}
+	return MultiError{[]error{}}
+}
+
+// combine multiple errors together.
+type MultiError struct {
+	errs []error
+}
+
+func (e *MultiError) Add(err error) {
+	e.errs = append(e.errs, err)
+}
+
+func (e MultiError) Error() string {
+	err_str := ""
+	for err := range e.errs {
+		err_str = fmt.Sprintf("%s: %s", err_str, err)
+	}
+	return err_str
+}
+
+func (e MultiError) Unwrap() error {
+	if len(e.errs) > 2 {
+		e.errs = e.errs[1:]
+		return e
+	}
+	if len(e.errs) == 2 {
+		return e.errs[1]
+	}
+	if len(e.errs) == 1 {
+		return e.errs[0]
+	}
+	return nil
+}
+
+func (e MultiError) Is(target error) bool {
+	return errors.Is(e.errs[0], target)
 }

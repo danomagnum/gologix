@@ -79,18 +79,18 @@ func NewItem(id CIPItemID, str any) cipItem {
 		},
 	}
 	if str != nil {
-		c.Marshal(str)
+		c.Serialize(str)
 	}
 	return c
 }
 
-// Marshal serializes a sturcture into the item's data.
+// Serialize a sturcture into the item's data.
 //
 // If called more than once the []byte data for the additional structures is appended to the
 // end of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
-func (item *cipItem) Marshal(str any) {
+func (item *cipItem) Serialize(str any) {
 	switch x := str.(type) {
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
@@ -105,11 +105,11 @@ func (item *cipItem) Marshal(str any) {
 	}
 }
 
-// Unmarshal deserializes an item's data into the given sturcture.
+// DeSerialize an item's data into the given sturcture.
 //
 // If called more than once the []byte data for the additional structures is continuously
 // raed from the current position of the item's data buffer.
-func (item *cipItem) Unmarshal(str any) error {
+func (item *cipItem) DeSerialize(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }
 
@@ -146,7 +146,7 @@ type cipItemsHeader struct {
 	Count           uint16
 }
 
-// MarshalItems takes a slice of items and generates the appropriate byte pattern for the packet
+// SerializeItems takes a slice of items and generates the appropriate byte pattern for the packet
 //
 // A lot of the time, item0 ends up being the "null" item with no Data section.
 //
@@ -171,7 +171,7 @@ type cipItemsHeader struct {
 // 14+N0
 // 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
-func MarshalItems(items []cipItem) *[]byte {
+func SerializeItems(items []cipItem) *[]byte {
 
 	b := new(bytes.Buffer)
 
@@ -182,7 +182,7 @@ func MarshalItems(items []cipItem) *[]byte {
 	}
 	err := binary.Write(b, binary.LittleEndian, item_hdr)
 	if err != nil {
-		log.Printf("problem marshaling item header into b. %v", err)
+		log.Printf("problem serializing item header into b. %v", err)
 	}
 
 	for _, item := range items {

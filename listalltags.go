@@ -89,23 +89,23 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	// setup item
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	// add path
-	reqitems[1].Marshal(p.Bytes())
+	reqitems[1].Serialize(p.Bytes())
 	// add service specific data
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
 	attr8_arraydims := 8
-	reqitems[1].Marshal([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
+	reqitems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
 
 	// if we have an empty path, we don't include this (for micro800)
 	// TODO: figure out what this is
 	if client.Path.Len() != 0 {
-		reqitems[1].Marshal(byte(1))
-		reqitems[1].Marshal(byte(0))
-		reqitems[1].Marshal(uint16(1))
+		reqitems[1].Serialize(byte(1))
+		reqitems[1].Serialize(byte(0))
+		reqitems[1].Serialize(uint16(1))
 	}
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, MarshalItems(reqitems))
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}
