@@ -276,7 +276,7 @@ func ReadPacked[T any](client *Client, tag string) (T, error) {
 	b := make([]byte, size)
 	err := client.Read(tag, &b)
 	if err != nil {
-		return data, fmt.Errorf("couldn't read %s as bytes. %v", tag, err)
+		return data, fmt.Errorf("couldn't read %s as bytes. %w", tag, err)
 	}
 	_, err = Unpack(bytes.NewBuffer(b), CIPPack{}, &data)
 	if err != nil {

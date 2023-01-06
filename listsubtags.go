@@ -156,7 +156,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	if data_hdr.Status == 6 && start_instance < 200 {
 		_, err = client.ListSubTags(roottag, start_instance)
 		if err != nil {
-			return new_kts, fmt.Errorf("problem listing subtags. %v", err)
+			return new_kts, fmt.Errorf("problem listing subtags. %w", err)
 		}
 	}
 

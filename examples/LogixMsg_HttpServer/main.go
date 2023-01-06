@@ -1,3 +1,5 @@
+// this example is for a web server that accepts "push" message from a controller.
+// the controller writes using a MSG instruction to this server and that value and tag will show up when doing a http GET
 package main
 
 import (
@@ -14,9 +16,9 @@ func main() {
 	r := gologix.PathRouter{}
 
 	// one memory based tag provider at slot 0 on the virtual "backplane"
-	// a message to 2,xxx.xxx.xxx.xxx,1,0 (compact logix) will get this provider (where xxx.xxx.xxx.xxx is the ip address)
-	// the message path before the IP address in the msg instruction will be different based on the actual controller
-	// you're using, but the part after the IP address is what this matches
+	// a message to 2,xxx.xxx.xxx.xxx,1,0 (compact logix) will get this provider (where xxx.xxx.xxx.xxx is the ip address
+	// of the computer running this server) The message path before the IP address in the msg instruction will be different
+	// based on the actual controller you're using, but the part after the IP address is what this matches
 	p1 := gologix.MapTagProvider{}
 	path1, err := gologix.ParsePath("1,0")
 	if err != nil {
