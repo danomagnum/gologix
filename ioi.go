@@ -39,7 +39,7 @@ func (tag *tagPartDescriptor) Parse(tagpath string) error {
 		tag.BasePath = strings.ReplaceAll(tag.BasePath, bit_access_text, "")
 		tag.BitNumber, err = strconv.Atoi(bit_access_text)
 		if err != nil {
-			return fmt.Errorf("could't parse %v to a bit portion of tag. %v", bit_access_text, err)
+			return fmt.Errorf("could't parse %v to a bit portion of tag. %w", bit_access_text, err)
 		}
 	}
 
@@ -56,7 +56,7 @@ func (tag *tagPartDescriptor) Parse(tagpath string) error {
 			for i, part := range parts {
 				tag.Array_Order[i], err = strconv.Atoi(part)
 				if err != nil {
-					return fmt.Errorf("could't parse %v to an array position. %v", arr_access_text, err)
+					return fmt.Errorf("could't parse %v to an array position. %w", arr_access_text, err)
 				}
 			}
 
@@ -64,7 +64,7 @@ func (tag *tagPartDescriptor) Parse(tagpath string) error {
 			tag.Array_Order = make([]int, 1)
 			tag.Array_Order[0], err = strconv.Atoi(arr_access_text)
 			if err != nil {
-				return fmt.Errorf("could't parse %v to an array position. %v", arr_access_text, err)
+				return fmt.Errorf("could't parse %v to an array position. %w", arr_access_text, err)
 			}
 		}
 	}

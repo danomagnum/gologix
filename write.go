@@ -7,6 +7,8 @@ import (
 	"reflect"
 )
 
+// The write equivalent to ReadMulti.  value should be a struct where each field has a tag of the form `gologix:"tagname"` that maps
+// what tag in the controller it corresponds to
 func (client *Client) WriteMulti(value any) error {
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Struct {
@@ -20,6 +22,7 @@ func (client *Client) WriteMulti(value any) error {
 }
 
 // write a single value to a single tag.
+// the type of value must correspond to the type of tag in the controller
 func (client *Client) Write(tag string, value any) error {
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Struct {

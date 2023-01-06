@@ -68,8 +68,8 @@ func (e *MultiError) Add(err error) {
 
 func (e MultiError) Error() string {
 	err_str := ""
-	for err := range e.errs {
-		err_str = fmt.Sprintf("%s: %s", err_str, err)
+	for i := range e.errs {
+		err_str = fmt.Sprintf("%s: %s", err_str, e.errs[i])
 	}
 	return err_str
 }

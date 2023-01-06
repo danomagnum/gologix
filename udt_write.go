@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+// convert tagged struct to a map in the format of {"fieldTag": fieldvalue}
 func multi_to_dict(data any) (map[string]interface{}, error) {
 	//TODO: handle nested structs and arrays
 	// convert the struct to a dict of FieldName: FieldValue
@@ -42,6 +43,7 @@ func multi_to_dict(data any) (map[string]interface{}, error) {
 
 }
 
+// convert a struct to a map in the format of {"tag.fieldName": fieldvalue}
 func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 	//TODO: handle nested structs and arrays
 	// convert the struct to a dict of FieldName: FieldValue
@@ -131,16 +133,16 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 		//}
 		err := binary.Write(&b, binary.LittleEndian, h)
 		if err != nil {
-			return fmt.Errorf("Problem writing udt item header to buffer. %w", err)
+			return fmt.Errorf("problem writing udt item header to buffer. %w", err)
 		}
 		b.Write(ioi.Buffer)
 		err = binary.Write(&b, binary.LittleEndian, f)
 		if err != nil {
-			return fmt.Errorf("Problem writing udt item footer to buffer. %w", err)
+			return fmt.Errorf("problem writing udt item footer to buffer. %w", err)
 		}
 		err = binary.Write(&b, binary.LittleEndian, tag_str[tags[i]])
 		if err != nil {
-			return fmt.Errorf("Problem writing udt tag name to buffer. %w", err)
+			return fmt.Errorf("problem writing udt tag name to buffer. %w", err)
 		}
 	}
 

@@ -359,7 +359,7 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)
 	msg.TimeoutTicks = 0x0E // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
 	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = rand.Uint32() //0x20000002
+	msg.OTConnectionID = rand.Uint32() // pylogix always uses 0x20000002
 	msg.TOConnectionID = rand.Uint32()
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
 	msg.VendorID = client.VendorID
