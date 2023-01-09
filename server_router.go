@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"sync"
 )
 
@@ -89,6 +90,20 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	if !ok {
 		return nil, fmt.Errorf("tag %v not in map", tag)
 	}
+
+	t := reflect.ValueOf(val)
+
+	if t.Kind() == reflect.Slice {
+		if int(qty) <= t.Len() {
+			values := reflect.Indirect(t)
+			v := values.Slice(0, int(qty))
+			return v.Interface(), nil
+		}
+		return nil, fmt.Errorf("too many elements requested %v > %v", qty, t.Len())
+	} else {
+		log.Printf("not a slice")
+	}
+
 	return val, nil
 }
 

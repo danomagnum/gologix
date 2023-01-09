@@ -151,8 +151,8 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
-	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
 	typ := GoVarToCIPType(result)
+	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
 	return h.sendConnectedReadReply(cipService_FragRead, seq, connection.OT, typ, byte(0), result)
 
@@ -169,5 +169,5 @@ func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, conn
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendRRData, SerializeItems(items))
+	return h.send(cipCommandSendUnitData, SerializeItems(items))
 }

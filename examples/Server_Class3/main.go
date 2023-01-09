@@ -57,6 +57,7 @@ func main() {
 	// otherwise you can lock p1.Mutex and manipulate p1.Data yourself
 	p1.TagWrite("testtag1", int32(12345))
 	p1.TagWrite("testtag2", float32(543.21))
+	p1.TagWrite("testtag3", []int32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 
 	// a different memory based tag provider at slot 1 on the virtual "backplane" this would be "2,xxx.xxx.xxx.xxx,1,1" in the msg connection path
 	p2 := gologix.MapTagProvider{}
