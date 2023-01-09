@@ -25,7 +25,7 @@ func main() {
 		fmt.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
-	r.AddHandler(path1.Bytes(), &p1)
+	r.Handle(path1.Bytes(), &p1)
 
 	// create the ethernet/ip class 3 message server
 	s := gologix.NewServer(&r)

@@ -50,7 +50,7 @@ func main() {
 		fmt.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
-	r.AddHandler(path1.Bytes(), &p1)
+	r.Handle(path1.Bytes(), &p1)
 
 	// set up some default tags.
 	// using TagWrite() and TagRead() are treadsafe if needed.
@@ -65,7 +65,7 @@ func main() {
 		fmt.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
-	r.AddHandler(path2.Bytes(), &p2)
+	r.Handle(path2.Bytes(), &p2)
 
 	s := gologix.NewServer(&r)
 	go s.Serve()

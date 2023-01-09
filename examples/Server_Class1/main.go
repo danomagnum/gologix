@@ -68,7 +68,7 @@ func main() {
 		fmt.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
-	r.AddHandler(path3.Bytes(), &p3)
+	r.Handle(path3.Bytes(), &p3)
 
 	s := gologix.NewServer(&r)
 	go s.Serve()
@@ -78,8 +78,12 @@ func main() {
 	for {
 		<-t.C
 		inInstance.Count++
+		p3.InMutex.Lock()
 		log.Printf("PLC Input: %v", inInstance)
+		p3.InMutex.Unlock()
+		p3.OutMutex.Lock()
 		log.Printf("PLC Output: %v", outInstance)
+		p3.OutMutex.Unlock()
 	}
 
 }
