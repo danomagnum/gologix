@@ -52,6 +52,10 @@ func main() {
 	}
 	r.AddHandler(path1.Bytes(), &p1)
 
+	// set up some default tags.
+	p1.TagWrite("testtag1", int32(12345))
+	p1.TagWrite("testtag2", float32(543.21))
+
 	// a different memory based tag provider at slot 1 on the virtual "backplane" this would be "2,xxx.xxx.xxx.xxx,1,1" in the msg connection path
 	p2 := gologix.MapTagProvider{}
 	path2, err := gologix.ParsePath("1,1")

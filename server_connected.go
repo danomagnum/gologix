@@ -100,23 +100,74 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	return h.sendUnitDataReply(cipService_Write)
 }
 
-func (h *serverTCPHandler) connectedData(item cipItem) error {
-	var service CIPService
-	var err error
-	err = item.DeSerialize(&service)
+func (h *serverTCPHandler) connectedData(items []cipItem) error {
+	items[0].Reset()
+	var connID uint32
+	err := items[0].DeSerialize(&connID)
 	if err != nil {
-		return fmt.Errorf("problem deserializing service %w", err)
+		return fmt.Errorf("couldn't get connection ID from item 0: %w", err)
 	}
-	item.Reset()
-	switch service {
-	case cipService_FragRead:
-		err = h.cipFragRead(&item)
-		if err != nil {
-			return fmt.Errorf("problem handling frag read. %w", err)
-		}
-	default:
-		log.Printf("Got unknown service %d", service)
+	connection, err := h.server.ConnMgr.GetByOT(connID)
+	if err != nil {
+		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	log.Printf("sendrrdata service requested: %v", service)
-	return nil
+	log.Printf("got connection id %v = %+v", connID, connection)
+
+	items[1].Reset()
+	return h.connectedFragRead(connection, items[1])
+
+}
+
+func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item cipItem) error {
+
+	var seq uint16
+	err := item.DeSerialize(&seq)
+	if err != nil {
+		return fmt.Errorf("error getting sequence ID: %w", err)
+	}
+	var hdr [2]byte
+	err = item.DeSerialize(&hdr)
+	if err != nil {
+		return fmt.Errorf("error getting header: %w", err)
+	}
+	tag, err := getTagFromPath(&item)
+	if err != nil {
+		return fmt.Errorf("couldn't parse path: %w", err)
+	}
+	var qty uint16
+	err = item.DeSerialize(&qty)
+	if err != nil {
+		return fmt.Errorf("error getting write qty: %w", err)
+	}
+
+	path := connection.Path
+
+	provider, err := h.server.Router.Resolve(path)
+	if err != nil {
+		return fmt.Errorf("problem finding tag provider for %v. %w", path, err)
+	}
+	p := provider
+	result, err := p.TagRead(tag, int16(qty))
+	if err != nil {
+		return fmt.Errorf("problem getting data from provider. %w", err)
+	}
+	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
+	typ := GoVarToCIPType(result)
+
+	return h.sendConnectedReadReply(cipService_FragRead, seq, connection.OT, typ, byte(0), result)
+
+}
+
+func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
+	items := make([]cipItem, 2)
+	items[0] = NewItem(cipItem_ConnectionAddress, connID)
+	items[1] = NewItem(cipItem_ConnectedData, seq)
+	resp := msgUnconnWriteResultHeader{
+		Service: s.AsResponse(),
+	}
+	items[1].Serialize(resp)
+	for i := range payload {
+		items[1].Serialize(payload[i])
+	}
+	return h.send(cipCommandSendRRData, SerializeItems(items))
 }

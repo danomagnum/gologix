@@ -274,30 +274,20 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
 	case cipService_FragRead:
-		err = h.connectedData(items[1])
+		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	case cipService_Read:
-		err = h.connectedData(items[1])
+		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	default:
-		log.Printf("Got unknown service %d", service)
+		log.Printf("Got unknown service at send unit data handler %d", service)
 	}
 	log.Printf("send unit data service requested: %v", service)
 	return nil
-}
-
-func (h *serverTCPHandler) cipFragRead(item *cipItem) error {
-	if item.Header.ID != cipItem_UnconnectedData {
-		return fmt.Errorf("expected unconnected frag read. got %v", item.Header.ID)
-	}
-	fmt.Printf("frag read data: %v", item.Data)
-	//return h.sendUnitDataReply(cipService_FragRead)
-	return h.sendUnconnectedUnitDataReply(cipService_FragRead)
-
 }
 
 func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
@@ -334,7 +324,12 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	}
 	switch items[1].Header.ID {
 	case cipItem_ConnectedData:
-		return h.connectedData(items[1])
+		var service CIPService
+		err = items[1].DeSerialize(&service)
+		if err != nil {
+			return fmt.Errorf("failed to get service. %w", err)
+		}
+		return h.connectedData(items)
 	case cipItem_UnconnectedData:
 		return h.unconnectedData(items[1])
 	}
