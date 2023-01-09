@@ -53,6 +53,8 @@ func main() {
 	r.AddHandler(path1.Bytes(), &p1)
 
 	// set up some default tags.
+	// using TagWrite() and TagRead() are treadsafe if needed.
+	// otherwise you can lock p1.Mutex and manipulate p1.Data yourself
 	p1.TagWrite("testtag1", int32(12345))
 	p1.TagWrite("testtag2", float32(543.21))
 

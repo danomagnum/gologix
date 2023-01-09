@@ -53,6 +53,7 @@ func (p *MapTagProvider) IOWrite(items []cipItem) error {
 	return nil
 }
 
+// this is a thread-safe way to get the value for a tag.
 func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	log.Printf("Trying to read %v from MapTagProvider", tag)
 	p.Mutex.Lock()
@@ -68,6 +69,7 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	return val, nil
 }
 
+// this is a thread-safe way to write a value to a tag.
 func (p *MapTagProvider) TagWrite(tag string, value any) error {
 	log.Printf("Trying to set %v=%v from MapTagProvider", tag, value)
 	p.Mutex.Lock()
