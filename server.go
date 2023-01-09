@@ -336,36 +336,6 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	return nil
 }
 
-func getTagFromPath(item *cipItem) (string, error) {
-	var prefix byte
-	err := item.DeSerialize(&prefix)
-	if err != nil {
-		return "", fmt.Errorf("problem getting path prefix. %w", err)
-	}
-	if prefix != 0x91 {
-		return "", fmt.Errorf("only support reading by tag name. TODO: support other things?. %w", err)
-	}
-	var tag_len byte
-	err = item.DeSerialize(&tag_len)
-	if err != nil {
-		return "", fmt.Errorf("problem getting tag len. %w", err)
-	}
-	b := make([]byte, tag_len)
-	err = item.DeSerialize(&b)
-	if err != nil {
-		return "", fmt.Errorf("problem reading tag path. %w", err)
-	}
-	if tag_len%2 == 1 {
-		var pad byte
-		err = item.DeSerialize(&pad)
-		if err != nil {
-			return "", fmt.Errorf("problem reading pad byte. %w", err)
-		}
-	}
-	return string(b), nil
-
-}
-
 func (h *serverTCPHandler) forwardClose(i cipItem) error {
 	log.Printf("got forward close from %v", h.conn.RemoteAddr())
 	var fwd_close msgEIPForwardClose

@@ -125,10 +125,10 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 	if err != nil {
 		return fmt.Errorf("error getting sequence ID: %w", err)
 	}
-	var hdr [2]byte
-	err = item.DeSerialize(&hdr)
+	var pathlen uint16
+	err = item.DeSerialize(&pathlen)
 	if err != nil {
-		return fmt.Errorf("error getting header: %w", err)
+		return fmt.Errorf("error getting path len: %w", err)
 	}
 	tag, err := getTagFromPath(&item)
 	if err != nil {
