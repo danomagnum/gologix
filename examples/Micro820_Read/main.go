@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"log"
 
 	"github.com/danomagnum/gologix"
 )
@@ -19,7 +19,7 @@ func main() {
 	// connect using parameters in the client struct
 	err = client.Connect()
 	if err != nil {
-		fmt.Printf("Error opening client. %v", err)
+		log.Printf("Error opening client. %v", err)
 		return
 	}
 	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
@@ -39,19 +39,19 @@ func main() {
 	// As far as I can tell you can't read program scope tags
 	err = client.Read("inputs", input_dat)
 	if err != nil {
-		fmt.Printf("error reading 'input' tag. %v\n", err)
+		log.Printf("error reading 'input' tag. %v\n", err)
 	}
 	// do whatever you want with the value
-	fmt.Printf("input_dat has value %d\n", input_dat)
+	log.Printf("input_dat has value %d\n", input_dat)
 
 	err = client.ListAllTags(0)
 	if err != nil {
-		fmt.Printf("problem listing tags. %v\n", err)
+		log.Printf("problem listing tags. %v\n", err)
 		return
 	}
-	fmt.Printf("found %v tags\n", len(client.KnownTags))
+	log.Printf("found %v tags\n", len(client.KnownTags))
 	for i := range client.KnownTags {
-		fmt.Printf("Tag: %v\n", client.KnownTags[i])
+		log.Printf("Tag: %v\n", client.KnownTags[i])
 	}
 
 }

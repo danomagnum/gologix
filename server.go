@@ -202,7 +202,7 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			return fmt.Errorf("problem reading eip header. %w", err)
 		}
 		h.context = eiphdr.Context
-		fmt.Printf("context: %v\n", h.context)
+		log.Printf("context: %v\n", h.context)
 		switch eiphdr.Command {
 		case cipCommandRegisterSession:
 			err = h.registerSession(eiphdr)

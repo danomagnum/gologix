@@ -18,7 +18,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -65,7 +64,7 @@ func main() {
 	}
 	path3, err := gologix.ParsePath("1,2")
 	if err != nil {
-		fmt.Printf("problem parsing path. %v", err)
+		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
 	r.Handle(path3.Bytes(), &p3)

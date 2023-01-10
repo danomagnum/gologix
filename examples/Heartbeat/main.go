@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/danomagnum/gologix"
@@ -22,7 +22,7 @@ func main() {
 	// connect using parameters in the client struct
 	err = client.Connect()
 	if err != nil {
-		fmt.Printf("Error opening client. %v", err)
+		log.Printf("Error opening client. %v", err)
 		return
 	}
 	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
@@ -37,9 +37,9 @@ func main() {
 		hbStatusChange := <-hbChan
 
 		if hbStatusChange {
-			fmt.Printf("heartbeat now OK")
+			log.Printf("heartbeat now OK")
 		} else {
-			fmt.Printf("heartbeat now bad")
+			log.Printf("heartbeat now bad")
 		}
 
 	}

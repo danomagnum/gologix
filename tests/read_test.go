@@ -1,7 +1,6 @@
 package gologix_tests
 
 import (
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -59,7 +58,7 @@ func TestReadNewUDT(t *testing.T) {
 		t.Errorf("failed to read. %v", err)
 	}
 	if have != want {
-		fmt.Printf("have: %+v, want: %+v", have, want)
+		log.Printf("have: %+v, want: %+v", have, want)
 	}
 }
 func TestReadNewUDTArr(t *testing.T) {
@@ -270,13 +269,13 @@ func TestReadTimeout(t *testing.T) {
 			t.Errorf("problem disconnecting. %v", err)
 		}
 	}()
-	fmt.Println("sleeping for 2 minutes. to let the comms timeout")
+	log.Println("sleeping for 2 minutes. to let the comms timeout")
 	for t := 0; t < 24; t++ {
 		log.Printf("%d\n", t*5)
 		time.Sleep(time.Second * 5)
 	}
 	//client.Conn.Close()
-	//fmt.Println("\nsleep complete")
+	//log.Println("\nsleep complete")
 	var value int16
 	err = client.Read("Program:gologix_tests.Readint", &value)
 	if err != nil {

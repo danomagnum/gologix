@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -47,7 +46,7 @@ func main() {
 	p1 := gologix.MapTagProvider{}
 	path1, err := gologix.ParsePath("1,0")
 	if err != nil {
-		fmt.Printf("problem parsing path. %v", err)
+		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
 	r.Handle(path1.Bytes(), &p1)
@@ -63,7 +62,7 @@ func main() {
 	p2 := gologix.MapTagProvider{}
 	path2, err := gologix.ParsePath("1,1")
 	if err != nil {
-		fmt.Printf("problem parsing path. %v", err)
+		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
 	r.Handle(path2.Bytes(), &p2)

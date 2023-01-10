@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/danomagnum/gologix"
 )
@@ -21,7 +21,7 @@ func main() {
 	// connect using parameters in the client struct
 	err = client.Connect()
 	if err != nil {
-		fmt.Printf("Error opening client. %v", err)
+		log.Printf("Error opening client. %v", err)
 		return
 	}
 	// setup a disconnect.  If you don't disconnect you might have trouble reconnecting
@@ -33,7 +33,7 @@ func main() {
 
 	err = client.Write("WriteUDTs[5].Field1", mydint)
 	if err != nil {
-		fmt.Printf("error writing to tag 'WriteUDTs[5].Field1'. %v", err)
+		log.Printf("error writing to tag 'WriteUDTs[5].Field1'. %v", err)
 	}
 
 	// no error = write OK.
