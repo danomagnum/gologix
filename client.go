@@ -32,6 +32,8 @@ type Client struct {
 	// Used for the keepalive messages.
 	SocketTimeout time.Duration
 
+	RPI time.Duration
+
 	// you have to change this read sequencer every time you make a new tag request.  If you don't, you
 	// won't get an error but it will return the last value you requested again.
 	// You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
@@ -80,6 +82,7 @@ func NewClient(ip string) *Client {
 		Port:           ":44818",
 		VendorID:       0x1776,
 		SerialNumber:   42,
+		RPI:            time.Millisecond * 2500,
 	}
 
 }

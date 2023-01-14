@@ -365,9 +365,14 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	msg.VendorID = client.VendorID
 	msg.OriginatorSerialNumber = client.SerialNumber
 	msg.Multiplier = 0x03
-	msg.OTRPI = 0x00201234
+	//msg.OTRPI = 0x00201234
+	if client.RPI == 0 {
+		client.RPI = 2500 * time.Millisecond
+	}
+	msg.OTRPI = uint32(client.RPI / time.Microsecond)
 	msg.OTNetworkConnParams = ConnectionParams
-	msg.TORPI = 0x00204001
+	//msg.TORPI = 0x00204001
+	msg.TORPI = uint32(client.RPI / time.Microsecond)
 	msg.TONetworkConnParams = ConnectionParams
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(p.Len() / 2)
@@ -415,9 +420,12 @@ func (client *Client) NewForwardOpenStandard() (cipItem, error) {
 	msg.VendorID = client.VendorID
 	msg.OriginatorSerialNumber = client.SerialNumber
 	msg.Multiplier = 0x00
-	msg.OTRPI = 0x007270E0
+	if client.RPI == 0 {
+		client.RPI = 2500 * time.Millisecond
+	}
+	msg.OTRPI = uint32(client.RPI / time.Microsecond)
 	msg.OTNetworkConnParams = uint16(ConnectionParams)
-	msg.TORPI = 0x007270E0
+	msg.TORPI = uint32(client.RPI / time.Microsecond)
 	msg.TONetworkConnParams = uint16(ConnectionParams)
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(p.Len() / 2)
