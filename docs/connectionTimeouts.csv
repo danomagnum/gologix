@@ -1,0 +1,12 @@
+,L27,,,,,Micro 820,
+,rpi (ms),timeout (s),,,,rpi (ms),timeout (s)
+,1000,32,,,,1000,
+,1500,48,,,,1500,48
+,1750,56,,,,1750,
+,2500,80,,,,2500,80
+,7500,240,,,,7500,
+,9000,288,,,,9000,120
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,These times are tests ran with different forward open RPIs to see how long before the PLC closed the TCP connection.,,,,,,
