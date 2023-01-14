@@ -2,7 +2,9 @@ package gologix
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"regexp"
 	"strconv"
@@ -223,4 +225,96 @@ func marshalIOIPart(tagpath string) []byte {
 		tag_name_msg = append(tag_name_msg, []byte{0x00}...)
 	}
 	return tag_name_msg
+}
+
+// these next functions are for reversing the bytes back to a tag string
+func getAsciiTagPart(item *cipItem) (string, error) {
+	var tag_len byte
+	err := item.DeSerialize(&tag_len)
+	if err != nil {
+		return "", fmt.Errorf("problem getting tag len. %w", err)
+	}
+	b := make([]byte, tag_len)
+	err = item.DeSerialize(&b)
+	if err != nil {
+		return "", fmt.Errorf("problem reading tag path. %w", err)
+	}
+	if tag_len%2 == 1 {
+		var pad byte
+		err = item.DeSerialize(&pad)
+		if err != nil {
+			return "", fmt.Errorf("problem reading pad byte. %w", err)
+		}
+	}
+
+	tag_str := string(b)
+	return tag_str, nil
+}
+func getTagFromPath(item *cipItem) (string, error) {
+
+	tag_str := ""
+
+morepath:
+	for {
+		// we haven't read all the tag path info.
+		var tag_path_type byte
+		err := item.DeSerialize(&tag_path_type)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return tag_str, nil
+
+			}
+			return "", fmt.Errorf("couldn't get path part type: %w", err)
+		}
+		switch tag_path_type {
+		case 0x28:
+			// one byte index
+			var array_index byte
+			err = item.DeSerialize(&array_index)
+			if err != nil {
+				return "", fmt.Errorf("couldn't get array index: %w", err)
+			}
+			if tag_str[len(tag_str)-1] == ']' {
+				tag_str = fmt.Sprintf("%s,%d]", tag_str[:len(tag_str)-1], array_index)
+			} else {
+				tag_str = fmt.Sprintf("%s[%d]", tag_str, array_index)
+			}
+		case 0x29:
+			// two byte index
+			var pad byte
+			err = item.DeSerialize(&pad)
+			if err != nil {
+				return "", fmt.Errorf("couldn't get padding: %w", err)
+			}
+			var array_index uint16
+			err = item.DeSerialize(&array_index)
+			if err != nil {
+				return "", fmt.Errorf("couldn't get array index: %w", err)
+			}
+			if tag_str[len(tag_str)-1] == ']' {
+				tag_str = fmt.Sprintf("%s,%d]", tag_str[:len(tag_str)-1], array_index)
+			} else {
+				tag_str = fmt.Sprintf("%s[%d]", tag_str, array_index)
+			}
+		case 0x91:
+			// ascii portion of tag path
+			s, err := getAsciiTagPart(item)
+			if err != nil {
+				return "", fmt.Errorf("problem in ascii tag part: %w", err)
+			}
+			if tag_str == "" {
+				tag_str = s
+			} else {
+				tag_str = fmt.Sprintf("%s.%s", tag_str, s)
+			}
+		default:
+			// this byte does not indicate the tag path is continuing.  go back by one in the item's data buffer to "unread" it.
+			item.Pos--
+			break morepath
+		}
+
+	}
+
+	return tag_str, nil
+
 }

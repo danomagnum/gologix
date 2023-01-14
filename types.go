@@ -42,6 +42,26 @@ func GoVarToCIPType(T any) CIPType {
 		return CIPTypeLREAL
 	case string:
 		return CIPTypeSTRING
+	case []byte:
+		return CIPTypeBYTE
+	case []uint16:
+		return CIPTypeUINT
+	case []int16:
+		return CIPTypeINT
+	case []uint32:
+		return CIPTypeUDINT
+	case []int32:
+		return CIPTypeDINT
+	case []uint64:
+		return CIPTypeLWORD
+	case []int64:
+		return CIPTypeLINT
+	case []float32:
+		return CIPTypeREAL
+	case []float64:
+		return CIPTypeLREAL
+	case []string:
+		return CIPTypeSTRING
 	case interface{}:
 		return CIPTypeStruct
 	}

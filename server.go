@@ -202,7 +202,7 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			return fmt.Errorf("problem reading eip header. %w", err)
 		}
 		h.context = eiphdr.Context
-		fmt.Printf("context: %v\n", h.context)
+		log.Printf("context: %v\n", h.context)
 		switch eiphdr.Command {
 		case cipCommandRegisterSession:
 			err = h.registerSession(eiphdr)
@@ -274,30 +274,20 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
 	case cipService_FragRead:
-		err = h.connectedData(items[1])
+		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	case cipService_Read:
-		err = h.connectedData(items[1])
+		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	default:
-		log.Printf("Got unknown service %d", service)
+		log.Printf("Got unknown service at send unit data handler %d", service)
 	}
 	log.Printf("send unit data service requested: %v", service)
 	return nil
-}
-
-func (h *serverTCPHandler) cipFragRead(item *cipItem) error {
-	if item.Header.ID != cipItem_UnconnectedData {
-		return fmt.Errorf("expected unconnected frag read. got %v", item.Header.ID)
-	}
-	fmt.Printf("frag read data: %v", item.Data)
-	//return h.sendUnitDataReply(cipService_FragRead)
-	return h.sendUnconnectedUnitDataReply(cipService_FragRead)
-
 }
 
 func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
@@ -334,41 +324,16 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	}
 	switch items[1].Header.ID {
 	case cipItem_ConnectedData:
-		return h.connectedData(items[1])
+		var service CIPService
+		err = items[1].DeSerialize(&service)
+		if err != nil {
+			return fmt.Errorf("failed to get service. %w", err)
+		}
+		return h.connectedData(items)
 	case cipItem_UnconnectedData:
 		return h.unconnectedData(items[1])
 	}
 	return nil
-}
-
-func getTagFromPath(item *cipItem) (string, error) {
-	var prefix byte
-	err := item.DeSerialize(&prefix)
-	if err != nil {
-		return "", fmt.Errorf("problem getting path prefix. %w", err)
-	}
-	if prefix != 0x91 {
-		return "", fmt.Errorf("only support reading by tag name. TODO: support other things?. %w", err)
-	}
-	var tag_len byte
-	err = item.DeSerialize(&tag_len)
-	if err != nil {
-		return "", fmt.Errorf("problem getting tag len. %w", err)
-	}
-	b := make([]byte, tag_len)
-	err = item.DeSerialize(&b)
-	if err != nil {
-		return "", fmt.Errorf("problem reading tag path. %w", err)
-	}
-	if tag_len%2 == 1 {
-		var pad byte
-		err = item.DeSerialize(&pad)
-		if err != nil {
-			return "", fmt.Errorf("problem reading pad byte. %w", err)
-		}
-	}
-	return string(b), nil
-
 }
 
 func (h *serverTCPHandler) forwardClose(i cipItem) error {

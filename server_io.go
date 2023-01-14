@@ -2,21 +2,33 @@ package gologix
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 )
 
+// this type satisfies the TagProvider interface to provide class 1 IO support
+// It has to be defined with an input and output struct that consist of only GoLogixTypes
+// It will then serialize the input data and send it to the PLC at the requested rate.
+// When the PLC sends an IO output message, that gets deserialized into the output structure.
+//
+// If you are going to access In or Out, be sure to lock the appropriate Mutex first to prevent data race.
+// Remember that they are pointers here so the locks also need to apply to the original data that was pointed at.
+//
+// it does not handle class 3 tag reads or writes.
 type IOProvider[Tin, Tout any] struct {
-	Mutex sync.Mutex
-	Data  map[string]any
-	In    *Tin
-	Out   *Tout
+	InMutex  sync.Mutex
+	OutMutex sync.Mutex
+	In       *Tin
+	Out      *Tout
 }
 
 var io_read_test_counter byte = 0
 
 // this gets called with the IO setup forward open as the items
 func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
+	p.InMutex.Lock()
+	defer p.InMutex.Unlock()
 	io_read_test_counter++
 	b := bytes.Buffer{}
 	_ = Pack(&b, CIPPack{}, *(p.In))
@@ -52,6 +64,10 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 		return fmt.Errorf("problem getting raw data. %w", err)
 	}
 	b := bytes.NewBuffer(payload)
+
+	p.OutMutex.Lock()
+	defer p.OutMutex.Unlock()
+
 	_, err = Unpack(b, CIPPack{}, p.Out)
 	if err != nil {
 		return fmt.Errorf("problem unpacking data into output struct %w", err)
@@ -61,9 +77,9 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 }
 
 func (p *IOProvider[Tin, Tout]) TagRead(tag string, qty int16) (any, error) {
-	return 0, nil
+	return 0, errors.New("not implemented")
 }
 
 func (p *IOProvider[Tin, Tout]) TagWrite(tag string, value any) error {
-	return nil
+	return errors.New("not implemented")
 }

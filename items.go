@@ -95,12 +95,12 @@ func (item *cipItem) Serialize(str any) {
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
 		if err != nil {
-			log.Printf("Problem writing. %v", err)
+			log.Printf("Problem writing serializable item: %v", err)
 		}
 	default:
 		err := binary.Write(item, binary.LittleEndian, str)
 		if err != nil {
-			log.Printf("Problem writing. %v", err)
+			log.Printf("Problem writing default item: %v", err)
 		}
 	}
 }

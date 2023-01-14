@@ -221,7 +221,6 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []interface{}:
 		// a pointer to a struct.
-		fmt.Printf("slice of interfaces detected")
 		val, err := client.read_single(tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
@@ -242,7 +241,6 @@ func (client *Client) Read(tag string, data any) error {
 	switch v.Kind() {
 	case reflect.Pointer:
 		// a pointer to a struct.
-		fmt.Printf("struct detected")
 		val, err := client.read_single(tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
@@ -262,7 +260,6 @@ func (client *Client) Read(tag string, data any) error {
 	case reflect.Slice:
 		// slice of structs.
 		elements := uint16(v.Len())
-		fmt.Printf("slice of structs length %d detected", elements)
 		val, err := client.read_single(tag, CIPTypeStruct, elements)
 		if err != nil {
 			return err

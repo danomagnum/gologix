@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/danomagnum/gologix"
 )
@@ -21,7 +21,7 @@ func main() {
 	// connect using parameters in the client struct
 	err = client.Connect()
 	if err != nil {
-		fmt.Printf("Error opening client. %v", err)
+		log.Printf("Error opening client. %v", err)
 		return
 	}
 	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
@@ -39,9 +39,9 @@ func main() {
 	// for slices you don't use a pointer.
 	err = client.Read("TestDintArr[2]", tag1)
 	if err != nil {
-		fmt.Printf("error reading testint. %v", err)
+		log.Printf("error reading testint. %v", err)
 	}
 	// do whatever you want with the value
-	fmt.Printf("tag1 has value %d", tag1)
+	log.Printf("tag1 has value %d", tag1)
 
 }

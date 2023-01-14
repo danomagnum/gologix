@@ -20,7 +20,7 @@ func main() {
 	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
-		fmt.Printf("Error opening client. %v", err)
+		log.Printf("Error opening client. %v", err)
 		return
 	}
 	defer client.Disconnect()
@@ -28,10 +28,10 @@ func main() {
 	var tag1 int16
 	err = client.Read("testint", &tag1)
 	if err != nil {
-		fmt.Printf("error reading testint. %v", err)
+		log.Printf("error reading testint. %v", err)
         return
 	}
-	fmt.Printf("tag1 has value %d", tag1)
+	log.Printf("tag1 has value %d", tag1)
 }
 
 ```
@@ -56,7 +56,7 @@ func main() {
 	p1 := gologix.MapTagProvider{}
 	path1, err := gologix.ParsePath("1,0")
 	if err != nil {
-		fmt.Printf("problem parsing path. %v", err)
+		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
 	r.AddHandler(path1.Bytes(), &p1)
@@ -103,7 +103,7 @@ If the UDT you're reading has bools packed in it, you'll need to use the ReadPac
 The library currently only does large forward opens.  It also only does connected reads/writes.  At some point regular forward opens may be added.
 
 
-No UDTs in the server yet.  This will eventually be implemented and that will greatly improve functionality.
+No UDTs or arrays in the server yet.  This will eventually be implemented and that will greatly improve functionality.
 
 
 ## License

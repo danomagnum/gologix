@@ -228,7 +228,6 @@ func (client *Client) connect() error {
 	if err != nil {
 		return fmt.Errorf("error unmarshaling forward open response. %w", err)
 	}
-	log.Printf("ForwardOpen: %+v", forwardopenresp)
 	client.OTNetworkConnectionID = forwardopenresp.OTConnectionID
 	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 

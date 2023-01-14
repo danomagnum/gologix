@@ -112,3 +112,39 @@ func to_hex(b []byte) []string {
 	return out
 
 }
+
+func TestIOIToBytesAndBackAgain(t *testing.T) {
+	ioi_cache = make(map[string]*tagIOI)
+	tests := []struct {
+		Tag  string
+		Type CIPType
+	}{
+		{"test", CIPTypeDINT},
+		{"test[2]", CIPTypeDINT},
+		{"test[2,3]", CIPTypeDINT},
+		{"test[3000,3]", CIPTypeDINT},
+		{"test.tester", CIPTypeDINT},
+		{"test[2,3].tester", CIPTypeDINT},
+	}
+	client := Client{}
+
+	for _, tt := range tests {
+
+		testname := fmt.Sprintf("tag: %s", tt.Tag)
+		t.Run(testname, func(t *testing.T) {
+			res, err := client.NewIOI(tt.Tag, tt.Type)
+			if err != nil {
+				t.Errorf("IOI Generation error. %v", err)
+			}
+			item := NewItem(cipItem_Null, res)
+			path, err := getTagFromPath(&item)
+			if err != nil {
+				t.Errorf("problem parsing path from byte item")
+			}
+			if path != tt.Tag {
+				t.Errorf("Wrong Value for result.  \nWanted %v. \nGot    %v", tt.Tag, path)
+			}
+		})
+	}
+
+}
