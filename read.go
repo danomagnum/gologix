@@ -221,7 +221,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []interface{}:
 		// a pointer to a struct.
-		val, err := client.read_single(tag, CIPTypeStruct, 1)
+		val, err := client.Read_single(tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
 		}
@@ -241,7 +241,7 @@ func (client *Client) Read(tag string, data any) error {
 	switch v.Kind() {
 	case reflect.Pointer:
 		// a pointer to a struct.
-		val, err := client.read_single(tag, CIPTypeStruct, 1)
+		val, err := client.Read_single(tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func (client *Client) Read(tag string, data any) error {
 	case reflect.Slice:
 		// slice of structs.
 		elements := uint16(v.Len())
-		val, err := client.read_single(tag, CIPTypeStruct, elements)
+		val, err := client.Read_single(tag, CIPTypeStruct, elements)
 		if err != nil {
 			return err
 		}
@@ -275,12 +275,13 @@ func (client *Client) Read(tag string, data any) error {
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data element %w", err)
 		}
+
 	}
 
 	return nil
 }
 
-func (client *Client) read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 	ioi, err := client.NewIOI(tag, datatype)
 
 	if err != nil {
@@ -372,7 +373,7 @@ func (client *Client) read_single(tag string, datatype CIPType, elements uint16)
 func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct := GoVarToCIPType(t[0])
-	val, err := client.read_single(tag, ct, elements)
+	val, err := client.Read_single(tag, ct, elements)
 	if err != nil {
 		return t, err
 	}
@@ -416,7 +417,7 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 func read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
 	ct := GoVarToCIPType(t)
-	val, err := client.read_single(tag, ct, 1)
+	val, err := client.Read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
 	}

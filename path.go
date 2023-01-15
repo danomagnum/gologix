@@ -53,6 +53,9 @@ func (p CIPPort) Bytes() []byte {
 
 // this function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
 func ParsePath(path string) (*bytes.Buffer, error) {
+	if path == "" {
+		return new(bytes.Buffer), nil
+	}
 	// get rid of any spaces and square brackets
 	path = strings.ReplaceAll(path, " ", "")
 	path = strings.ReplaceAll(path, "[", "")

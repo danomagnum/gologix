@@ -1,0 +1,21 @@
+{
+    "server":
+    {
+        "address":"localhost",
+        "port":8080
+    },
+    "plcs":
+    [
+        {
+            "name":"L27",
+            "address":"192.168.2.241",
+            "path":"1,0"
+        },
+        {
+            "name":"M820",
+            "address":"192.168.2.244",
+            "path":""
+        }
+    ]
+
+}
