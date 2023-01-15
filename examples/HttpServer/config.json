@@ -2,7 +2,10 @@
     "server":
     {
         "address":"localhost",
-        "port":8080
+        "port":8080,
+        "tls_cert":"",
+        "tls_key":""
+
     },
     "plcs":
     [

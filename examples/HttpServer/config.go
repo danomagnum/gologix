@@ -7,8 +7,10 @@ type PLCConfig struct {
 }
 
 type ServerConfig struct {
-	Address string
-	Port    int
+	Address  string
+	Port     int
+	TLS_Cert string
+	TLS_Key  string
 }
 
 type AppConfig struct {

@@ -28,6 +28,7 @@ func main() {
 	}
 	log.Printf("Config: %+v", Config)
 
+	log.Printf("=== Connecting to PLCs. ===")
 	for _, plcconf := range Config.PLCs {
 		path, err := gologix.ParsePath(plcconf.Path)
 		if err != nil {
@@ -44,14 +45,27 @@ func main() {
 			log.Printf("problem with plc connection %s. Can't connect. %v", plcconf.Name, err)
 			continue
 		}
+		defer conn.Disconnect()
 		Connections[plcconf.Name] = &conn
 	}
+	log.Printf("=== Starting Webserver. ===")
 
 	// set up a web request handler and start the server
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", httpreq)
 	connection_addr := fmt.Sprintf("%s:%d", Config.Server.Address, Config.Server.Port)
-	http.ListenAndServe(connection_addr, mux)
+
+	if Config.Server.TLS_Cert != "" {
+		err = http.ListenAndServeTLS(connection_addr, Config.Server.TLS_Cert, Config.Server.TLS_Key, mux)
+		if err != nil {
+			log.Panicf("problem starting https server. %v", err)
+		}
+
+	} else {
+		// no TLS cert specified - just use a plain HTTP server.
+		err = http.ListenAndServe(connection_addr, mux)
+		log.Panicf("problem starting http server. %v", err)
+	}
 
 }
 
