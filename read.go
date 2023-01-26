@@ -488,13 +488,39 @@ func (client *Client) ReadMulti(tag_str any) error {
 	}
 
 	// first generate IOIs for each tag
+	result_values, err := client.ReadList(tags, types)
+	if err != nil {
+		return fmt.Errorf("problem in read list: %w", err)
+	}
+
+	// now unpack the result values back into the given structure
+	for i, tag := range tags {
+		fieldno := tag_map[tag]
+		val := result_values[i]
+
+		v := reflect.ValueOf(&tag_str).Elem().Elem().Elem()
+
+		fieldVal := v.Field(fieldno)
+		fieldVal.Set(reflect.ValueOf(val))
+
+		if err != nil {
+			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
+		}
+
+	}
+
+	return nil
+}
+
+func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
+	// first generate IOIs for each tag
 	qty := len(tags)
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
 		iois[i], err = client.NewIOI(tag, types[i])
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -526,12 +552,12 @@ func (client *Client) ReadMulti(tag_str any) error {
 		}
 		err := binary.Write(&b, binary.LittleEndian, h)
 		if err != nil {
-			return fmt.Errorf("problem writing cip IO header to buffer. %w", err)
+			return nil, fmt.Errorf("problem writing cip IO header to buffer. %w", err)
 		}
 		b.Write(ioi.Buffer)
 		err = binary.Write(&b, binary.LittleEndian, f)
 		if err != nil {
-			return fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
+			return nil, fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
 		}
 	}
 
@@ -545,7 +571,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 
 	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_ = hdr
 
@@ -556,21 +582,21 @@ func (client *Client) ReadMulti(tag_str any) error {
 	}
 	items, err := ReadItems(data)
 	if err != nil {
-		return fmt.Errorf("problem reading items. %w", err)
+		return nil, fmt.Errorf("problem reading items. %w", err)
 	}
 	if len(items) != 2 {
-		return fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
+		return nil, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
 	ritem := items[1]
 	var reply_hdr msgMultiReadResultHeader
 	err = binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
 	if err != nil {
-		return fmt.Errorf("problem reading reply header. %w", err)
+		return nil, fmt.Errorf("problem reading reply header. %w", err)
 	}
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
 	err = binary.Read(&ritem, binary.LittleEndian, &offset_table)
 	if err != nil {
-		return fmt.Errorf("problem reading offset table. %w", err)
+		return nil, fmt.Errorf("problem reading offset table. %w", err)
 	}
 	rb := ritem.Bytes()
 	result_values := make([]interface{}, reply_hdr.Reply_Count)
@@ -580,16 +606,16 @@ func (client *Client) ReadMulti(tag_str any) error {
 		rhdr := msgMultiReadResult{}
 		err = binary.Read(mybytes, binary.LittleEndian, &rhdr)
 		if err != nil {
-			return fmt.Errorf("problem reading multi result header. %w", err)
+			return nil, fmt.Errorf("problem reading multi result header. %w", err)
 		}
 
 		// bit 8 of the service indicates whether it is a response service
 		if !rhdr.Service.IsResponse() {
-			return fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
+			return nil, fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
 		}
 		rhdr.Service = rhdr.Service.UnResponse()
 		if rhdr.Status != 0 {
-			return fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
+			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
 		}
 		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
@@ -609,23 +635,8 @@ func (client *Client) ReadMulti(tag_str any) error {
 		}
 	}
 
-	// now unpack the result values back into the given structure
-	for i, tag := range tags {
-		fieldno := tag_map[tag]
-		val := result_values[i]
+	return result_values, nil
 
-		v := reflect.ValueOf(&tag_str).Elem().Elem().Elem()
-
-		fieldVal := v.Field(fieldno)
-		fieldVal.Set(reflect.ValueOf(val))
-
-		if err != nil {
-			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
-		}
-
-	}
-
-	return nil
 }
 
 func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
