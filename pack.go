@@ -18,7 +18,24 @@ type CIPPack struct {
 }
 
 func (p CIPPack) Align(t reflect.Type) int {
-	a := t.Align()
+	// If a type is a struct we need to check the alignment of every field.
+	// If any of the fields have an alignment of 8 (LINT, LREAL, etc...)
+	// then the struct also has an alignment of 8.
+	if t.Kind() != reflect.Struct {
+		return t.Align()
+	}
+	if t.Kind() == reflect.Array {
+		return p.Align(t.Elem())
+	}
+
+	a := 1
+	for i := 0; i < t.NumField(); i++ {
+		subfield_align := p.Align(t.Field(i).Type)
+		if subfield_align > a {
+			a = subfield_align
+		}
+
+	}
 	return a
 }
 
