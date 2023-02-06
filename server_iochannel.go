@@ -89,7 +89,7 @@ func (p *IOChannelProvider[Tin, Tout]) TagWrite(tag string, value any) error {
 
 // returns the most udpated copy of the output data
 // this output data is what the PLC is writing to us
-func (p *IOChannelProvider[Tin, Tout]) GetOutputData() <-chan Tout {
+func (p *IOChannelProvider[Tin, Tout]) GetOutputDataChannel() <-chan Tout {
 	newout := make(chan Tout)
 	p.outChannels = append(p.outChannels, newout)
 	return newout
