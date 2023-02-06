@@ -39,7 +39,7 @@ func (p *IOChannelProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 		return fmt.Errorf("expeted 2 items but got %v", len(items))
 	}
 	if items[1].Header.ID != cipItem_ConnectedData {
-		return fmt.Errorf("expeted item 2 to be a connected data item but got %v", items[1].Header.ID)
+		return fmt.Errorf("expected item 2 to be a connected data item but got %v", items[1].Header.ID)
 	}
 	var seq_counter uint32
 
