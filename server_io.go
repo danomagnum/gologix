@@ -83,3 +83,20 @@ func (p *IOProvider[Tin, Tout]) TagRead(tag string, qty int16) (any, error) {
 func (p *IOProvider[Tin, Tout]) TagWrite(tag string, value any) error {
 	return errors.New("not implemented")
 }
+
+// returns the most udpated copy of the output data
+// this output data is what the PLC is writing to us
+func (p *IOProvider[Tin, Tout]) GetOutputData() Tout {
+	p.OutMutex.Lock()
+	defer p.OutMutex.Unlock()
+	t := *p.Out
+	return t
+}
+
+// update the input data thread safely
+// this input data is what the PLC receives
+func (p *IOProvider[Tin, Tout]) SetInputData(newin Tin) {
+	p.InMutex.Lock()
+	defer p.InMutex.Unlock()
+	p.In = &newin
+}
