@@ -105,6 +105,7 @@ The library currently only does large forward opens.  It also only does connecte
 
 No UDTs or arrays in the server yet.  This will eventually be implemented and that will greatly improve functionality.
 
+Have not implemented large data reads/writes yet.  If you try to send/receive a message that goes over the ForwardOpen size limit (between 500 and 4000 bytes) you'll have a bad time.  Until this is implemented, you'll have to do multiple smaller reads/writes.  Depending on the length of the tag names you're reading you should still be able to get a couple hundred in one go until this is resolved.
 
 ## License
 
