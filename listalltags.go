@@ -13,7 +13,7 @@ type msgtagResultDataHeader struct {
 	NameLength uint16
 }
 
-type msgtagResultDataFooter struct {
+type TagInfo struct {
 	Type       CIPType
 	TypeInfo   byte
 	Dimension1 uint32
@@ -22,19 +22,19 @@ type msgtagResultDataFooter struct {
 }
 
 // see page 42 of 1756-PM020H-EN-P
-func (f msgtagResultDataFooter) PreDefined() bool {
+func (f TagInfo) PreDefined() bool {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
 	return !((val > 0x0100) && (val < 0x0EFF))
 }
 
 // see page 42 of 1756-PM020H-EN-P
-func (f msgtagResultDataFooter) Atomic() bool {
+func (f TagInfo) Atomic() bool {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
-	return val < 0xFF
+	return val&0b1001_0000_0000_0000 == 0
 }
 
 // see page 42 of 1756-PM020H-EN-P
-func (f msgtagResultDataFooter) Template_ID() uint16 {
+func (f TagInfo) Template_ID() uint16 {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
 	template_mask := uint16(0b0000_0111_1111_1111)
 	bit12 := uint16(1 << 12)
@@ -136,7 +136,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	tag_hdr := new(msgtagResultDataHeader)
-	tag_ftr := new(msgtagResultDataFooter)
+	tag_ftr := new(TagInfo)
 	for data2.Len() > 0 {
 
 		err = binary.Read(data2, binary.LittleEndian, tag_hdr)
@@ -162,8 +162,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		kt := KnownTag{
 			Name:     string(tag_name),
-			Type:     tag_ftr.Type,
-			Class:    CIPClass(tag_ftr.TypeInfo),
+			Info:     *tag_ftr,
 			Instance: CIPInstance(tag_hdr.InstanceID),
 		}
 		if tag_ftr.Dimension3 != 0 {

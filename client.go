@@ -89,8 +89,7 @@ func NewClient(ip string) *Client {
 
 type KnownTag struct {
 	Name        string
-	Type        CIPType
-	Class       CIPClass
+	Info        TagInfo
 	Instance    CIPInstance
 	Array_Order []int
 }

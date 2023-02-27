@@ -149,7 +149,7 @@ const (
 	cipCommandCancel            CIPCommand = 0x73
 )
 
-type CIPClass byte
+type CIPTagInfo byte
 
 // currently unused
 /*

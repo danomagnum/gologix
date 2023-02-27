@@ -178,10 +178,17 @@ func (c CIPType) String() string {
 	case CIPTypeSTRING:
 		return "0xDA - String"
 	default:
-		return "0 - Unknown"
+		return fmt.Sprintf("0x%2x - Unknown", byte(c))
 	}
 }
 
+func (t CIPType) IsAtomic() bool {
+	v := byte(t)
+	if v > 254 {
+		return false
+	}
+	return true
+}
 func (t CIPType) readValue(r io.Reader) any {
 	return readValue(t, r)
 }
@@ -259,7 +266,7 @@ func readValue(t CIPType, r io.Reader) any {
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
 	default:
-		panic("Default type.")
+		panic(fmt.Sprintf("Default type %d", t))
 
 	}
 	if err != nil {

@@ -87,7 +87,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	}
 
 	tag_hdr := new(msgtagResultDataHeader)
-	tag_ftr := new(msgtagResultDataFooter)
+	tag_ftr := new(TagInfo)
 	for data2.Len() > 0 {
 
 		err = binary.Read(data2, binary.LittleEndian, tag_hdr)
@@ -113,8 +113,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 		kt := KnownTag{
 			Name:     newtag_name,
-			Type:     tag_ftr.Type,
-			Class:    CIPClass(tag_ftr.TypeInfo),
+			Info:     *tag_ftr,
 			Instance: CIPInstance(tag_hdr.InstanceID),
 		}
 		if tag_ftr.Dimension3 != 0 {

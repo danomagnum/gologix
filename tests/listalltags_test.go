@@ -33,13 +33,17 @@ func TestList(t *testing.T) {
 	// check that we picked up all the test tags properly
 	tests := make(map[string]gologix.KnownTag)
 	tests["testdintarr"] = gologix.KnownTag{
-		Name:        "TestDintArr",
-		Type:        gologix.CIPTypeDINT,
+		Name: "TestDintArr",
+		Info: gologix.TagInfo{
+			Type: gologix.CIPTypeDINT,
+		},
 		Array_Order: []int{10},
 	}
 	tests["testdint"] = gologix.KnownTag{
-		Name:        "TestDint",
-		Type:        gologix.CIPTypeDINT,
+		Name: "TestDint",
+		Info: gologix.TagInfo{
+			Type: gologix.CIPTypeDINT,
+		},
 		Array_Order: []int{},
 	}
 
@@ -51,8 +55,8 @@ func TestList(t *testing.T) {
 			if have.Name != want.Name {
 				t.Errorf("Name Mismatch. Have %s. Want %s.", have.Name, want.Name)
 			}
-			if have.Type != want.Type {
-				t.Errorf("Type Mismatch. Have %s. Want %s.", have.Type, want.Type)
+			if have.Info.Type != want.Info.Type {
+				t.Errorf("Type Mismatch. Have %s. Want %s.", have.Info.Type, want.Info.Type)
 			}
 			if !compare_array_order(have.Array_Order, want.Array_Order) {
 				t.Errorf("Array Order Mismatch. Have %v. Want %v.", have.Array_Order, want.Array_Order)
