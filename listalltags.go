@@ -24,7 +24,13 @@ type TagInfo struct {
 // see page 42 of 1756-PM020H-EN-P
 func (f TagInfo) PreDefined() bool {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
-	return !((val > 0x0100) && (val < 0x0EFF))
+	var mask uint16 = 0b0000_1111_1111_1111
+	var mask2 uint16 = 0x0FFF
+	_ = mask2
+	val2 := val & mask
+	log.Print(val, mask, mask2, val2)
+	//return !((val > 0x0100) && (val < 0x0EFF))
+	return val2 <= 0x0100
 }
 
 // see page 42 of 1756-PM020H-EN-P
@@ -212,16 +218,22 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			}
 		}
 
+		if tag_ftr.Template_ID() != 0 {
+			log.Printf("found UDT of some sort %s", kt.Name)
+		}
+
 		if tag_ftr.Template_ID() != 0 && !tag_ftr.PreDefined() {
 			if verbose {
 				log.Printf("Looking up template for Tag: '%s' ", tag_string)
 			}
-			_, err = client.ListMembers(uint32(tag_ftr.Template_ID()))
+			u, err := client.ListMembers(uint32(tag_ftr.Template_ID()))
 			if err != nil {
 				log.Printf("problem reading member list for %v, %+v, %+v, %v, %v", tag_string, tag_hdr, tag_ftr, tag_ftr.Template_ID(), tag_ftr.PreDefined())
 				//return err
+			} else {
+				kt.UDT = &u
+				log.Printf("Successful member read for %s", kt.Name)
 			}
-			continue
 		}
 
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt

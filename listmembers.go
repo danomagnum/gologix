@@ -136,6 +136,10 @@ type msgMemberInfo struct {
 	Offset uint32
 }
 
+func (m msgMemberInfo) CIPType() CIPType {
+	return CIPType(m.Type & 0x00FF)
+}
+
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	if verbose {
 		log.Printf("list members for %v", str_instance)
@@ -253,6 +257,18 @@ type UDTDescriptor struct {
 	Name        string
 	Info        msgGetTemplateAttrListResponse
 	Members     []UDTMemberDescriptor
+}
+
+func (u UDTDescriptor) Size() int {
+	maxsize := uint32(0)
+	for i := range u.Members {
+		m := u.Members[i]
+		end := m.Info.Offset + uint32(m.Info.CIPType().Size())
+		if end > maxsize {
+			maxsize = end
+		}
+	}
+	return int(maxsize)
 }
 
 type UDTMemberDescriptor struct {

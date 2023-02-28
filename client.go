@@ -92,6 +92,7 @@ type KnownTag struct {
 	Info        TagInfo
 	Instance    CIPInstance
 	Array_Order []int
+	UDT         *UDTDescriptor
 }
 
 func (t KnownTag) Bytes() []byte {

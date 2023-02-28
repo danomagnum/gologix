@@ -39,17 +39,40 @@ func main() {
 	// list through the tag list.
 	for tagname := range client.KnownTags {
 		tag := client.KnownTags[tagname]
-		log.Printf("%s: %v", tag.Name, tag.Info.Type)
-		if !tag.Info.Atomic() {
-			log.Print("Not Atomic")
+		//log.Printf("%s: %v", tag.Name, tag.Info.Type)
+		if tag.Name == "Program:MotionTest.Target3" ||
+			tag.Name == "Program:Garage.Pressure_History" ||
+			tag.Name == "Program:MainProgram.pBaseINTArray" ||
+			tag.Name == "Program:gologix_tests.WriteSints" ||
+			tag.Name == "Program:gologix_tests.ReadDints" {
+			log.Print("this one")
+		}
+		if tagname == "local:1:i" {
+			log.Print("should have one!")
+		}
+		//if !tag.Info.Atomic() {
+		//log.Print("Not Atomic")
+		//continue
+		//}
+		if tag.Info.Dimension1 != 0 {
+			tagname = tagname + "[0]"
+		}
+		if tag.UDT == nil && !tag.Info.Atomic() {
+			//log.Print("Not Atomic or UDT")
 			continue
 		}
-		val, err := client.Read_single(tagname, tag.Info.Type, 1)
-		if err != nil {
-			log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
-			continue
+		if tag.UDT != nil {
+			log.Printf("%s size = %d", tag.Name, tag.UDT.Size())
 		}
-		log.Printf("     = %v", val)
+
+		if false {
+			val, err := client.Read_single(tagname, tag.Info.Type, 1)
+			if err != nil {
+				log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
+				continue
+			}
+			log.Printf("     = %v", val)
+		}
 	}
 
 }
