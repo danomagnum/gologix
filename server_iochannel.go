@@ -4,39 +4,37 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 )
 
-// this type satisfies the TagProvider interface to provide class 1 IO support
+// this type satisfies the TagChannelProvider interface to provide class 1 IO support
 // It has to be defined with an input and output struct that consist of only GoLogixTypes
 // It will then serialize the input data and send it to the PLC at the requested rate.
-// When the PLC sends an IO output message, that gets deserialized into the output structure.
+// When the PLC sends an IO output message, that gets deserialized and sent to all destination channels.
 //
-// If you are going to access In or Out, be sure to lock the appropriate Mutex first to prevent data race.
-// Remember that they are pointers here so the locks also need to apply to the original data that was pointed at.
+// get a new destintaion channel by calling GetOutputData.  You can then receive from this to get data as it comes in.
+//
+// update the input data with the SetInputData(Tin) function
 //
 // it does not handle class 3 tag reads or writes.
-type IOProvider[Tin, Tout any] struct {
-	InMutex  sync.Mutex
-	OutMutex sync.Mutex
-	In       *Tin
-	Out      *Tout
+type IOChannelProvider[Tin, Tout any] struct {
+	inMutex     sync.Mutex
+	in          Tin
+	outChannels []chan Tout
 }
 
-var io_read_test_counter byte = 0
-
 // this gets called with the IO setup forward open as the items
-func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
-	p.InMutex.Lock()
-	defer p.InMutex.Unlock()
-	io_read_test_counter++
+func (p *IOChannelProvider[Tin, Tout]) IORead() ([]byte, error) {
+	p.inMutex.Lock()
+	defer p.inMutex.Unlock()
 	b := bytes.Buffer{}
-	_ = Pack(&b, CIPPack{}, *(p.In))
+	_ = Pack(&b, CIPPack{}, p.in)
 	dat := b.Bytes()
 	return dat, nil
 }
 
-func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
+func (p *IOChannelProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 	if len(items) != 2 {
 		return fmt.Errorf("expeted 2 items but got %v", len(items))
 	}
@@ -65,38 +63,42 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
 	}
 	b := bytes.NewBuffer(payload)
 
-	p.OutMutex.Lock()
-	defer p.OutMutex.Unlock()
-
-	_, err = Unpack(b, CIPPack{}, p.Out)
+	var out Tout
+	_, err = Unpack(b, CIPPack{}, &out)
 	if err != nil {
 		return fmt.Errorf("problem unpacking data into output struct %w", err)
+	}
+	for i := range p.outChannels {
+		select {
+		case p.outChannels[i] <- out:
+		default:
+			log.Printf("problem sending. channel full?")
+		}
 	}
 
 	return nil
 }
 
-func (p *IOProvider[Tin, Tout]) TagRead(tag string, qty int16) (any, error) {
+func (p *IOChannelProvider[Tin, Tout]) TagRead(tag string, qty int16) (any, error) {
 	return 0, errors.New("not implemented")
 }
 
-func (p *IOProvider[Tin, Tout]) TagWrite(tag string, value any) error {
+func (p *IOChannelProvider[Tin, Tout]) TagWrite(tag string, value any) error {
 	return errors.New("not implemented")
 }
 
 // returns the most udpated copy of the output data
 // this output data is what the PLC is writing to us
-func (p *IOProvider[Tin, Tout]) GetOutputData() Tout {
-	p.OutMutex.Lock()
-	defer p.OutMutex.Unlock()
-	t := *p.Out
-	return t
+func (p *IOChannelProvider[Tin, Tout]) GetOutputDataChannel() <-chan Tout {
+	newout := make(chan Tout)
+	p.outChannels = append(p.outChannels, newout)
+	return newout
 }
 
 // update the input data thread safely
 // this input data is what the PLC receives
-func (p *IOProvider[Tin, Tout]) SetInputData(newin Tin) {
-	p.InMutex.Lock()
-	defer p.InMutex.Unlock()
-	p.In = &newin
+func (p *IOChannelProvider[Tin, Tout]) SetInputData(newin Tin) {
+	p.inMutex.Lock()
+	defer p.inMutex.Unlock()
+	p.in = newin
 }

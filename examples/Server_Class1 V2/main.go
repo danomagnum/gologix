@@ -54,10 +54,14 @@ func main() {
 
 	// define the Input and Output instances.  (Input and output here is from the plc's perspective)
 	inInstance := InStr{}
+	outInstance := OutStr{}
 
 	// an IO handler in slot 2
 	//p3 := gologix.IOProvider[InStr, OutStr]{}
-	p3 := gologix.IOChannelProvider[InStr, OutStr]{}
+	p3 := gologix.IOProvider[InStr, OutStr]{
+		In:  &inInstance,
+		Out: &outInstance,
+	}
 	path3, err := gologix.ParsePath("1,2")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
@@ -69,17 +73,16 @@ func main() {
 	go s.Serve()
 
 	t := time.NewTicker(time.Second)
-	data_chan := p3.GetOutputDataChannel()
 
 	for {
-		select {
-		case <-t.C:
-			// time to update the input data
-			inInstance.Count++
-			p3.SetInputData(inInstance)
-		case outdat := <-data_chan:
-			log.Printf("PLC Output: %v", outdat)
-		}
+		<-t.C
+		inInstance.Count++
+		p3.InMutex.Lock()
+		log.Printf("PLC Input: %v", inInstance)
+		p3.InMutex.Unlock()
+		p3.OutMutex.Lock()
+		log.Printf("PLC Output: %v", outInstance)
+		p3.OutMutex.Unlock()
 	}
 
 }

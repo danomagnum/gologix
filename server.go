@@ -507,6 +507,20 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 	log.Printf("IO RPI of %v", rpi)
 	t := time.NewTicker(rpi)
 	seq := uint32(0)
+
+	// get the address to send the response back to, trim off the port number, and add the eip udp port number (2222) back on.
+	// I suspect this will break with IPV6 since it uses colons in the IP address itself.
+	remote := h.conn.RemoteAddr().String()
+	remote = strings.Split(remote, ":")[0]
+	addr := fmt.Sprintf("%s:2222", remote)
+
+	udpconn, err := net.Dial("udp", addr)
+	if err != nil {
+		log.Printf("[ERROR] problem connecting UDP. %v", err)
+		return
+	}
+	defer udpconn.Close()
+
 	for {
 		seq++
 		<-t.C
@@ -531,25 +545,12 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		items[1].Serialize(uint16(seq))
 		items[1].Serialize(dat)
 
-		// get the address to send the response back to, trim off the port number, and add the eip udp port number (2222) back on.
-		// I suspect this will break with IPV6 since it uses colons in the IP address itself.
-		remote := h.conn.RemoteAddr().String()
-		remote = strings.Split(remote, ":")[0]
-		addr := fmt.Sprintf("%s:2222", remote)
-
-		conn, err := net.Dial("udp", addr)
-		if err != nil {
-			log.Printf("problem connecting UDP. %v", err)
-			continue
-		}
-
 		payload := *SerializeItems(items)
 		payload = payload[6:]
-		_, err = conn.Write(payload)
+		_, err = udpconn.Write(payload)
 		if err != nil {
 			log.Printf("problem writing %v", err)
 		}
-		conn.Close()
 
 	}
 }

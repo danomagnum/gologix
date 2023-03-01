@@ -1,12 +1,12 @@
 # gologix
 
-gologix is a communication driver written in native go that lets you easily read/write values from tags in Rockwell Automation ControlLogix, and CompactLogix PLC's over Ethernet I/P using GO.  PLCs that use CIP over Ethernet/IP are supported (controllogix, compactlogix, micro820). Models like PLC5, SLC, and MicroLogix that use PCCC instead of CIP are *not* supported.
+gologix is a communication driver written in native go that lets you easily read/write values from tags in Rockwell Automation ControlLogix, and CompactLogix PLC's over Ethernet I/P using GO.  PLCs that use CIP over Ethernet/IP are supported (controllogix, compactlogix, micro820).  Models like PLC5, SLC, and MicroLogix that use PCCC instead of CIP are *not* supported.
 
 It is modeled after pylogix with changes to make it usable in go.
 
 ### Your First Client Program:
 
-There are a few examples in the examples folder, here is an abriged version of the SimpleRead example. See the actual example for a more thorough description of what is going on.
+There are a few examples in the examples folder, here is an abriged version of the SimpleRead example.  See the actual example for a more thorough description of what is going on.
 
 ```go
 package main
@@ -38,7 +38,7 @@ func main() {
 
 ### Your First Server Program:
 
-There are a few examples in the examples folder, here is an abriged version of the Server_Class3 example. See the actual example(s) for a more thorough description of what is going on.  Basically it listens to incoming MSG instructions doing CIP Data Table Writes and CIP Data Table Reads and maps the data to/from an internal golang map.  You can then access the data through that map as long as you get the lock on it.
+There are a few examples in the examples folder, here is an abriged version of the Server_Class3 example.  See the actual example(s) for a more thorough description of what is going on.  Basically it listens to incoming MSG instructions doing CIP Data Table Writes and CIP Data Table Reads and maps the data to/from an internal golang map.  You can then access the data through that map as long as you get the lock on it.
 
 ```go
 package main
@@ -105,6 +105,7 @@ The library currently only does large forward opens.  It also only does connecte
 
 No UDTs or arrays in the server yet.  This will eventually be implemented and that will greatly improve functionality.
 
+Have not implemented large data reads/writes yet.  If you try to send/receive a message that goes over the ForwardOpen size limit (between 500 and 4000 bytes) you'll have a bad time.  Until this is implemented, you'll have to do multiple smaller reads/writes.  Depending on the length of the tag names you're reading you should still be able to get a couple hundred in one go until this is resolved.
 
 ## License
 
