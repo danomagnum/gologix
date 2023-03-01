@@ -353,16 +353,25 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	if elements == 1 {
 		if datatype == CIPTypeBOOL && hdr2.Type != CIPTypeBOOL && ioi.BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
-			value := readValue(hdr2.Type, &items[1])
+			value, err := readValue(hdr2.Type, &items[1])
+			if err != nil {
+				return nil, fmt.Errorf("problem reading bool tag %s: %w", tag, err)
+			}
 			return getBit(hdr2.Type, value, ioi.BitPosition)
 		}
 		// not a struct so we can read the value directly
-		value := readValue(hdr2.Type, &items[1])
+		value, err := readValue(hdr2.Type, &items[1])
+		if err != nil {
+			return nil, fmt.Errorf("problem reading tag %s: %w", tag, err)
+		}
 		return value, nil
 	} else {
 		value := make([]any, elements)
 		for i := 0; i < int(elements); i++ {
-			value[i] = readValue(hdr2.Type, &items[1])
+			value[i], err = readValue(hdr2.Type, &items[1])
+			if err != nil {
+				return nil, fmt.Errorf("problem reading element %d of %s: %w", i, tag, err)
+			}
 
 		}
 		return value, nil
@@ -619,7 +628,10 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 		}
 		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
-			value := readValue(rhdr.Type, mybytes)
+			value, err := readValue(rhdr.Type, mybytes)
+			if err != nil {
+				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
+			}
 			val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
 			if err != nil {
 				log.Printf("problem reading value for this guy")
@@ -627,7 +639,10 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 			}
 			result_values[i] = val
 		} else {
-			result_values[i] = rhdr.Type.readValue(mybytes)
+			result_values[i], err = rhdr.Type.readValue(mybytes)
+			if err != nil {
+				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
+			}
 		}
 
 		if verbose {

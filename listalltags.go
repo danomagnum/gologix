@@ -187,29 +187,12 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			kt.Array_Order = make([]int, 0)
 		}
 
-		// per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
-		// because they aren't valid for reading/writing.
-		if !tag_ftr.Atomic() && tag_ftr.PreDefined() && verbose {
-			log.Printf("Skipping Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
-				tag_name,
-				tag_hdr.InstanceID,
-				tag_ftr.Type,
-				tag_ftr.TypeInfo,
-				tag_ftr.Dimension1,
-				tag_ftr.Dimension2,
-				tag_ftr.Dimension3,
-				tag_ftr.Template_ID(),
-			)
-		}
-		if tag_string[:2] == "__" {
-			if verbose {
-				log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
-			}
+		if !isValidTag(tag_string, *tag_ftr) {
 			continue
 		}
 
 		if len(tag_string) > 8 {
-			if tag_string[:8] == "Program:" {
+			if strings.HasPrefix(tag_string, "Program:") {
 				_, err = client.ListSubTags(tag_string, 1)
 				if err != nil {
 					return err
@@ -265,4 +248,34 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	return nil
+}
+
+// per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
+// because they aren't valid for reading/writing.
+func isValidTag(tag_string string, tag_ftr TagInfo) bool {
+	if !tag_ftr.Atomic() && tag_ftr.PreDefined() && verbose {
+		log.Printf("Skipping Tag: '%s' Type: %s/%d[%d,%d,%d].  Template %d",
+			tag_string,
+			tag_ftr.Type,
+			tag_ftr.TypeInfo,
+			tag_ftr.Dimension1,
+			tag_ftr.Dimension2,
+			tag_ftr.Dimension3,
+			tag_ftr.Template_ID(),
+		)
+	}
+	if tag_string[:2] == "__" {
+		if verbose {
+			log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
+		}
+		return false
+	}
+	if strings.Contains(tag_string, ":") {
+		if !strings.HasPrefix(tag_string, "Program") {
+			log.Printf("Skipping Tag: '%s' because it has a : but doesn't start with 'program' ", tag_string)
+			return false
+		}
+
+	}
+	return true
 }

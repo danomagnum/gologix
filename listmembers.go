@@ -259,6 +259,8 @@ type UDTDescriptor struct {
 	Members     []UDTMemberDescriptor
 }
 
+// This function is experimental and not accurate.  I suspect it is accurate only if the last field in the
+// udt is a simple atomic type (int, real, dint, etc...).  Use at your own risk.
 func (u UDTDescriptor) Size() int {
 	maxsize := uint32(0)
 	for i := range u.Members {

@@ -60,7 +60,10 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	results := make([]any, qty)
 	log.Printf("tag: %s", tag)
 	for i := 0; i < int(qty); i++ {
-		results[i] = typ.readValue(&item)
+		results[i], err = typ.readValue(&item)
+		if err != nil {
+			return fmt.Errorf("problem reading element %d: %w", i, err)
+		}
 	}
 	log.Printf("value: %v", results)
 

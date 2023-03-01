@@ -36,26 +36,18 @@ func main() {
 	}
 
 	log.Printf("Found %d tags.", len(client.KnownTags))
-	// list through the tag list.
+	// list through the tag list and read them all
 	for tagname := range client.KnownTags {
 		tag := client.KnownTags[tagname]
-		//log.Printf("%s: %v", tag.Name, tag.Info.Type)
-		if tag.Name == "Program:MotionTest.Target3" ||
-			tag.Name == "Program:Garage.Pressure_History" ||
-			tag.Name == "Program:MainProgram.pBaseINTArray" ||
-			tag.Name == "Program:gologix_tests.WriteSints" ||
-			tag.Name == "Program:gologix_tests.ReadDints" {
-			log.Print("this one")
-		}
-		if tagname == "local:1:i" {
-			log.Print("should have one!")
-		}
-		//if !tag.Info.Atomic() {
-		//log.Print("Not Atomic")
-		//continue
-		//}
+		log.Printf("%s: %v", tag.Name, tag.Info.Type)
+
+		// TODO: in theory we should do more to read multi-dim arrays.
+		qty := uint16(1)
 		if tag.Info.Dimension1 != 0 {
 			tagname = tagname + "[0]"
+			x := tag.Info.Atomic()
+			qty = uint16(tag.Info.Dimension1)
+			_ = x
 		}
 		if tag.UDT == nil && !tag.Info.Atomic() {
 			//log.Print("Not Atomic or UDT")
@@ -65,14 +57,14 @@ func main() {
 			log.Printf("%s size = %d", tag.Name, tag.UDT.Size())
 		}
 
-		if false {
-			val, err := client.Read_single(tagname, tag.Info.Type, 1)
-			if err != nil {
-				log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
-				continue
-			}
-			log.Printf("     = %v", val)
+		val, err := client.Read_single(tagname, tag.Info.Type, qty)
+		if err != nil {
+			log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
+			continue
 		}
+		log.Printf("     = %v", val)
 	}
+
+	log.Printf("Found %d tags.", len(client.KnownTags))
 
 }

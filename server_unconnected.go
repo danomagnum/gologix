@@ -106,7 +106,10 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 	}
 	results := make([]any, qty)
 	for i := 0; i < int(qty); i++ {
-		results[i] = typ.readValue(&item)
+		results[i], err = typ.readValue(&item)
+		if err != nil {
+			return fmt.Errorf("problem reading element %d: %w", i, err)
+		}
 	}
 	var path_size uint16
 	err = item.DeSerialize(&path_size)

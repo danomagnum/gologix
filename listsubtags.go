@@ -131,6 +131,9 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 		} else {
 			kt.Array_Order = make([]int, 0)
 		}
+		if !isValidTag(string(newtag_bytes), *tag_ftr) {
+			continue
+		}
 		client.KnownTags[strings.ToLower(newtag_name)] = kt
 		new_kts = append(new_kts, kt)
 

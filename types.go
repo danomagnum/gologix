@@ -189,22 +189,22 @@ func (t CIPType) IsAtomic() bool {
 	}
 	return true
 }
-func (t CIPType) readValue(r io.Reader) any {
+func (t CIPType) readValue(r io.Reader) (any, error) {
 	return readValue(t, r)
 }
 
 // readValue reads one unit of cip data type t into the correct go type.
 // To do this it reads the needed number of bytes from r.
 // It returns the value as an any so the caller will have to do a cast to get it back
-func readValue(t CIPType, r io.Reader) any {
+func readValue(t CIPType, r io.Reader) (any, error) {
 
 	var value any
 	var err error
 	switch t {
 	case CIPTypeUnknown:
-		panic("Unknown type.")
+		return nil, fmt.Errorf("Unknown Type")
 	case CIPTypeStruct:
-		panic("Struct!")
+		return nil, fmt.Errorf("Struct!")
 	case CIPTypeBOOL:
 		var trueval bool
 		err = binary.Read(r, binary.LittleEndian, &trueval)
@@ -273,7 +273,7 @@ func readValue(t CIPType, r io.Reader) any {
 		log.Printf("Problem reading %s as one unit of %T. %v", t, value, err)
 	}
 	//log.Printf("type %v. value %v", t, value)
-	return value
+	return value, nil
 }
 
 // after reading a value v from the controller, you can get a bit from it with
