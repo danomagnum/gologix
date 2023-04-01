@@ -57,6 +57,9 @@ type Client struct {
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
 
 	cancel_keepalive chan struct{}
+
+	// this just lets us not have to re-process tag strings.
+	ioi_cache map[string]*tagIOI
 }
 
 func (client *Client) Sequencer() uint16 {
@@ -69,9 +72,6 @@ func (client *Client) Sequencer() uint16 {
 func NewClient(ip string) *Client {
 	// default path is backplane -> slot 0
 	p, err := ParsePath("1,0")
-	if ioi_cache == nil {
-		ioi_cache = make(map[string]*tagIOI)
-	}
 	if err != nil {
 		log.Panicf("this should not have failed since the path is hardcoded.  problem with path. %v", err)
 	}
@@ -83,6 +83,7 @@ func NewClient(ip string) *Client {
 		VendorID:       0x1776,
 		SerialNumber:   42,
 		RPI:            time.Millisecond * 2500,
+		ioi_cache:      make(map[string]*tagIOI),
 	}
 
 }

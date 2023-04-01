@@ -36,8 +36,8 @@ func (client *Client) Connect() error {
 		}
 	}
 
-	if ioi_cache == nil {
-		ioi_cache = make(map[string]*tagIOI)
+	if client.ioi_cache == nil {
+		client.ioi_cache = make(map[string]*tagIOI)
 	}
 	return client.connect()
 }

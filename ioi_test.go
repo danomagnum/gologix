@@ -9,7 +9,6 @@ import (
 // it only tests the request path portion of each tag addressing example
 // it also only tests symbolic paths.
 func TestIOI(t *testing.T) {
-	ioi_cache = make(map[string]*tagIOI)
 	var tests = []struct {
 		path string
 		t    CIPType
@@ -114,7 +113,6 @@ func to_hex(b []byte) []string {
 }
 
 func TestIOIToBytesAndBackAgain(t *testing.T) {
-	ioi_cache = make(map[string]*tagIOI)
 	tests := []struct {
 		Tag  string
 		Type CIPType

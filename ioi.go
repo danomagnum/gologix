@@ -11,10 +11,6 @@ import (
 	"strings"
 )
 
-// it's fine for this to be global. One string maps to one IOI regardless of what PLC it comes from.
-// this just lets us not have to re-process them.
-var ioi_cache map[string]*tagIOI
-
 type tagPartDescriptor struct {
 	FullPath    string
 	BasePath    string
@@ -114,6 +110,9 @@ const defaultIOIBufferSize = 256
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
 func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
+	if client.ioi_cache == nil {
+		client.ioi_cache = make(map[string]*tagIOI)
+	}
 	ioi = new(tagIOI)
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
@@ -129,7 +128,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 			return
 		}
 	}
-	extant, exists := ioi_cache[tagpath]
+	extant, exists := client.ioi_cache[tagpath]
 	if exists {
 		ioi = extant
 		return
@@ -205,7 +204,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 
 	}
 
-	ioi_cache[tagpath] = ioi
+	client.ioi_cache[tagpath] = ioi
 	return
 }
 
