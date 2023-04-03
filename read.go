@@ -568,6 +568,11 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
 		}
+		// TODO: calculate the actual message size, not just the IOI data size.
+		if b.Len() > client.ConnectionSize {
+			// TODO: split this read up into mulitple messages.
+			return nil, fmt.Errorf("maximum read message size is %d", client.ConnectionSize)
+		}
 	}
 
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
