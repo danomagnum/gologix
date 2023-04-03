@@ -569,6 +569,8 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 			return nil, fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
 		}
 		// TODO: calculate the actual message size, not just the IOI data size.
+		// TODO: We also need to caculate the response size we expect from the PLC and split
+		//       into multiple messages on that also.
 		if b.Len() > client.ConnectionSize {
 			// TODO: split this read up into mulitple messages.
 			return nil, fmt.Errorf("maximum read message size is %d", client.ConnectionSize)
