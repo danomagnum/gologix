@@ -317,4 +317,9 @@ func TestReadTooManyTags(t *testing.T) {
 		t.Error("Should have failed but didn't.")
 		return
 	}
+	_, err = client.ReadListPartial(tags, types)
+	if err != nil {
+		t.Errorf("shouldn't have failed but did. %v", err)
+		return
+	}
 }
