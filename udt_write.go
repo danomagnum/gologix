@@ -20,9 +20,6 @@ func multi_to_dict(data any) (map[string]interface{}, error) {
 		f := fs.Field(i)
 		fulltag := f.Tag.Get("gologix")
 		switch v.Kind() {
-
-		}
-		switch v.Kind() {
 		case reflect.Struct:
 			d2, err := udt_to_dict(fulltag, v.Interface())
 			if err != nil {
