@@ -14,3 +14,4 @@
 - https://www.odva.org/wp-content/uploads/2020/05/PUB00070_Recommended-Functionality-for-EIP-Devices-v10.pdf
 - https://literature.rockwellautomation.com/idc/groups/literature/documents/qs/2080-qs002_-en-e.pdf
 - https://www.rockwellautomation.com/content/dam/rockwell-automation/sites/downloads/pdf/TypeEncode_CIPRW.pdf
+- https://assets.omron.eu/downloads/manual/en/v2/w506_nx_nj-series_cpu_unit_built-in_ethernet_ip_port_users_manual_en.pdf
