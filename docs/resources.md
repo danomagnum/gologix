@@ -1,5 +1,5 @@
 
-# Documentation:
+# Manufacturer Documentation and Resources:
 
 - https://literature.rockwellautomation.com/idc/groups/literature/documents/pm/1756-pm020_-en-p.pdf
 - https://www.odva.org/wp-content/uploads/2020/06/PUB00123R1_Common-Industrial_Protocol_and_Family_of_CIP_Networks.pdf
