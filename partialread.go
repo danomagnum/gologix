@@ -13,19 +13,28 @@ func (client *Client) ReadListPartial(tags []string, types []CIPType) ([]any, er
 	var err error
 	var req []cipItem
 	total := len(tags)
-	results := make([]any, total)
+	results := make([]any, 0, total)
 	msgs := 0
 
 	for n < total {
 		msgs += 1
 		n_new, req, err = client.GetIOIsThatFit(tags[n:], types[n:])
+		if err != nil {
+			return nil, err
+		}
+		subresults, err := client.ReadList(tags[n:n+n_new], types[n:n+n_new])
 		n += n_new
 		if err != nil {
 			return nil, err
 		}
-		_ = req     // TODO: do read and get results
-		_ = results // TODO: append results
+		results = append(results, subresults...)
+
+		// GetIOIsThatFit calculates the message to send to get said # of IOIs.  The code above re-calculates that packet
+		// which is, of course, inefficient, *but* it's easier this way.  Should GetIOIsThatFit no longer calculate the
+		// req packet, the req variable here will go away.
+		_ = req
 	}
+
 	log.Printf("Took %d messages to read %d tags", msgs, n)
 	return results, nil
 }
