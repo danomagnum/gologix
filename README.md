@@ -87,6 +87,8 @@ You can read/write multiple tags at once by defining a struct with each field ta
 
 To read multiple items from an array, pass a slice to the Read method.
 
+To read more than one arbitrary tags at once, use the ReadList method - the first parameter is a slice of tag names and the second parameter is a slice of each tags type.
+
 You can read UDTs in if you define an equivalent struct to blit the data into. Arrays of UDTs also works. (see limitation below about UDTs with packed bools)
 
 
@@ -100,12 +102,7 @@ You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, 
 
 If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
 
-The library currently only does large forward opens.  It also only does connected reads/writes.  At some point regular forward opens may be added.
-
-
 No UDTs or arrays in the server yet.  This will eventually be implemented and that will greatly improve functionality.
-
-Have not implemented large data reads/writes yet.  If you try to send/receive a message that goes over the ForwardOpen size limit (between 500 and 4000 bytes) you'll have a bad time.  Until this is implemented, you'll have to do multiple smaller reads/writes.  Depending on the length of the tag names you're reading you should still be able to get a couple hundred in one go until this is resolved.
 
 ## License
 
