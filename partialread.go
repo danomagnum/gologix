@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func (client *Client) ReadListPartial(tags []string, types []CIPType) ([]any, error) {
+func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	n := 0
 	n_new := 0
 	var err error
@@ -21,7 +21,7 @@ func (client *Client) ReadListPartial(tags []string, types []CIPType) ([]any, er
 		if err != nil {
 			return nil, err
 		}
-		subresults, err := client.ReadList(tags[n:n+n_new], types[n:n+n_new])
+		subresults, err := client.readList(tags[n:n+n_new], types[n:n+n_new])
 		n += n_new
 		if err != nil {
 			return nil, err

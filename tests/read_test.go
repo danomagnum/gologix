@@ -312,7 +312,7 @@ func TestReadTooManyTags(t *testing.T) {
 		types = append(types, gologix.CIPTypeDINT)
 	}
 
-	vals, err := client.ReadListPartial(tags, types)
+	vals, err := client.ReadList(tags, types)
 	if err != nil {
 		t.Errorf("shouldn't have failed but did. %v", err)
 		return
