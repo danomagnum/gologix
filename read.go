@@ -536,12 +536,8 @@ func (client *Client) ReadMulti(tag_str any) error {
 	return nil
 }
 
-func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 
-	err := client.checkConnection()
-	if err != nil {
-		return nil, fmt.Errorf("could not start list read: %w", err)
-	}
+func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
