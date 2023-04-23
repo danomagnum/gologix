@@ -285,6 +285,8 @@ func TestReadTimeout(t *testing.T) {
 	log.Printf("value: %v\n", value)
 }
 
+// this tests reading more tags than one single EIP message can hold.  It can hold about 90 of the tags in one message
+// so we check around that value for magic numbers in the array.
 func TestReadTooManyTags(t *testing.T) {
 	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
