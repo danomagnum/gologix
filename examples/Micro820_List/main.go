@@ -27,21 +27,15 @@ func main() {
 	// if that happens (about a minute)
 	defer client.Disconnect()
 
-	// define a variable with a type that matches the tag you want to read.  In this case it is an INT so
-	// int16 or uint16 will work.
-	input_dat := make([]int32, 8)
-
-	// call the read function.
-	// note that tag names are case insensitive.
-	// also note that for atomic types and structs you need to use a pointer.
-	// for slices you don't use a pointer.
-	//
-	// As far as I can tell you can't read program scope tags
-	err = client.Read("inputs", input_dat)
+	err = client.ListAllTags(0)
 	if err != nil {
-		log.Printf("error reading 'input' tag. %v\n", err)
+		log.Printf("Error reading tags: %v", err)
+		return
 	}
-	// do whatever you want with the value
-	log.Printf("input_dat has value %d\n", input_dat)
+	log.Printf("All Tags:")
+	for i := range client.KnownTags {
+		tag := client.KnownTags[i]
+		log.Printf("%v: / %v[%v]", tag.Name, tag.Info.Type, tag.Info.Dimension1)
+	}
 
 }
