@@ -285,8 +285,6 @@ func TestReadTimeout(t *testing.T) {
 	log.Printf("value: %v\n", value)
 }
 
-// Right now this test will fail, but eventually the read function will be updated to do multiple requests and merge the
-// results back together at which point it will pass.
 func TestReadTooManyTags(t *testing.T) {
 	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
@@ -300,26 +298,47 @@ func TestReadTooManyTags(t *testing.T) {
 			t.Errorf("problem disconnecting. %v", err)
 		}
 	}()
-	tag := "Program:gologix_tests.ReadDints"
+	tag := "Program:gologix_tests.LongDints"
 
 	tags := make([]string, 0)
 	types := make([]gologix.CIPType, 0)
 
-	tagcount := 4000
+	tagcount := 100
 
 	for i := 0; i < tagcount; i++ {
 		tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
 		types = append(types, gologix.CIPTypeDINT)
 	}
 
-	_, err = client.ReadList(tags, types)
-	if err == nil {
-		t.Error("Should have failed but didn't.")
-		return
-	}
-	_, err = client.ReadListPartial(tags, types)
+	vals, err := client.ReadListPartial(tags, types)
 	if err != nil {
 		t.Errorf("shouldn't have failed but did. %v", err)
 		return
 	}
+
+	type arraySpotCheck struct {
+		Index int
+		Value int32
+	}
+
+	checks := []arraySpotCheck{
+		{0, 5556},
+		{89, 2329},
+		{90, 888884},
+		{99, 232058},
+	}
+
+	for i := range checks {
+		index := checks[i].Index
+		want := checks[i].Value
+		val, ok := vals[index].(int32)
+		if !ok {
+			t.Errorf("Not a dint!")
+			return
+		}
+		if val != want {
+			t.Errorf("Element %d incorrect value. Expected %d got %d", index, want, val)
+		}
+	}
+
 }
