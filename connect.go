@@ -83,6 +83,7 @@ func (client *Client) keepalive() {
 				new_props, err := client.GetControllerPropList()
 				if err != nil {
 					log.Printf("keepalive failed. %v", err)
+					client.Disconnect()
 					return
 				}
 				if !new_props.Match(og_props) {
