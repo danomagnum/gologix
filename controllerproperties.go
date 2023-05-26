@@ -74,7 +74,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	}
 
 	readmsg := msgCIPConnectedServiceReq{
-		SequenceCount: client.Sequencer(),
+		SequenceCount: uint16(sequencer()),
 		Service:       cipService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}

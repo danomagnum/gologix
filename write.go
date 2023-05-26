@@ -10,6 +10,10 @@ import (
 // The write equivalent to ReadMulti.  value should be a struct where each field has a tag of the form `gologix:"tagname"` that maps
 // what tag in the controller it corresponds to
 func (client *Client) WriteMulti(value any) error {
+	err := client.checkConnection()
+	if err != nil {
+		return fmt.Errorf("could not start multi write: %w", err)
+	}
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Struct {
 		d, err := multi_to_dict(value)
@@ -24,6 +28,10 @@ func (client *Client) WriteMulti(value any) error {
 // write a single value to a single tag.
 // the type of value must correspond to the type of tag in the controller
 func (client *Client) Write(tag string, value any) error {
+	err := client.checkConnection()
+	if err != nil {
+		return fmt.Errorf("could not start write: %w", err)
+	}
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Struct {
 		d, err := udt_to_dict(tag, value)
@@ -51,7 +59,7 @@ func (client *Client) write_single(tag string, value any) error {
 	}
 
 	ioi_header := msgCIPIOIHeader{
-		Sequence: client.Sequencer(),
+		Sequence: uint16(sequencer()),
 		Service:  cipService_Write,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}
