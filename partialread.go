@@ -35,7 +35,7 @@ func (client *Client) GetIOIsThatFit(tags []string, types []CIPType) (int, []cip
 	qty := len(tags)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
-		Sequence:     client.Sequencer(),
+		Sequence:     uint16(sequencer()),
 		Service:      cipService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},

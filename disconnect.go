@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -9,10 +10,6 @@ func (client *Client) Disconnect() error {
 	if !client.Connected {
 		return nil
 	}
-	client.Connected = false
-
-	// this will kill the keepalive goroutine
-	close(client.cancel_keepalive)
 	var err error
 
 	items := make([]cipItem, 2)
@@ -29,7 +26,7 @@ func (client *Client) Disconnect() error {
 		TimeoutTicks:           0x0E,
 		ConnectionSerialNumber: client.ConnectionSerialNumber,
 		VendorID:               client.VendorID,
-		OriginatorSerialNumber: client.SerialNumber,
+		OriginatorSerialNumber: client.serialNumber,
 		PathSize:               3,                                           // 16 bit words
 		Path:                   [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}, // TODO: generate paths automatically
 	}
@@ -38,10 +35,29 @@ func (client *Client) Disconnect() error {
 
 	err = client.send(cipCommandSendRRData, SerializeItems(items)) // 0x65 is register session
 	if err != nil {
-		return fmt.Errorf("couldn't send unconnect req %w", err)
+		err2 := client.disconnect()
+		return fmt.Errorf("couldn't send unconnect req %w: %v", err, err2)
 	}
+	client.disconnect()
 	return nil
 
+}
+
+// module internal disconnect that closes the connection and cancels the watchdog/keepalive
+func (client *Client) disconnect() error {
+	if !client.Connected {
+		return errors.New("already disconnected")
+	}
+	client.Connected = false
+
+	// this will kill the keepalive goroutine
+	close(client.cancel_keepalive)
+
+	err := client.conn.Close()
+	if err != nil {
+		err = fmt.Errorf("error closing connection: %w", err)
+	}
+	return err
 }
 
 type msgCIPMessage_UnRegister struct {

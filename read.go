@@ -10,6 +10,10 @@ import (
 )
 
 func (client *Client) Read(tag string, data any) error {
+	err := client.checkConnection()
+	if err != nil {
+		return fmt.Errorf("could not start read: %w", err)
+	}
 	switch data := data.(type) {
 	case *bool:
 		v, err := read[bool](client, tag)
@@ -282,6 +286,12 @@ func (client *Client) Read(tag string, data any) error {
 }
 
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+
+	err := client.checkConnection()
+	if err != nil {
+		return nil, fmt.Errorf("could not start single read: %w", err)
+	}
+
 	ioi, err := client.NewIOI(tag, datatype)
 
 	if err != nil {
@@ -292,7 +302,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	readmsg := msgCIPConnectedServiceReq{
-		SequenceCount: client.Sequencer(),
+		SequenceCount: uint16(sequencer()),
 		Service:       cipService_Read,
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
@@ -476,6 +486,11 @@ type CIPStructHeader struct {
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
 func (client *Client) ReadMulti(tag_str any) error {
 
+	err := client.checkConnection()
+	if err != nil {
+		return fmt.Errorf("could not start multi read: %w", err)
+	}
+
 	// build the tag list from the structure by reflecing through the tags on the fields of the struct.
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
@@ -522,6 +537,12 @@ func (client *Client) ReadMulti(tag_str any) error {
 }
 
 func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
+
+	err := client.checkConnection()
+	if err != nil {
+		return nil, fmt.Errorf("could not start list read: %w", err)
+	}
+
 	// first generate IOIs for each tag
 	qty := len(tags)
 	iois := make([]*tagIOI, qty)
@@ -537,7 +558,7 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
-		Sequence:     client.Sequencer(),
+		Sequence:     uint16(sequencer()),
 		Service:      cipService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
