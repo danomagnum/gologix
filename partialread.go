@@ -14,7 +14,6 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	}
 	n := 0
 	n_new := 0
-	var err error
 	total := len(tags)
 	results := make([]any, 0, total)
 	msgs := 0
