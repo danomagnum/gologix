@@ -65,7 +65,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	}
 
 	readmsg := msgCIPConnectedServiceReq{
-		SequenceCount: client.Sequencer(),
+		SequenceCount: uint16(sequencer()),
 		Service:       cipService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
@@ -164,7 +164,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	}
 
 	readmsg := msgCIPConnectedServiceReq{
-		SequenceCount: client.Sequencer(),
+		SequenceCount: uint16(sequencer()),
 		Service:       cipService_Read,
 		PathLength:    byte(p.Len() / 2),
 	}

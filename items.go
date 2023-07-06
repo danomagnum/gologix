@@ -108,7 +108,7 @@ func (item *cipItem) Serialize(str any) {
 // DeSerialize an item's data into the given sturcture.
 //
 // If called more than once the []byte data for the additional structures is continuously
-// raed from the current position of the item's data buffer.
+// read from the current position of the item's data buffer.
 func (item *cipItem) DeSerialize(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }

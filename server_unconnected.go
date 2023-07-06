@@ -65,6 +65,8 @@ func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 			return h.unconnectedServiceWrite(item)
 		case cipService_Read:
 			return h.unconnectedServiceRead(item)
+		case cipService_GetAttributeSingle:
+			return h.unconnectedServiceGetAttrSingle(item)
 
 		default:
 			return fmt.Errorf("don't know how to handle service '%v'", emService)
@@ -144,6 +146,14 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 
 }
 
+func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item cipItem) error {
+	var req msgGetAttrSignleReq
+	err := item.DeSerialize(&req)
+	if err != nil {
+		return fmt.Errorf("problem parsing get attr single message: %w", err)
+	}
+	return nil
+}
 func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
 	var reserved byte
 	err := item.DeSerialize(&reserved)

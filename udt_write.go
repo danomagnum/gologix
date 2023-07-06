@@ -102,7 +102,7 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
-		Sequence:     client.Sequencer(),
+		Sequence:     uint16(sequencer()),
 		Service:      cipService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},

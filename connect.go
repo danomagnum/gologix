@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -22,8 +23,10 @@ func (client *Client) Connect() error {
 
 		client.VendorID = 0x1776
 	}
-	if client.SerialNumber == 0 {
-		client.SerialNumber = 42
+	if client.SerialNumber != 0 {
+		client.serialNumber = client.SerialNumber
+	} else {
+		client.serialNumber = sequencer()
 	}
 
 	// default path is backplane -> slot 0
@@ -83,6 +86,7 @@ func (client *Client) keepalive() {
 				new_props, err := client.GetControllerPropList()
 				if err != nil {
 					log.Printf("keepalive failed. %v", err)
+					client.Disconnect()
 					return
 				}
 				if !new_props.Match(og_props) {
@@ -342,7 +346,7 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	client.ConnectionSerialNumber = uint16(rand.Uint32())
+	client.ConnectionSerialNumber = uint16(sequencer())
 	ConnectionParams := uint32(0x4200)
 	ConnectionParams = ConnectionParams << 16 // for long packet
 	ConnectionParams += uint32(client.ConnectionSize)
@@ -358,11 +362,11 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)
 	msg.TimeoutTicks = 0x0E // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
 	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = rand.Uint32() // pylogix always uses 0x20000002
-	msg.TOConnectionID = rand.Uint32()
+	msg.OTConnectionID = sequencer() // pylogix always uses 0x20000002
+	msg.TOConnectionID = sequencer()
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
 	msg.VendorID = client.VendorID
-	msg.OriginatorSerialNumber = client.SerialNumber
+	msg.OriginatorSerialNumber = client.serialNumber
 	msg.Multiplier = 0x03
 	//msg.OTRPI = 0x00201234
 	if client.RPI == 0 {
@@ -378,6 +382,7 @@ func (client *Client) NewForwardOpenLarge() (cipItem, error) {
 	item.Serialize(msg)
 	item.Serialize(p.Bytes())
 
+	log.Printf("Attempted Connection ID: OT=%d, TO=%d", msg.OTConnectionID, msg.TOConnectionID)
 	return item, nil
 }
 
@@ -413,11 +418,11 @@ func (client *Client) NewForwardOpenStandard() (cipItem, error) {
 	msg.Priority = 0x07     // 0x0A means normal multiplier (about 1 second?)
 	msg.TimeoutTicks = 0xE9 // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
 	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = 0 //0x20000002
-	msg.TOConnectionID = rand.Uint32()
+	msg.OTConnectionID = sequencer()
+	msg.TOConnectionID = sequencer()
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
 	msg.VendorID = client.VendorID
-	msg.OriginatorSerialNumber = client.SerialNumber
+	msg.OriginatorSerialNumber = client.serialNumber
 	msg.Multiplier = 0x00
 	if client.RPI == 0 {
 		client.RPI = 2500 * time.Millisecond
@@ -448,4 +453,18 @@ type msgEIPForwardOpen_Standard_Reply struct {
 	TOAPI                  uint32
 	ReplySize              byte
 	Reserved2              byte
+}
+
+func (client *Client) checkConnection() error {
+	if !client.Connected {
+		if client.AutoConnect {
+			err := client.Connect()
+			if err != nil {
+				return fmt.Errorf("not connected and connect attemp failed: %w", err)
+			}
+		} else {
+			return errors.New("not connected")
+		}
+	}
+	return nil
 }

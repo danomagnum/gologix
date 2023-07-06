@@ -8,9 +8,12 @@ import (
 )
 
 func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
+	err := client.checkConnection()
+	if err != nil {
+		return nil, fmt.Errorf("could not start list read: %w", err)
+	}
 	n := 0
 	n_new := 0
-	var err error
 	total := len(tags)
 	results := make([]any, 0, total)
 	msgs := 0
@@ -39,7 +42,7 @@ func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, err
 	qty := len(tags)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
-		Sequence:     client.Sequencer(),
+		Sequence:     uint16(sequencer()),
 		Service:      cipService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},

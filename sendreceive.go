@@ -51,7 +51,8 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	for written < len(b) {
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
-			return err
+			err2 := client.disconnect()
+			return fmt.Errorf("%w: %v", err, err2)
 		}
 		written += n
 	}
@@ -79,7 +80,8 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 	var err error
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
-		return hdr, nil, err
+		err2 := client.disconnect()
+		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
 	}
 	//log.Printf("Header: %v", hdr)
 	//data_size := hdr.Length * 2
@@ -87,11 +89,19 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 	data := make([]byte, data_size)
 	if data_size > 0 {
 		err = binary.Read(client.conn, binary.LittleEndian, &data)
+		if err != nil {
+			err2 := client.disconnect()
+			return hdr, nil, fmt.Errorf("problem reading socket payload: %w: %v", err, err2)
+		}
 	}
 	//log.Printf("Buffer: %v", data)
 	buf := bytes.NewBuffer(data)
 	return hdr, buf, err
 
+}
+
+func (client *Client) DebugCloseConn() {
+	client.conn.Close()
 }
 
 func (client *Client) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
