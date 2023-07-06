@@ -645,6 +645,18 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 				continue
 			}
 			result_values[i] = val
+		} else if types[i] == CIPTypeSTRING {
+			str_hdr := CIPStringHeader{}
+			err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
+			}
+			str := make([]byte, str_hdr.Length)
+			err = binary.Read(mybytes, binary.LittleEndian, str)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+			}
+			result_values[i] = string(str)
 		} else {
 			result_values[i], err = rhdr.Type.readValue(mybytes)
 			if err != nil {

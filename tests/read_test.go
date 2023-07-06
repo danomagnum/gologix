@@ -153,6 +153,7 @@ func TestReadNew(t *testing.T) {
 
 	testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
 	testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
+	testReadNew(t, client, "Program:gologix_tests.ReadBool", false)
 	testReadNew(t, client, "Program:gologix_tests.ReadDint.0", false)
 	testReadNew(t, client, "Program:gologix_tests.ReadDint.2", true)
 	testReadNew(t, client, "Program:gologix_tests.ReadReal", float32(93.45))
