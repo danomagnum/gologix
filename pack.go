@@ -17,6 +17,14 @@ type Packing interface {
 type CIPPack struct {
 }
 
+type Packable interface {
+	Pack(w io.Writer) int
+}
+
+type Unpackable interface {
+	Unpack(r io.Reader) (n int, err error)
+}
+
 func (p CIPPack) Align(t reflect.Type) int {
 	// If a type is a struct we need to check the alignment of every field.
 	// If any of the fields have an alignment of 8 (LINT, LREAL, etc...)
@@ -44,6 +52,11 @@ func (p CIPPack) Order() binary.ByteOrder {
 }
 
 func Pack(w io.Writer, p Packing, data any) int {
+
+	switch d := data.(type) {
+	case Packable:
+		return d.Pack(w)
+	}
 
 	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
 	pos := 0
@@ -171,6 +184,11 @@ func Pack(w io.Writer, p Packing, data any) int {
 }
 
 func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
+
+	switch d := data.(type) {
+	case Unpackable:
+		return d.Unpack(r)
+	}
 
 	// bitpos and bitpack are for packing bits into bytes.  bitpos is the position in the byte and bitpack is the packed bits that
 	// haven't been written to w yet.
