@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-type LogixTimer struct {
+type LogixTIMER struct {
 	PRE int32
 	ACC int32
 	EN  bool // bit 31
@@ -20,15 +20,8 @@ type LogixTimer struct {
 	ER bool // bit 25 Unused
 }
 
-func (t LogixTimer) Pack(w io.Writer) int {
-	err := binary.Write(w, binary.LittleEndian, t.PRE)
-	if err != nil {
-		return 0
-	}
-	err = binary.Write(w, binary.LittleEndian, t.ACC)
-	if err != nil {
-		return 4
-	}
+func (t LogixTIMER) Pack(w io.Writer) int {
+
 	var CtrlWord uint32
 	if t.EN {
 		CtrlWord |= 1 << 31
@@ -39,7 +32,17 @@ func (t LogixTimer) Pack(w io.Writer) int {
 	if t.DN {
 		CtrlWord |= 1 << 29
 	}
-	err = binary.Write(w, binary.LittleEndian, CtrlWord)
+
+	err := binary.Write(w, binary.LittleEndian, CtrlWord)
+	if err != nil {
+		return 0
+	}
+
+	err = binary.Write(w, binary.LittleEndian, t.PRE)
+	if err != nil {
+		return 4
+	}
+	err = binary.Write(w, binary.LittleEndian, t.ACC)
 	if err != nil {
 		return 8
 	}
@@ -47,26 +50,26 @@ func (t LogixTimer) Pack(w io.Writer) int {
 	return 12
 }
 
-func (t *LogixTimer) Unpack(r io.Reader) (int, error) {
-	err := binary.Read(r, binary.LittleEndian, t.PRE)
+func (t *LogixTIMER) Unpack(r io.Reader) (int, error) {
+	var CtrlWord uint32
+	err := binary.Read(r, binary.LittleEndian, &CtrlWord)
 	if err != nil {
 		return 0, err
 	}
 
-	err = binary.Read(r, binary.LittleEndian, t.ACC)
+	t.EN = CtrlWord&(1<<31) != 0
+	t.TT = CtrlWord&(1<<30) != 0
+	t.DN = CtrlWord&(1<<29) != 0
+
+	err = binary.Read(r, binary.LittleEndian, &(t.PRE))
 	if err != nil {
 		return 4, err
 	}
 
-	var CtrlWord uint32
-	err = binary.Read(r, binary.LittleEndian, &CtrlWord)
+	err = binary.Read(r, binary.LittleEndian, &(t.ACC))
 	if err != nil {
 		return 8, err
 	}
-
-	t.EN = CtrlWord&1<<31 != 0
-	t.TT = CtrlWord&1<<30 != 0
-	t.DN = CtrlWord&1<<29 != 0
 
 	return 12, nil
 }
