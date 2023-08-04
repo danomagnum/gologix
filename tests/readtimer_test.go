@@ -121,3 +121,47 @@ func TestTimerRead(t *testing.T) {
 	}
 
 }
+
+func TestTimerStructRead(t *testing.T) {
+
+	client := gologix.NewClient("192.168.2.241")
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
+
+	x := struct {
+		Field0 int32
+		Flag1  bool
+		Flag2  bool
+		Timer  gologix.LogixTIMER
+		Field1 int32
+	}{}
+
+	//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
+	err = client.Read("Program:gologix_tests.TestTimerStruct", &x)
+	if err != nil {
+		t.Errorf("problem reading timer data: %v", err)
+		return
+	}
+
+	if x.Timer.PRE != 8765 {
+		t.Errorf("Expected preset of 8765 but got %d ", x.Timer.PRE)
+	}
+
+	if x.Field0 != 44444 {
+		t.Errorf("Expected field0 of 44444 but got %d", x.Field0)
+	}
+
+	if x.Field1 != 55555 {
+		t.Errorf("Expected field1 of 55555 but got %d", x.Field1)
+	}
+
+}
