@@ -65,9 +65,17 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
+	// the attributes of the Identity object are as follows:
+	//
+	// 1 - vendor ID
+	// 2 - Device Type
+	// 3 - Product Code
+	// 4 - Revision
+	// 5 - Status
+	// 6 - Serial Number
+	// 7 - Product Name
 	p, err := Serialize(
-		cipObject_ControllerInfo, CIPInstance(1),
-		//cipObject_Symbol, cipInstance(start_instance),
+		cipObject_ControllerInfo, cipObject_Identity,
 	)
 	if err != nil {
 		return msgGetControllerPropList{}, fmt.Errorf("couldn't build path. %w", err)
