@@ -1,11 +1,11 @@
-package gologix
+package lgxtypes
 
 import (
 	"encoding/binary"
 	"io"
 )
 
-type LogixTIMER struct {
+type TIMER struct {
 	PRE int32
 	ACC int32
 	EN  bool // bit 31
@@ -20,7 +20,7 @@ type LogixTIMER struct {
 	ER bool // bit 25 Unused
 }
 
-func (t LogixTIMER) Pack(w io.Writer) int {
+func (t TIMER) Pack(w io.Writer) int {
 
 	var CtrlWord uint32
 	if t.EN {
@@ -50,7 +50,7 @@ func (t LogixTIMER) Pack(w io.Writer) int {
 	return 12
 }
 
-func (t *LogixTIMER) Unpack(r io.Reader) (int, error) {
+func (t *TIMER) Unpack(r io.Reader) (int, error) {
 	var CtrlWord uint32
 	err := binary.Read(r, binary.LittleEndian, &CtrlWord)
 	if err != nil {

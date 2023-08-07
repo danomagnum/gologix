@@ -1,15 +1,17 @@
 package gologix_tests
 
 import (
+	"bytes"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/lgxtypes"
 )
 
 func TestTimerRead(t *testing.T) {
-	var tmr gologix.LogixTIMER
+	var tmr lgxtypes.TIMER
 
 	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
@@ -120,6 +122,35 @@ func TestTimerRead(t *testing.T) {
 		t.Errorf("problem resetting timer: %v", err)
 	}
 
+	// make sure we can go the other way and recover it.
+	b := bytes.Buffer{}
+	_ = gologix.Pack(&b, gologix.CIPPack{}, tmr)
+	var tmr2 lgxtypes.TIMER
+	_, err = gologix.Unpack(&b, gologix.CIPPack{}, &tmr2)
+	if err != nil {
+		t.Errorf("problem unpacking timer: %v", err)
+	}
+
+	if tmr.ACC != tmr2.ACC {
+		t.Errorf("ACC didn't recover properly.  %d != %d", tmr.ACC, tmr2.ACC)
+	}
+
+	if tmr.PRE != tmr2.PRE {
+		t.Errorf("PRE didn't recover properly.  %d != %d", tmr.PRE, tmr2.PRE)
+	}
+
+	if tmr.DN != tmr2.DN {
+		t.Errorf("DN didn't recover properly.  %v != %v", tmr.DN, tmr2.DN)
+	}
+
+	if tmr.TT != tmr2.TT {
+		t.Errorf("TT didn't recover properly.  %v != %v", tmr.TT, tmr2.TT)
+	}
+
+	if tmr.EN != tmr2.EN {
+		t.Errorf("EN didn't recover properly.  %v != %v", tmr.EN, tmr2.EN)
+	}
+
 }
 
 func TestTimerStructRead(t *testing.T) {
@@ -141,7 +172,7 @@ func TestTimerStructRead(t *testing.T) {
 		Field0 int32
 		Flag1  bool
 		Flag2  bool
-		Timer  gologix.LogixTIMER
+		Timer  lgxtypes.TIMER
 		Field1 int32
 	}{}
 
