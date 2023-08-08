@@ -12,33 +12,10 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem deserializing item length %w", err)
 	}
-	var path_type SegmentType
-	err = item.DeSerialize(&path_type)
-	if err != nil {
-		return fmt.Errorf("problem deserializing path type %w", err)
-	}
-	if path_type != SegmentTypeExtendedSymbolic {
-		return fmt.Errorf("only support symbolic writes. got segment type %v", path_type)
-	}
-	var tag_length byte
-	err = item.DeSerialize(&tag_length)
-	if err != nil {
-		return fmt.Errorf("problem deserializing tag length %w", err)
-	}
-	tag_bytes := make([]byte, tag_length)
-	err = item.DeSerialize(&tag_bytes)
+
+	tag, err := getTagFromPath(&item)
 	if err != nil {
 		return fmt.Errorf("problem deserializing tag bytes %w", err)
-	}
-	tag := string(tag_bytes)
-
-	// string will be padded with a null if odd length
-	if (tag_length % 2) == 1 {
-		var b byte
-		err = item.DeSerialize(&b)
-		if err != nil {
-			return fmt.Errorf("problem deserializing odd length pad byte %w", err)
-		}
 	}
 
 	var typ CIPType
