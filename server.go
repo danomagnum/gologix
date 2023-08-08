@@ -291,7 +291,7 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 }
 
 func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
-	items := make([]cipItem, 2)
+	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)
 	items[1] = NewItem(cipItem_ConnectedData, nil)
 	resp := msgWriteResultHeader{
@@ -336,7 +336,7 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	return nil
 }
 
-func (h *serverTCPHandler) forwardClose(i cipItem) error {
+func (h *serverTCPHandler) forwardClose(i CIPItem) error {
 	log.Printf("got forward close from %v", h.conn.RemoteAddr())
 	var fwd_close msgEIPForwardClose
 	err := i.DeSerialize(&fwd_close)
@@ -360,7 +360,7 @@ func (h *serverTCPHandler) forwardClose(i cipItem) error {
 	return nil
 }
 
-func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
+func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 	log.Printf("got large forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Large
 	err := i.DeSerialize(&fwd_open)
@@ -376,8 +376,8 @@ func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
 	path := fwd_path[:2]
 
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
-	items := make([]cipItem, 2)
-	items[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	items := make([]CIPItem, 2)
+	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
 
 	if fwd_open.TOConnectionID == 0 {
@@ -428,7 +428,7 @@ func (h *serverTCPHandler) largeforwardOpen(i cipItem) error {
 	return nil
 }
 
-func (h *serverTCPHandler) forwardOpen(i cipItem) error {
+func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	log.Printf("got small forward open from %v", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Standard
 	err := i.DeSerialize(&fwd_open)
@@ -444,8 +444,8 @@ func (h *serverTCPHandler) forwardOpen(i cipItem) error {
 	path := fwd_path[:2]
 
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
-	items := make([]cipItem, 2)
-	items[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	items := make([]CIPItem, 2)
+	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
 
 	if fwd_open.TOConnectionID == 0 {
@@ -537,7 +537,7 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		}
 
 		// every RPI send the message.
-		items := make([]cipItem, 2)
+		items := make([]CIPItem, 2)
 		items[0] = NewItem(cipItem_SequenceAddress, nil)
 		items[0].Serialize(fwd_open.TOConnectionID)
 		items[0].Serialize(seq)

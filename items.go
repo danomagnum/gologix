@@ -24,7 +24,7 @@ const (
 
 // ReadItems takes an io.Reader positioned at the count of items in the data stream.
 // It then reads each item from the data stream into an Item structure and returns a slice of all items.
-func ReadItems(r io.Reader) ([]cipItem, error) {
+func ReadItems(r io.Reader) ([]CIPItem, error) {
 
 	var count uint16
 
@@ -33,7 +33,7 @@ func ReadItems(r io.Reader) ([]cipItem, error) {
 		return nil, fmt.Errorf("couldn't read item count. %w", err)
 	}
 
-	items := make([]cipItem, count) // usually have 2 items.
+	items := make([]CIPItem, count) // usually have 2 items.
 
 	for i := 0; i < int(count); i++ {
 		//var hdr cipItemHeader
@@ -50,13 +50,13 @@ func ReadItems(r io.Reader) ([]cipItem, error) {
 	return items, nil
 }
 
-type cipItem struct {
+type CIPItem struct {
 	Header cipItemHeader
 	Data   []byte
 	Pos    int
 }
 
-func (item *cipItem) Read(p []byte) (n int, err error) {
+func (item *CIPItem) Read(p []byte) (n int, err error) {
 	if item.Pos >= len(item.Data) {
 		return 0, io.EOF
 	}
@@ -64,7 +64,7 @@ func (item *cipItem) Read(p []byte) (n int, err error) {
 	item.Pos += n
 	return
 }
-func (item *cipItem) Write(p []byte) (n int, err error) {
+func (item *CIPItem) Write(p []byte) (n int, err error) {
 	item.Data = append(item.Data, p...)
 	n = len(p)
 	item.Header.Length = uint16(len(item.Data))
@@ -72,8 +72,8 @@ func (item *cipItem) Write(p []byte) (n int, err error) {
 }
 
 // create an item given an item id and data structure
-func NewItem(id CIPItemID, str any) cipItem {
-	c := cipItem{
+func NewItem(id CIPItemID, str any) CIPItem {
+	c := CIPItem{
 		Header: cipItemHeader{
 			ID: id,
 		},
@@ -90,7 +90,7 @@ func NewItem(id CIPItemID, str any) cipItem {
 // end of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
-func (item *cipItem) Serialize(str any) {
+func (item *CIPItem) Serialize(str any) {
 	switch x := str.(type) {
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
@@ -109,11 +109,11 @@ func (item *cipItem) Serialize(str any) {
 //
 // If called more than once the []byte data for the additional structures is continuously
 // read from the current position of the item's data buffer.
-func (item *cipItem) DeSerialize(str any) error {
+func (item *CIPItem) DeSerialize(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }
 
-func (item *cipItem) Bytes() []byte {
+func (item *CIPItem) Bytes() []byte {
 	b := bytes.Buffer{}
 	err := binary.Write(&b, binary.LittleEndian, item.Header)
 	if err != nil {
@@ -129,7 +129,7 @@ func (item *cipItem) Bytes() []byte {
 }
 
 // Sets the items data position back to zero.  Can be used to overrite the item's internal data or to re-read the item's data
-func (item *cipItem) Reset() {
+func (item *CIPItem) Reset() {
 	item.Pos = 0
 }
 
@@ -171,7 +171,7 @@ type cipItemsHeader struct {
 // 14+N0
 // 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
-func SerializeItems(items []cipItem) *[]byte {
+func SerializeItems(items []CIPItem) *[]byte {
 
 	b := new(bytes.Buffer)
 

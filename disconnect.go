@@ -12,8 +12,8 @@ func (client *Client) Disconnect() error {
 	}
 	var err error
 
-	items := make([]cipItem, 2)
-	items[0] = cipItem{} // null item
+	items := make([]CIPItem, 2)
+	items[0] = CIPItem{} // null item
 
 	reg_msg := msgCIPMessage_UnRegister{
 		Service:                cipService_ForwardClose,

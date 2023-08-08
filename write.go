@@ -68,9 +68,9 @@ func (client *Client) write_single(tag string, value any) error {
 		Elements: elements,
 	}
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
-	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
+	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Serialize(ioi_header)
 	reqitems[1].Serialize(ioi.Buffer)
 	reqitems[1].Serialize(ioi_footer)

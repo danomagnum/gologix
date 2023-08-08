@@ -138,8 +138,8 @@ func (client *Client) connect() error {
 	}
 	s := binary.Size(fwd_open)
 	_ = s
-	items0 := make([]cipItem, 2)
-	items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	items0 := make([]CIPItem, 2)
+	items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
 	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
 	if err != nil {
@@ -185,8 +185,8 @@ func (client *Client) connect() error {
 		}
 		s := binary.Size(fwd_open)
 		_ = s
-		items0 := make([]cipItem, 2)
-		items0[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+		items0 := make([]CIPItem, 2)
+		items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 		items0[1] = fwd_open
 		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
 		if err != nil {
@@ -333,8 +333,8 @@ type msgEIPForwardOpen_Large struct {
 	ConnPathSize           byte
 }
 
-func (client *Client) NewForwardOpenLarge() (cipItem, error) {
-	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
+func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
+	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Large
 	rand.Seed(time.Now().Unix())
 
@@ -391,8 +391,8 @@ type msgCIPRegister struct {
 	OptionFlag      uint16
 }
 
-func (client *Client) NewForwardOpenStandard() (cipItem, error) {
-	item := cipItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
+func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
+	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Standard
 
 	rand.Seed(time.Now().Unix())

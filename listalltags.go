@@ -75,7 +75,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = 1
 	}
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 

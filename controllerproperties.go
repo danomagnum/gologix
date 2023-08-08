@@ -61,7 +61,7 @@ func (old msgGetControllerPropList) Match(new msgGetControllerPropList) bool {
 // these properties indicate if the controller has been modified.  Could indicate a logic change or a tag was added or removed.
 func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) {
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 

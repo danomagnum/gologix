@@ -52,7 +52,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		str_instance = 1
 	}
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
@@ -151,7 +151,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't get template info. %w", err)
 	}
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 

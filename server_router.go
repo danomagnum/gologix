@@ -58,7 +58,7 @@ type TagProvider interface {
 	// SequenceCounter uint32
 	// Header uint16
 	// Payload [items[1].Header.Length - 6]byte
-	IOWrite(items []cipItem) error
+	IOWrite(items []CIPItem) error
 }
 
 // This is a generic tag provider that can handle bi-directional class 3 tag reads and writes.
@@ -73,7 +73,7 @@ type MapTagProvider struct {
 func (p *MapTagProvider) IORead() ([]byte, error) {
 	return nil, errors.New("not implemented")
 }
-func (p *MapTagProvider) IOWrite(items []cipItem) error {
+func (p *MapTagProvider) IOWrite(items []CIPItem) error {
 	return errors.New("not implemented")
 }
 

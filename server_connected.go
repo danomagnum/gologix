@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
+func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 	var l byte // length in words
 	item := items[1]
 	err := item.DeSerialize(&l)
@@ -103,7 +103,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []cipItem) error {
 	return h.sendUnitDataReply(cipService_Write)
 }
 
-func (h *serverTCPHandler) connectedData(items []cipItem) error {
+func (h *serverTCPHandler) connectedData(items []CIPItem) error {
 	items[0].Reset()
 	var connID uint32
 	err := items[0].DeSerialize(&connID)
@@ -121,7 +121,7 @@ func (h *serverTCPHandler) connectedData(items []cipItem) error {
 
 }
 
-func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item cipItem) error {
+func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item CIPItem) error {
 
 	var seq uint16
 	err := item.DeSerialize(&seq)
@@ -162,7 +162,7 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 }
 
 func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
-	items := make([]cipItem, 2)
+	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, connID)
 	items[1] = NewItem(cipItem_ConnectedData, seq)
 	resp := msgUnconnWriteResultHeader{

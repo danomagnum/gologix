@@ -98,7 +98,7 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 		}
 	}
 
-	reqitems := make([]cipItem, 2)
+	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
@@ -146,7 +146,7 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
-	reqitems[1] = cipItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
+	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Serialize(ioi_header)
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(b.Bytes())

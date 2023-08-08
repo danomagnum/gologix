@@ -36,7 +36,7 @@ func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
 	return dat, nil
 }
 
-func (p *IOProvider[Tin, Tout]) IOWrite(items []cipItem) error {
+func (p *IOProvider[Tin, Tout]) IOWrite(items []CIPItem) error {
 	if len(items) != 2 {
 		return fmt.Errorf("expeted 2 items but got %v", len(items))
 	}

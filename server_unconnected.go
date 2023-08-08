@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (h *serverTCPHandler) unconnectedData(item cipItem) error {
+func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 	var service CIPService
 	var err error
 	err = item.DeSerialize(&service)
@@ -76,7 +76,7 @@ func (h *serverTCPHandler) unconnectedData(item cipItem) error {
 	return nil
 }
 
-func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
+func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	var reserved byte
 	err := item.DeSerialize(&reserved)
 	if err != nil {
@@ -146,7 +146,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item cipItem) error {
 
 }
 
-func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item cipItem) error {
+func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 	var req msgGetAttrSignleReq
 	err := item.DeSerialize(&req)
 	if err != nil {
@@ -154,7 +154,7 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item cipItem) error {
 	}
 	return nil
 }
-func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
+func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	var reserved byte
 	err := item.DeSerialize(&reserved)
 	if err != nil {
@@ -199,7 +199,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item cipItem) error {
 }
 
 func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
-	items := make([]cipItem, 2)
+	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
 	resp := msgUnconnWriteResultHeader{
@@ -213,7 +213,7 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 }
 
 func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
-	items := make([]cipItem, 2)
+	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
 	resp := msgWriteResultHeader{

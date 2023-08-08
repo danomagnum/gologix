@@ -227,7 +227,7 @@ func marshalIOIPart(tagpath string) []byte {
 }
 
 // these next functions are for reversing the bytes back to a tag string
-func getAsciiTagPart(item *cipItem) (string, error) {
+func getAsciiTagPart(item *CIPItem) (string, error) {
 	var tag_len byte
 	err := item.DeSerialize(&tag_len)
 	if err != nil {
@@ -249,7 +249,7 @@ func getAsciiTagPart(item *cipItem) (string, error) {
 	tag_str := string(b)
 	return tag_str, nil
 }
-func getTagFromPath(item *cipItem) (string, error) {
+func getTagFromPath(item *CIPItem) (string, error) {
 
 	tag_str := ""
 
