@@ -92,6 +92,22 @@ func NewItem(id CIPItemID, str any) CIPItem {
 // The data length in the item's header is updated to match.
 func (item *CIPItem) Serialize(str any) {
 	switch x := str.(type) {
+	case string:
+		strlen := uint8(len(x))
+		err := binary.Write(item, binary.LittleEndian, strlen)
+		if err != nil {
+			log.Printf("Problem writing string header: %v", err)
+		}
+		if strlen%2 == 1 {
+			strlen++
+		}
+		b := make([]byte, strlen)
+		copy(b, x)
+		err = binary.Write(item, binary.LittleEndian, b)
+		if err != nil {
+			log.Printf("Problem writing string payload: %v", err)
+		}
+
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
 		if err != nil {
