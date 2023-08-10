@@ -51,11 +51,45 @@ func (p CIPPack) Order() binary.ByteOrder {
 	return binary.LittleEndian
 }
 
+type Serializable interface {
+	Bytes() []byte
+	Len() int
+}
+
+// given a list of structures, serialize them with the Bytes() method if available,
+// otherwise serialize with binary.write()
+func Serialize(strs ...any) (*bytes.Buffer, error) {
+	b := new(bytes.Buffer)
+	for _, str := range strs {
+		switch serializable_str := str.(type) {
+		case Serializable:
+			// if the struct is serializable, we should use its Bytes() function to get its
+			// representation instead of binary.Write
+			_, err := b.Write(serializable_str.Bytes())
+			if err != nil {
+				return nil, err
+			}
+		case any:
+			err := binary.Write(b, binary.LittleEndian, str)
+			if err != nil {
+				return nil, fmt.Errorf("problem writing str to buffer. %w", err)
+			}
+		}
+	}
+	return b, nil
+}
+
 func Pack(w io.Writer, p Packing, data any) int {
 
 	switch d := data.(type) {
 	case Packable:
 		return d.Pack(w)
+	case Serializable:
+		n, err := w.Write(d.Bytes())
+		if err != nil {
+			return 0
+		}
+		return n
 	}
 
 	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
