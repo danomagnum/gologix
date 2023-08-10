@@ -6,7 +6,14 @@ import (
 	"log"
 )
 
-func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr CIPAttribute) ([]CIPItem, error) {
+type cipAttributeResponseHdr struct {
+	SequenceCount   uint16
+	ResponseService CIPService
+	_               byte
+	Status          uint16
+}
+
+func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr CIPAttribute) (*CIPItem, error) {
 
 	err := client.checkConnection()
 	if err != nil {
@@ -42,8 +49,12 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	items, err := ReadItems(data)
 	if err != nil {
 		log.Printf("Problem reading items. %v", err)
-		return []CIPItem{}, err
+		return nil, err
 	}
 
-	return items, nil
+	var resphdr cipAttributeResponseHdr
+	items[1].DeSerialize(&resphdr)
+	//dat := make([]byte, hdr.Length-26)
+	//items[1].DeSerialize(&dat)
+	return &items[1], nil
 }

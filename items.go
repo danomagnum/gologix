@@ -84,6 +84,91 @@ func NewItem(id CIPItemID, str any) CIPItem {
 	return c
 }
 
+func (item *CIPItem) Rest() []byte {
+	return item.Data[item.Pos:]
+}
+
+func (item *CIPItem) Byte() (byte, error) {
+	if len(item.Data) <= item.Pos {
+		return 0, fmt.Errorf("item out of data")
+	}
+	b := item.Data[item.Pos]
+	item.Pos++
+	return b, nil
+}
+
+func (item *CIPItem) Uint16() (uint16, error) {
+	if len(item.Data) <= item.Pos+1 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint16(item.Data[item.Pos:])
+	item.Pos += 2
+	return val, nil
+}
+
+func (item *CIPItem) Int16() (int16, error) {
+	if len(item.Data) <= item.Pos+1 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint16(item.Data[item.Pos:])
+	item.Pos += 2
+	return int16(val), nil
+}
+
+func (item *CIPItem) Uint32() (uint32, error) {
+	if len(item.Data) <= item.Pos+3 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint32(item.Data[item.Pos:])
+	item.Pos += 4
+	return val, nil
+}
+
+func (item *CIPItem) Int32() (int32, error) {
+	if len(item.Data) <= item.Pos+3 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint32(item.Data[item.Pos:])
+	item.Pos += 4
+	return int32(val), nil
+}
+
+func (item *CIPItem) Uint64() (uint64, error) {
+	if len(item.Data) <= item.Pos+7 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint64(item.Data[item.Pos:])
+	item.Pos += 8
+	return val, nil
+}
+
+func (item *CIPItem) Int64() (int64, error) {
+	if len(item.Data) <= item.Pos+7 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	val := binary.LittleEndian.Uint64(item.Data[item.Pos:])
+	item.Pos += 8
+	return int64(val), nil
+}
+
+func (item *CIPItem) Float32() (float32, error) {
+	if len(item.Data) <= item.Pos+3 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	var val float32
+	err := binary.Read(item, binary.LittleEndian, &val)
+	return val, err
+}
+
+func (item *CIPItem) Float64() (float64, error) {
+	if len(item.Data) <= item.Pos+7 {
+		return 0, fmt.Errorf("item out of data")
+	}
+	var val float64
+	err := binary.Read(item, binary.LittleEndian, &val)
+	return val, err
+}
+
 // Serialize a sturcture into the item's data.
 //
 // If called more than once the []byte data for the additional structures is appended to the
