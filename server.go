@@ -20,6 +20,7 @@ type Server struct {
 	UDPListener net.PacketConn
 	ConnMgr     serverConnectionManager
 	Router      *PathRouter
+	Attributes  map[CIPAttribute]any
 }
 
 // an instance of serverTCPHandler will be created for every incomming connection to the EIP tcp port.
@@ -43,6 +44,14 @@ func NewServer(r *PathRouter) *Server {
 	srv := Server{}
 	srv.ConnMgr.Init()
 	srv.Router = r
+	srv.Attributes = make(map[CIPAttribute]any)
+	srv.Attributes[1] = int16(0x1776) // vendor ID
+	srv.Attributes[2] = int16(0x000E) // device type
+	srv.Attributes[3] = int16(0x0001) // Product Code
+	srv.Attributes[4] = int16(0x1412) // Revision
+	srv.Attributes[5] = int16(0x3060) // Status
+	srv.Attributes[6] = rand.Uint32() // Serial
+	srv.Attributes[7] = "Gologix"     // Product Name
 	return &srv
 }
 
@@ -282,6 +291,16 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
+		}
+	case cipService_MultipleService:
+		err = h.connectedData(items)
+		if err != nil {
+			return fmt.Errorf("problem handling multi service. %w", err)
+		}
+	case cipService_GetAttributeSingle:
+		err = h.connectedGetAttr(items)
+		if err != nil {
+			return fmt.Errorf("problem handling getAttrSingle %w", err)
 		}
 	default:
 		log.Printf("Got unknown service at send unit data handler %d", service)

@@ -151,3 +151,74 @@ func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, conn
 	}
 	return h.send(cipCommandSendUnitData, SerializeItems(items))
 }
+
+func (h *serverTCPHandler) connectedGetAttr(items []CIPItem) error {
+	items[0].Reset()
+	var connID uint32
+	err := items[0].DeSerialize(&connID)
+	if err != nil {
+		return fmt.Errorf("couldn't get connection ID from item 0: %w", err)
+	}
+	connection, err := h.server.ConnMgr.GetByOT(connID)
+	if err != nil {
+		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
+	}
+	log.Printf("got connection id %v = %+v", connID, connection)
+
+	items[1].Reset()
+	return h.getAttrSingle(connection, items[1])
+
+}
+
+func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPItem) error {
+
+	var seq uint16
+	err := item.DeSerialize(&seq)
+	if err != nil {
+		return fmt.Errorf("error getting sequence ID: %w", err)
+	}
+
+	_, err = item.Byte()
+	if err != nil {
+		return fmt.Errorf("couldn't read cmd type: %w", err)
+	}
+
+	path_size, err := item.Byte()
+	if err != nil {
+		return fmt.Errorf("couldn't read data len: %w", err)
+	}
+
+	if path_size != 3 {
+		return fmt.Errorf("currently only support getattrsingle path size of 3. got %d", path_size)
+	}
+
+	var cls CIPClass
+	err = cls.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read class: %w", err)
+	}
+
+	var inst CIPInstance
+	err = inst.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read instance: %w", err)
+	}
+
+	if cls != 1 || inst != 1 {
+		return fmt.Errorf("only support class 1 instance 1 so far. got %d:%d", cls, inst)
+	}
+
+	var attr CIPAttribute
+	err = attr.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read attribute ID: %w", err)
+	}
+
+	result, ok := h.server.Attributes[attr]
+	if !ok {
+		return fmt.Errorf("bad attribute %d", attr)
+	}
+
+	return h.sendConnectedReadReply(cipService_FragRead, seq, connection.OT, result)
+
+}

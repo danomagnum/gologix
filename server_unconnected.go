@@ -67,7 +67,8 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 			return h.unconnectedServiceRead(item)
 		case cipService_GetAttributeSingle:
 			return h.unconnectedServiceGetAttrSingle(item)
-
+		//case cipService_GetAttributeAll:
+		//return h.unconnectedServiceGetAttrAll(item)
 		default:
 			return fmt.Errorf("don't know how to handle service '%v'", emService)
 
@@ -147,13 +148,48 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 }
 
 func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
-	var req msgGetAttrSignleReq
-	err := item.DeSerialize(&req)
+
+	path_size, err := item.Uint16()
 	if err != nil {
-		return fmt.Errorf("problem parsing get attr single message: %w", err)
+		return fmt.Errorf("couldn't read data len: %w", err)
 	}
-	return nil
+
+	if path_size != 3 {
+		return fmt.Errorf("currently only support getattrsingle path size of 3. got %d", path_size)
+	}
+
+	var cls CIPClass
+	err = cls.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read class: %w", err)
+	}
+
+	var inst CIPInstance
+	err = inst.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read instance: %w", err)
+	}
+
+	if cls != 1 || inst != 1 {
+		return fmt.Errorf("only support class 1 instance 1 so far. got %d:%d", cls, inst)
+	}
+
+	var attr CIPAttribute
+	err = attr.Read(&item)
+	if err != nil {
+		return fmt.Errorf("could not read attribute ID: %w", err)
+	}
+
+	val, ok := h.server.Attributes[attr]
+	if !ok {
+		return fmt.Errorf("bad attribute %d", attr)
+	}
+
+	typ := GoVarToCIPType(val)
+
+	return h.sendUnconnectedRRDataReply(cipService_GetAttributeSingle, typ, byte(0), val)
 }
+
 func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	var reserved byte
 	err := item.DeSerialize(&reserved)
