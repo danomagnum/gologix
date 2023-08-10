@@ -75,7 +75,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	// 6 - Serial Number
 	// 7 - Product Name
 	p, err := Serialize(
-		cipObject_ControllerInfo, cipObject_Identity,
+		CipObject_ControllerInfo, CipObject_Identity,
 	)
 	if err != nil {
 		return msgGetControllerPropList{}, fmt.Errorf("couldn't build path. %w", err)

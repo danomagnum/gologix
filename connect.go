@@ -341,7 +341,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	p, err := Serialize(
 		client.Path,
 		//CIPPort{PortNo: 1}, CIPAddress(0),
-		cipObject_MessageRouter, CIPInstance(1))
+		CipObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -355,7 +355,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = cipClass_8bit
-	msg.Class = byte(cipObject_ConnectionManager)
+	msg.Class = byte(CipObject_ConnectionManager)
 	msg.InstanceType = cipInstance_8bit
 	msg.Instance = 0x01
 	// end of path
@@ -399,7 +399,7 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 
 	p, err := Serialize(
 		client.Path,
-		cipObject_MessageRouter, CIPInstance(1))
+		CipObject_MessageRouter, CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -411,7 +411,7 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = byte(cipClass_8bit)
-	msg.Class = byte(cipObject_ConnectionManager)
+	msg.Class = byte(CipObject_ConnectionManager)
 	msg.InstanceType = byte(cipInstance_8bit)
 	msg.Instance = 0x01
 	// end of path

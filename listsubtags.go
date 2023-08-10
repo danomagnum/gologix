@@ -35,7 +35,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 	p, err := Serialize(
 		ioi.Buffer,
-		cipObject_Symbol, CIPInstance(start_instance),
+		CipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
 		return new_kts, fmt.Errorf("couldn't build path. %w", err)

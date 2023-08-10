@@ -80,7 +80,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		cipObject_Symbol, CIPInstance(start_instance),
+		CipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
 		return fmt.Errorf("couldn't build path. %w", err)

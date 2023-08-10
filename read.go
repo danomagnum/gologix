@@ -327,7 +327,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	items, err := ReadItems(data)
 	if err != nil {
 		log.Printf("Problem reading items. %v", err)
-		return 0, nil
+		return 0, err
 	}
 	if len(items) != 2 {
 		return 0, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))

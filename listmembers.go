@@ -57,7 +57,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		cipObject_Template, CIPInstance(str_instance),
+		CipObject_Template, CIPInstance(str_instance),
 		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
@@ -156,7 +156,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		cipObject_Template, CIPInstance(str_instance),
+		CipObject_Template, CIPInstance(str_instance),
 		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
