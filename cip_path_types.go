@@ -44,19 +44,19 @@ func (p CIPAttribute) Bytes() []byte {
 	}
 }
 func (p *CIPAttribute) Read(r io.Reader) error {
-	var size CIPAttribute
-	binary.Read(r, binary.LittleEndian, size)
+	var size cipAttributeType
+	binary.Read(r, binary.LittleEndian, &size)
 	switch size {
-	case CIPAttribute(cipAttribute_8bit):
+	case cipAttribute_8bit:
 		var val byte
 		binary.Read(r, binary.LittleEndian, &val)
 		*p = CIPAttribute(val)
 		return nil
-	case CIPAttribute(cipAttribute_16bit):
+	case cipAttribute_16bit:
 		binary.Read(r, binary.LittleEndian, p)
 		return nil
 	default:
-		return fmt.Errorf("expected 0x24 or 0x25 but got class size of %x", size)
+		return fmt.Errorf("expected 0x30 or 0x31 but got class size of %x", size)
 	}
 }
 func (p CIPAttribute) Len() int {
@@ -144,7 +144,7 @@ func (p CIPInstance) Bytes() []byte {
 }
 func (p *CIPInstance) Read(r io.Reader) error {
 	var size cipInstanceSize
-	binary.Read(r, binary.LittleEndian, size)
+	binary.Read(r, binary.LittleEndian, &size)
 	switch size {
 	case cipInstance_8bit:
 		var val byte
@@ -212,7 +212,7 @@ func (p CIPClass) Bytes() []byte {
 
 func (p *CIPClass) Read(r io.Reader) error {
 	var classSize CIPClassSize
-	binary.Read(r, binary.LittleEndian, classSize)
+	binary.Read(r, binary.LittleEndian, &classSize)
 	switch classSize {
 	case cipClass_8bit:
 		var val byte
