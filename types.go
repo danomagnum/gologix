@@ -69,27 +69,43 @@ func GoVarToCIPType(T any) CIPType {
 }
 
 const (
-	CIPTypeUnknown CIPType = 0x00
-	CIPTypeStruct  CIPType = 0xA0 // also used for strings.  Not sure what's up with CIPTypeSTRING
-	CIPTypeBOOL    CIPType = 0xC1
-	CIPTypeBYTE    CIPType = 0xD1 // 8 bits packed into one byte
-	CIPTypeSINT    CIPType = 0xC2
-	CIPTypeINT     CIPType = 0xC3
-	CIPTypeDINT    CIPType = 0xC4
-	CIPTypeLINT    CIPType = 0xC5
-	CIPTypeUSINT   CIPType = 0xC6
-	CIPTypeUINT    CIPType = 0xC7
-	CIPTypeUDINT   CIPType = 0xC8
-	CIPTypeLWORD   CIPType = 0xC9
-	CIPTypeREAL    CIPType = 0xCA
-	CIPTypeLREAL   CIPType = 0xCB
-	CIPTypeWORD    CIPType = 0xD2
-	CIPTypeDWORD   CIPType = 0xD3
+	CIPTypeUnknown         CIPType = 0x00
+	CIPTypeStruct          CIPType = 0xA0 // also used for strings.  Not sure what's up with CIPTypeSTRING
+	CIPTypeUTIME           CIPType = 0xC0
+	CIPTypeBOOL            CIPType = 0xC1
+	CIPTypeSINT            CIPType = 0xC2
+	CIPTypeINT             CIPType = 0xC3
+	CIPTypeDINT            CIPType = 0xC4
+	CIPTypeLINT            CIPType = 0xC5
+	CIPTypeUSINT           CIPType = 0xC6
+	CIPTypeUINT            CIPType = 0xC7
+	CIPTypeUDINT           CIPType = 0xC8
+	CIPTypeULINT           CIPType = 0xC9
+	CIPTypeREAL            CIPType = 0xCA
+	CIPTypeLREAL           CIPType = 0xCB
+	CIPTypeSTIME           CIPType = 0xCC
+	CIPTypeDATE            CIPType = 0xCD
+	CIPTypeTIMEOFDAY       CIPType = 0xCE
+	CIPTypeDATETIME        CIPType = 0xCF
+	CIPTypeSTRING_UNKNOWN  CIPType = 0xD0
+	CIPTypeBYTE            CIPType = 0xD1 // 8 bits packed into one byte
+	CIPTypeWORD            CIPType = 0xD2
+	CIPTypeDWORD           CIPType = 0xD3
+	CIPTypeLWORD           CIPType = 0xD4
+	CIPTypeSTRING_UNKNOWN2 CIPType = 0xD5
+	CIPTypeFTIME           CIPType = 0xD6
+	CIPTypeLTIME           CIPType = 0xD7
+	CIPTypeITIME           CIPType = 0xD8
+	CIPTypeSTRING_UNKNOWN3 CIPType = 0xD9
+	CIPTypeSTRING_SHORT    CIPType = 0xDA
+	CIPTypeTIMEOFDAY2      CIPType = 0xDB
+	CIPTypeEPATH           CIPType = 0xDC
+	CIPTypeENGUNIT         CIPType = 0xDD
 
-	// As far as I can tell CIPTypeSTRING isn't actually used in the controllers. Strings actually come
-	// accross as 0xA0 = CIPTypeStruct.  In this library we're using this as kind of a flag to keep track of whether
-	// a structure is a string or not.
-	CIPTypeSTRING CIPType = 0xDA
+	//  Strings actually come accross as 0xA0 = CIPTypeStruct.
+	//In this library we're using this as kind of a flag to keep track of whether
+	// a structure is a normal logix string or not.
+	CIPTypeSTRING CIPType = 0xFF
 )
 
 // return the size in bytes of the data structure
