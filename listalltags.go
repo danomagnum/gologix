@@ -28,7 +28,7 @@ func (f TagInfo) PreDefined() bool {
 	var mask2 uint16 = 0x0FFF
 	_ = mask2
 	val2 := val & mask
-	log.Print(val, mask, mask2, val2)
+	//log.Print(val, mask, mask2, val2)
 	//return !((val > 0x0100) && (val < 0x0EFF))
 	return val2 <= 0x0100
 }
