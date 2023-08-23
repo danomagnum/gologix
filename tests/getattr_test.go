@@ -9,8 +9,7 @@ import (
 
 func TestGetAttrSingle(t *testing.T) {
 
-	client := gologix.NewClient("localhost")
-	//client := gologix.NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.241")
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
