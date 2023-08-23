@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -115,6 +116,8 @@ func (c CIPType) Size() int {
 		return 0
 	case CIPTypeStruct:
 		return 88
+	case CIPTypeUTIME:
+		return 8
 	case CIPTypeBOOL:
 		return 1
 	case CIPTypeBYTE:
@@ -133,6 +136,8 @@ func (c CIPType) Size() int {
 		return 2
 	case CIPTypeUDINT:
 		return 4
+	case CIPTypeULINT:
+		return 8
 	case CIPTypeLWORD:
 		return 8
 	case CIPTypeREAL:
@@ -143,6 +148,12 @@ func (c CIPType) Size() int {
 		return 2
 	case CIPTypeDWORD:
 		return 4
+	case CIPTypeDATE:
+		return 2
+	case CIPTypeTIMEOFDAY:
+		return 6
+	case CIPTypeDATETIME:
+		return 0 //?
 	case CIPTypeSTRING:
 		return 1
 	default:
@@ -192,7 +203,7 @@ func (c CIPType) String() string {
 	case CIPTypeDWORD:
 		return "0xD3 - DWORD"
 	case CIPTypeSTRING:
-		return "0xDA - String"
+		return "0xFF - (gologix specific) String"
 	default:
 		return fmt.Sprintf("0x%2x - Unknown", byte(c))
 	}
@@ -200,10 +211,7 @@ func (c CIPType) String() string {
 
 func (t CIPType) IsAtomic() bool {
 	v := byte(t)
-	if v > 254 {
-		return false
-	}
-	return true
+	return v <= 254
 }
 func (t CIPType) readValue(r io.Reader) (any, error) {
 	return readValue(t, r)
@@ -282,7 +290,8 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
 	default:
-		panic(fmt.Sprintf("Default type %d", t))
+		return nil, fmt.Errorf("default (unknown) type %d", t)
+		//panic(fmt.Sprintf("Default type %d", t))
 
 	}
 	if err != nil {
@@ -299,9 +308,11 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 	var err error
 	switch t {
 	case CIPTypeUnknown:
-		panic("Unknown type.")
+		return false, errors.New("unknown type.")
+		//panic("Unknown type.")
 	case CIPTypeStruct:
-		panic("Struct!")
+		return false, errors.New("got a struct - can't get a bit")
+		//panic("Struct!")
 	case CIPTypeBOOL:
 		if bitpos == 0 {
 			x, ok := v.(bool)
@@ -427,7 +438,8 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 	case CIPTypeSTRING:
 		err = fmt.Errorf("value was a STRING, not finding bit of string")
 	default:
-		panic("Default type.")
+		return false, errors.New("got an unknown type. don't know how to get bit")
+		//panic("Default type.")
 
 	}
 	if err != nil {
