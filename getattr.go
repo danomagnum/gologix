@@ -163,15 +163,10 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
-	number_of_attr_to_receive := 5
-	reqitems[1].Serialize([]uint16{
-		uint16(number_of_attr_to_receive),
-		uint16(1),
-		uint16(2),
-		uint16(3),
-		uint16(4),
-		uint16(10),
-	})
+	reqitems[1].Serialize(uint16(len(attrs)))
+	for i := range attrs {
+		reqitems[1].Serialize(uint16(attrs[i]))
+	}
 	reqitems[1].Serialize(byte(1))
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))

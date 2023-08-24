@@ -152,3 +152,86 @@ func TestGetCtrlProps(t *testing.T) {
 	}
 	log.Printf("Props: %+v", props)
 }
+
+func TestGetAttrList(t *testing.T) {
+
+	client := gologix.NewClient("192.168.2.241")
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
+
+	//VendorID (UINT, attribute 1)
+	i, err := client.GetAttrList(gologix.CipObject_Identity, 1,
+		1, 2, 3, 4, 6, 7) // properties
+	if err != nil {
+		t.Errorf("problem reading items: %v", err)
+	}
+
+	type CtrlAttrStruct struct {
+		VendorID_AttrID uint16
+		VendorID_Status uint16
+		VendorID        uint16
+
+		DeviceType_AttrID uint16
+		DeviceType_Status uint16
+		DeviceType        uint16
+
+		ProdCode_AttrID uint16
+		ProdCode_Status uint16
+		ProdCode        uint16
+
+		Revision_AttrID uint16
+		Revision_Status uint16
+		MajorRevision   byte
+		MinorRevision   byte
+
+		SerialNo_AttrID uint16
+		SerialNo_Status uint16
+		SerialNo        uint32
+
+		ProductName_AttrID uint16
+		ProductName_Status uint16
+		Pad                byte
+	}
+
+	var results CtrlAttrStruct
+	err = i.DeSerialize(&results)
+	if err != nil {
+		t.Errorf("problem deserializing: %v", err)
+	}
+
+	if results.VendorID != 0x01 {
+		t.Errorf("vendor ID should have been 0x01 but was 0x%X", results.VendorID)
+	}
+
+	if results.DeviceType != 0x0E {
+		t.Errorf("Device type should have been 0x0E (PLC) but was 0x%X", results.DeviceType)
+	}
+	if results.ProdCode != 0x97 {
+		t.Errorf("Product Code should have been 0x97 (Compact Logix?) but was 0x%X", results.ProdCode)
+	}
+
+	if results.MajorRevision != 33 || results.MinorRevision != 11 {
+		t.Errorf("Version should have been 33.11 but was %d.%d", results.MajorRevision, results.MinorRevision)
+	}
+
+	if results.SerialNo != 3223037449 {
+		t.Errorf("Serial # should have been 3223037449 but was %d", results.SerialNo)
+	}
+
+	name := string(i.Rest())
+	log.Printf("ProductName: %s", name)
+	wantName := "1769-L27ERM-QxC1B/A LOGIX5327ERM"
+	if name != wantName {
+		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", wantName, name)
+	}
+
+}
