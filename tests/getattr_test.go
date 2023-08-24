@@ -109,3 +109,24 @@ func TestGetAttrSingle(t *testing.T) {
 	log.Printf("ProductName: %s", string(i.Rest()))
 
 }
+
+func TestGetCtrlProps(t *testing.T) {
+	client := gologix.NewClient("192.168.2.241")
+	err := client.Connect()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer func() {
+		err := client.Disconnect()
+		if err != nil {
+			t.Errorf("problem disconnecting. %v", err)
+		}
+	}()
+
+	props, err := client.GetControllerPropList()
+	if err != nil {
+		t.Errorf("problem getting controller prop list: %v", err)
+	}
+	log.Printf("Props: %+v", props)
+}
