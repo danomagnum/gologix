@@ -34,6 +34,10 @@ func TestGetAttrSingle(t *testing.T) {
 	}
 	log.Printf("vendor: 0x%X", val)
 
+	if val != 0x01 {
+		t.Errorf("vendor ID should have been 0x01 but was 0x%X", val)
+	}
+
 	//
 	//DeviceType (UINT, attribute 2)
 	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 2)
@@ -46,6 +50,9 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("device type: 0x%X", val)
+	if val != 0x0E {
+		t.Errorf("Device type should have been 0x0E (PLC) but was 0x%X", val)
+	}
 
 	//ProductCode (UINT, attribute 3)
 	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 3)
@@ -58,6 +65,9 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("product code: 0x%X", val)
+	if val != 0x97 {
+		t.Errorf("Product Code should have been 0x97 (Compact Logix?) but was 0x%X", val)
+	}
 
 	//MajorRevision (USINT, attribute 4)
 	//MinorRevision (USINT, attribute 4)
@@ -76,6 +86,9 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("Version:%d.%d", major, minor)
+	if major != 33 || minor != 11 {
+		t.Errorf("Version should have been 33.11 but was %d.%d", major, minor)
+	}
 
 	//Status (UINT, attribute 5)
 	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 5)
@@ -100,13 +113,22 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("serial: %d", serial)
+	if serial != 3223037449 {
+		t.Errorf("Serial # should have been 3223037449 but was %d", serial)
+	}
 
 	//ProductName (STR_32, attribute 7)
 	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 7)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
-	log.Printf("ProductName: %s", string(i.Rest()))
+	_, _ = i.Byte()
+	name := string(i.Rest())
+	log.Printf("ProductName: %s", name)
+	wantName := "1769-L27ERM-QxC1B/A LOGIX5327ERM"
+	if name != wantName {
+		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", wantName, name)
+	}
 
 }
 
