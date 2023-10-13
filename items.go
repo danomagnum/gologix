@@ -178,7 +178,7 @@ func (item *CIPItem) Float64() (float64, error) {
 func (item *CIPItem) Serialize(str any) {
 	switch x := str.(type) {
 	case string:
-		strlen := uint8(len(x))
+		strlen := uint32(len(x))
 		err := binary.Write(item, binary.LittleEndian, strlen)
 		if err != nil {
 			log.Printf("Problem writing string header: %v", err)
@@ -186,7 +186,8 @@ func (item *CIPItem) Serialize(str any) {
 		if strlen%2 == 1 {
 			strlen++
 		}
-		b := make([]byte, strlen)
+		//b := make([]byte, strlen)
+		b := make([]byte, 84)
 		copy(b, x)
 		err = binary.Write(item, binary.LittleEndian, b)
 		if err != nil {

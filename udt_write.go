@@ -76,7 +76,7 @@ func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 
 }
 
-func (client *Client) writeDict(tag_str map[string]interface{}) error {
+func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	// build the tag list from the structure
 	tags := make([]string, 0)
@@ -133,11 +133,19 @@ func (client *Client) writeDict(tag_str map[string]interface{}) error {
 			return fmt.Errorf("problem writing udt item header to buffer. %w", err)
 		}
 		b.Write(ioi.Buffer)
-		err = binary.Write(&b, binary.LittleEndian, f)
+		ftr_buf, err := Serialize(f)
+		if err != nil {
+			return fmt.Errorf("problem serializing footer for item %d: %w", i, err)
+		}
+		err = binary.Write(&b, binary.LittleEndian, ftr_buf.Bytes())
 		if err != nil {
 			return fmt.Errorf("problem writing udt item footer to buffer. %w", err)
 		}
-		err = binary.Write(&b, binary.LittleEndian, tag_str[tags[i]])
+		item_buf, err := Serialize(tag_str[tags[i]])
+		if err != nil {
+			return fmt.Errorf("problem serializing %v: %w", tags[i], err)
+		}
+		err = binary.Write(&b, binary.LittleEndian, item_buf.Bytes())
 		if err != nil {
 			return fmt.Errorf("problem writing udt tag name to buffer. %w", err)
 		}

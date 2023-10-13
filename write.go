@@ -20,7 +20,7 @@ func (client *Client) WriteMulti(value any) error {
 		if err != nil {
 			return fmt.Errorf("problem creating keyvalue dict %w", err)
 		}
-		return client.writeDict(d)
+		return client.WriteMap(d)
 	}
 	return fmt.Errorf("value must be a struct with gologix tags")
 }
@@ -38,7 +38,7 @@ func (client *Client) Write(tag string, value any) error {
 		if err != nil {
 			return fmt.Errorf("problem creating keyvalue dict %w", err)
 		}
-		return client.writeDict(d)
+		return client.WriteMap(d)
 	}
 	return client.write_single(tag, value)
 }

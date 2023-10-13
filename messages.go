@@ -1,5 +1,10 @@
 package gologix
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 // todo: move sequence to a different struct and combine msgCIPIOIHeader and CIPMultiIOIHeader
 type msgCIPIOIHeader struct {
 	Sequence uint16
@@ -33,6 +38,27 @@ type msgCIPWriteIOIFooter struct {
 	DataType uint16
 	Elements uint16
 }
+
+func (ftr msgCIPWriteIOIFooter) Bytes() []byte {
+	if ftr.DataType == uint16(CIPTypeSTRING) {
+		b := []byte{0xA0, 0x02, 0xCE, 0x0F, 0x00, 0x00}
+		binary.LittleEndian.PutUint16(b[4:], ftr.Elements)
+		return b
+	}
+
+	b := bytes.Buffer{}
+	binary.Write(&b, binary.LittleEndian, ftr)
+	return b.Bytes()
+
+}
+func (ftr msgCIPWriteIOIFooter) Len() int {
+	if ftr.DataType == uint16(CIPTypeSTRING) {
+		return 6
+	}
+
+	return 4
+}
+
 type msgCIPIOIFooter struct {
 	Elements uint16
 }

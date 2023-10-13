@@ -62,6 +62,21 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 	b := new(bytes.Buffer)
 	for _, str := range strs {
 		switch serializable_str := str.(type) {
+		case string:
+			strlen := uint32(len(serializable_str))
+			err := binary.Write(b, binary.LittleEndian, strlen)
+			if err != nil {
+				log.Printf("Problem writing string header: %v", err)
+			}
+			if strlen%2 == 1 {
+				strlen++
+			}
+			b2 := make([]byte, 84)
+			copy(b2, serializable_str)
+			err = binary.Write(b, binary.LittleEndian, b2)
+			if err != nil {
+				log.Printf("Problem writing string payload: %v", err)
+			}
 		case Serializable:
 			// if the struct is serializable, we should use its Bytes() function to get its
 			// representation instead of binary.Write
@@ -69,6 +84,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 			if err != nil {
 				return nil, err
 			}
+
 		case any:
 			err := binary.Write(b, binary.LittleEndian, str)
 			if err != nil {
