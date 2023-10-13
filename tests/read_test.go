@@ -281,7 +281,7 @@ func TestReadTimeout(t *testing.T) {
 	var value int16
 	err = client.Read("Program:gologix_tests.Readint", &value)
 	if err != nil {
-		t.Errorf("problem reading. %v", err)
+		t.Errorf("problem reading after timeout. %v", err)
 	}
 	log.Printf("value: %v\n", value)
 }
