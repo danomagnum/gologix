@@ -263,14 +263,14 @@ func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, inst
 	}
 
 	if CIPService(s_response).UnResponse() != service {
-		return nil, fmt.Errorf("expected service response %x but got %x", service, CIPService(s_response).UnResponse())
+		return nil, fmt.Errorf("expected service response 0x%X but got 0x%X", service, CIPService(s_response).UnResponse())
 	}
 	status, err := items[1].Int16()
 	if err != nil {
 		return nil, fmt.Errorf("problem getting resposne status: %w", err)
 	}
 	if status != 0 {
-		return &items[1], fmt.Errorf("got status of %x instead of 0", status)
+		return &items[1], fmt.Errorf("got status of 0x%X instead of 0", status)
 	}
 
 	return &items[1], nil

@@ -326,6 +326,7 @@ const (
 	CipObject_PCCC                         CIPClass = 0x67
 	CipObject_TIME                         CIPClass = 0x8B
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
+	CipObject_RunMode                      CIPClass = 0x8E
 )
 
 // Here are predefined profiles
