@@ -13,20 +13,20 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 		return fmt.Errorf("problem unmarshling service %w", err)
 	}
 	switch service {
-	case cipService_ForwardOpen:
+	case CIPService_ForwardOpen:
 		item.Reset()
 		err = h.forwardOpen(item)
 		if err != nil {
 			return fmt.Errorf("problem handling forward open. %w", err)
 		}
 
-	case cipService_LargeForwardOpen:
+	case CIPService_LargeForwardOpen:
 		item.Reset()
 		err = h.largeforwardOpen(item)
 		if err != nil {
 			return fmt.Errorf("problem handling large forward open. %w", err)
 		}
-	case cipService_ForwardClose:
+	case CIPService_ForwardClose:
 		item.Reset()
 		err = h.forwardClose(item)
 		if err != nil {
@@ -61,11 +61,11 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 			return fmt.Errorf("error getting embedded service. %w", err)
 		}
 		switch emService {
-		case cipService_Write:
+		case CIPService_Write:
 			return h.unconnectedServiceWrite(item)
-		case cipService_Read:
+		case CIPService_Read:
 			return h.unconnectedServiceRead(item)
-		case cipService_GetAttributeSingle:
+		case CIPService_GetAttributeSingle:
 			return h.unconnectedServiceGetAttrSingle(item)
 		//case cipService_GetAttributeAll:
 		//return h.unconnectedServiceGetAttrAll(item)
@@ -105,7 +105,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	// TODO: read structs gracefully.
 	if typ == CIPTypeStruct {
 		log.Printf("read %s as %s * %v = %v", tag, typ, qty, item.Data[item.Pos:])
-		return h.sendUnconnectedRRDataReply(cipService_Write)
+		return h.sendUnconnectedRRDataReply(CIPService_Write)
 	}
 	results := make([]any, qty)
 	for i := 0; i < int(qty); i++ {
@@ -143,7 +143,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 		}
 	}
 
-	return h.sendUnconnectedRRDataReply(cipService_Write)
+	return h.sendUnconnectedRRDataReply(CIPService_Write)
 
 }
 
@@ -187,7 +187,7 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 
 	typ := GoVarToCIPType(val)
 
-	return h.sendUnconnectedRRDataReply(cipService_GetAttributeSingle, typ, byte(0), val)
+	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
 }
 
 func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
@@ -230,7 +230,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
 	typ := GoVarToCIPType(result)
 
-	return h.sendUnconnectedRRDataReply(cipService_Read, typ, byte(0), result)
+	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
 
 }
 

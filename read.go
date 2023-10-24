@@ -303,7 +303,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       cipService_Read,
+		Service:       CIPService_Read,
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
 	// setup item
@@ -554,7 +554,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
-		Service:      cipService_MultipleService,
+		Service:      CIPService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -569,7 +569,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
 		h := msgCIPMultiIOIHeader{
-			Service: cipService_Read,
+			Service: CIPService_Read,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{

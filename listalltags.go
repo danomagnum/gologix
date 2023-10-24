@@ -88,7 +88,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       cipService_GetInstanceAttributeList,
+		Service:       CIPService_GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 

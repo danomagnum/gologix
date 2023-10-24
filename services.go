@@ -22,71 +22,71 @@ func (s CIPService) UnResponse() CIPService {
 }
 func (s CIPService) String() string {
 	switch s {
-	case cipService_GetAttributeAll:
+	case CIPService_GetAttributeAll:
 		return "cipService_GetAttributeAll"
-	case cipService_SetAttributeAll:
+	case CIPService_SetAttributeAll:
 		return "cipService_SetAttributeAll"
-	case cipService_GetAttributeList:
+	case CIPService_GetAttributeList:
 		return "cipService_GetAttributeList"
-	case cipService_SetAttributeList:
+	case CIPService_SetAttributeList:
 		return "cipService_SetAttributeList"
-	case cipService_Reset:
+	case CIPService_Reset:
 		return "cipService_Reset"
-	case cipService_Start:
+	case CIPService_Start:
 		return "cipService_Start"
-	case cipService_Stop:
+	case CIPService_Stop:
 		return "cipService_Stop"
-	case cipService_Create:
+	case CIPService_Create:
 		return "cipService_Create"
-	case cipService_Delete:
+	case CIPService_Delete:
 		return "cipService_Delete"
-	case cipService_MultipleService:
+	case CIPService_MultipleService:
 		return "cipService_MultipleService"
-	case cipService_ApplyAttributes:
+	case CIPService_ApplyAttributes:
 		return "cipService_ApplyAttributes"
-	case cipService_GetAttributeSingle:
+	case CIPService_GetAttributeSingle:
 		return "cipService_GetAttributeSingle"
-	case cipService_SetAttributeSingle:
+	case CIPService_SetAttributeSingle:
 		return "cipService_SetAttributeSingle"
-	case cipService_FindNextObjectInstance:
+	case CIPService_FindNextObjectInstance:
 		return "cipService_FindNextObjectInstance"
-	case cipService_Restore:
+	case CIPService_Restore:
 		return "cipService_Restore"
-	case cipService_Save:
+	case CIPService_Save:
 		return "cipService_Save"
-	case cipService_NOP:
+	case CIPService_NOP:
 		return "cipService_NOP"
-	case cipService_GetMember:
+	case CIPService_GetMember:
 		return "cipService_GetMember"
-	case cipService_SetMember:
+	case CIPService_SetMember:
 		return "cipService_SetMember"
-	case cipService_InsertMember:
+	case CIPService_InsertMember:
 		return "cipService_InsertMember"
-	case cipService_RemoveMember:
+	case CIPService_RemoveMember:
 		return "cipService_RemoveMember"
-	case cipService_GroupSync:
+	case CIPService_GroupSync:
 		return "cipService_GroupSync"
-	case cipService_GetMemberList:
+	case CIPService_GetMemberList:
 		return "cipService_GetMemberList"
-	case cipService_Read:
+	case CIPService_Read:
 		return "cipService_Read"
-	case cipService_Write:
+	case CIPService_Write:
 		return "cipService_Write"
-	case cipService_ForwardClose:
+	case CIPService_ForwardClose:
 		return "cipService_ForwardClose"
-	case cipService_GetConnectionOwner:
+	case CIPService_GetConnectionOwner:
 		return "cipService_GetConnectionOwner"
-	case cipService_ForwardOpen:
+	case CIPService_ForwardOpen:
 		return "cipService_ForwardOpen"
-	case cipService_LargeForwardOpen:
+	case CIPService_LargeForwardOpen:
 		return "cipService_LargeForwardOpen"
-	case cipService_FragRead:
+	case CIPService_FragRead:
 		return "cipService_FragRead"
-	case cipService_FragWrite:
+	case CIPService_FragWrite:
 		return "cipService_FragWrite"
-	case cipService_GetInstanceAttributeList:
+	case CIPService_GetInstanceAttributeList:
 		return "cipService_GetInstanceAttributeList"
-	case cipService_GetConnectionData:
+	case CIPService_GetConnectionData:
 		return "cipService_GetConnectionData"
 	}
 	return fmt.Sprintf("unknown service %d", s)
@@ -95,40 +95,40 @@ func (s CIPService) String() string {
 
 const (
 	// cip common services
-	cipService_GetAttributeAll        CIPService = 0x01
-	cipService_SetAttributeAll        CIPService = 0x02
-	cipService_GetAttributeList       CIPService = 0x03
-	cipService_SetAttributeList       CIPService = 0x04
-	cipService_Reset                  CIPService = 0x05
-	cipService_Start                  CIPService = 0x06
-	cipService_Stop                   CIPService = 0x07
-	cipService_Create                 CIPService = 0x08
-	cipService_Delete                 CIPService = 0x09
-	cipService_MultipleService        CIPService = 0x0A
-	cipService_ApplyAttributes        CIPService = 0x0D
-	cipService_GetAttributeSingle     CIPService = 0x0E
-	cipService_SetAttributeSingle     CIPService = 0x10
-	cipService_FindNextObjectInstance CIPService = 0x11
-	cipService_Restore                CIPService = 0x15
-	cipService_Save                   CIPService = 0x16
-	cipService_NOP                    CIPService = 0x17
-	cipService_GetMember              CIPService = 0x18
-	cipService_SetMember              CIPService = 0x19
-	cipService_InsertMember           CIPService = 0x1A
-	cipService_RemoveMember           CIPService = 0x1B
-	cipService_GroupSync              CIPService = 0x1C
-	cipService_GetMemberList          CIPService = 0x1D
+	CIPService_GetAttributeAll        CIPService = 0x01
+	CIPService_SetAttributeAll        CIPService = 0x02
+	CIPService_GetAttributeList       CIPService = 0x03
+	CIPService_SetAttributeList       CIPService = 0x04
+	CIPService_Reset                  CIPService = 0x05
+	CIPService_Start                  CIPService = 0x06
+	CIPService_Stop                   CIPService = 0x07
+	CIPService_Create                 CIPService = 0x08
+	CIPService_Delete                 CIPService = 0x09
+	CIPService_MultipleService        CIPService = 0x0A
+	CIPService_ApplyAttributes        CIPService = 0x0D
+	CIPService_GetAttributeSingle     CIPService = 0x0E
+	CIPService_SetAttributeSingle     CIPService = 0x10
+	CIPService_FindNextObjectInstance CIPService = 0x11
+	CIPService_Restore                CIPService = 0x15
+	CIPService_Save                   CIPService = 0x16
+	CIPService_NOP                    CIPService = 0x17
+	CIPService_GetMember              CIPService = 0x18
+	CIPService_SetMember              CIPService = 0x19
+	CIPService_InsertMember           CIPService = 0x1A
+	CIPService_RemoveMember           CIPService = 0x1B
+	CIPService_GroupSync              CIPService = 0x1C
+	CIPService_GetMemberList          CIPService = 0x1D
 	// cip object services
-	cipService_Read                     CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
-	cipService_Write                    CIPService = 0x4D
-	cipService_ForwardClose             CIPService = 0x4E // Also seen this called "read modify write" //cipService_ReadModWrite     cipService = 0x4E // Read Modify Write
-	cipService_GetConnectionOwner       CIPService = 0x5A
-	cipService_ForwardOpen              CIPService = 0x54
-	cipService_LargeForwardOpen         CIPService = 0x5B
-	cipService_FragRead                 CIPService = 0x52 // Fragmented Read
-	cipService_FragWrite                CIPService = 0x53 // Fragmented Write
-	cipService_GetInstanceAttributeList CIPService = 0x55
-	cipService_GetConnectionData        CIPService = 0x57
+	CIPService_Read                     CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
+	CIPService_Write                    CIPService = 0x4D
+	CIPService_ForwardClose             CIPService = 0x4E // Also seen this called "read modify write" //cipService_ReadModWrite     cipService = 0x4E // Read Modify Write
+	CIPService_GetConnectionOwner       CIPService = 0x5A
+	CIPService_ForwardOpen              CIPService = 0x54
+	CIPService_LargeForwardOpen         CIPService = 0x5B
+	CIPService_FragRead                 CIPService = 0x52 // Fragmented Read
+	CIPService_FragWrite                CIPService = 0x53 // Fragmented Write
+	CIPService_GetInstanceAttributeList CIPService = 0x55
+	CIPService_GetConnectionData        CIPService = 0x57
 )
 
 type CIPCommand uint16

@@ -16,7 +16,7 @@ func (client *Client) Disconnect() error {
 	items[0] = CIPItem{} // null item
 
 	reg_msg := msgCIPMessage_UnRegister{
-		Service:                cipService_ForwardClose,
+		Service:                CIPService_ForwardClose,
 		CipPathSize:            0x02,
 		ClassType:              cipClass_8bit,
 		Class:                  0x06,

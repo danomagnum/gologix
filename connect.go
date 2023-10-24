@@ -351,7 +351,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	ConnectionParams = ConnectionParams << 16 // for long packet
 	ConnectionParams += uint32(client.ConnectionSize)
 
-	msg.Service = cipService_LargeForwardOpen
+	msg.Service = CIPService_LargeForwardOpen
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = cipClass_8bit
@@ -407,7 +407,7 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 	client.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint16(0x43F6)
 
-	msg.Service = cipService_ForwardOpen
+	msg.Service = CIPService_ForwardOpen
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
 	msg.ClassType = byte(cipClass_8bit)

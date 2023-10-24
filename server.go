@@ -277,27 +277,27 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		return fmt.Errorf("problem deserializing service %w", err)
 	}
 	switch service {
-	case cipService_Write:
+	case CIPService_Write:
 		err = h.cipConnectedWrite(items)
 		if err != nil {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
-	case cipService_FragRead:
+	case CIPService_FragRead:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
-	case cipService_Read:
+	case CIPService_Read:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
-	case cipService_MultipleService:
+	case CIPService_MultipleService:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling multi service. %w", err)
 		}
-	case cipService_GetAttributeSingle:
+	case CIPService_GetAttributeSingle:
 		err = h.connectedGetAttr(items)
 		if err != nil {
 			return fmt.Errorf("problem handling getAttrSingle %w", err)

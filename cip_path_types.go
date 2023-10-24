@@ -324,6 +324,7 @@ const (
 	CipObject_RSTPPort                     CIPClass = 0x55
 	CipObject_TCPIP                        CIPClass = 0xF5
 	CipObject_PCCC                         CIPClass = 0x67
+	CipObject_TIME                         CIPClass = 0x8B
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
 )
 

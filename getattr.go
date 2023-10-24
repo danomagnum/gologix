@@ -25,7 +25,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       cipService_GetAttributeSingle,
+		Service:       CIPService_GetAttributeSingle,
 		PathLength:    3,
 	}
 	// setup item
@@ -157,7 +157,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       cipService_GetAttributeList,
+		Service:       CIPService_GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -199,6 +199,78 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	_, err = items[1].Int16() // Count
 	if err != nil {
 		return nil, err
+	}
+
+	return &items[1], nil
+
+}
+
+// Generic CIP Message
+//
+// CIP expects you to know the data type for each of the values so you'll have to parse the resulting CIPItem yourself.
+//
+// If there are no variable-length fields in the response data you are expecting, the best way may be to create the equivalent
+// struct with the proper types and do an item.Serialize(&InstanceOfMyType)
+func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, instance CIPInstance, msg_data []byte) (*CIPItem, error) {
+
+	reqitems := make([]CIPItem, 2)
+	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
+	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+
+	p, err := Serialize(
+		class, instance,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't build path. %w", err)
+	}
+
+	readmsg := msgCIPConnectedServiceReq{
+		SequenceCount: uint16(sequencer()),
+		Service:       service,
+		PathLength:    byte(p.Len() / 2),
+	}
+
+	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1].Serialize(p.Bytes())
+	reqitems[1].Serialize(msg_data)
+
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+
+	if err != nil {
+		return nil, err
+	}
+	_ = hdr
+
+	read_result_header := msgCIPResultHeader{}
+	err = binary.Read(data, binary.LittleEndian, &read_result_header)
+	if err != nil {
+		return nil, fmt.Errorf("problpm reading read result header: %w", err)
+	}
+	items, err := ReadItems(data)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading items: %w", err)
+	}
+
+	// There is a count before there is any result data - we'll remove that here.
+	// If needed, the item can always be Reset() to get all the data from the start.
+	_, err = items[1].Int16() // Count
+	if err != nil {
+		return nil, fmt.Errorf("problem reading sequence counter: %w", err)
+	}
+	s_response, err := items[1].Int16()
+	if err != nil {
+		return nil, fmt.Errorf("problem reading service response: %w", err)
+	}
+
+	if CIPService(s_response).UnResponse() != service {
+		return nil, fmt.Errorf("expected service response %x but got %x", service, CIPService(s_response).UnResponse())
+	}
+	status, err := items[1].Int16()
+	if err != nil {
+		return nil, fmt.Errorf("problem getting resposne status: %w", err)
+	}
+	if status != 0 {
+		return &items[1], fmt.Errorf("got status of %x instead of 0", status)
 	}
 
 	return &items[1], nil

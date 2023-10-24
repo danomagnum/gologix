@@ -60,7 +60,7 @@ func (client *Client) write_single(tag string, value any) error {
 
 	ioi_header := msgCIPIOIHeader{
 		Sequence: uint16(sequencer()),
-		Service:  cipService_Write,
+		Service:  CIPService_Write,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}
 	ioi_footer := msgCIPWriteIOIFooter{

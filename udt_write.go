@@ -103,7 +103,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
-		Service:      cipService_MultipleService,
+		Service:      CIPService_MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -118,7 +118,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
 		h := msgCIPMultiIOIHeader{
-			Service: cipService_Write,
+			Service: CIPService_Write,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPWriteIOIFooter{

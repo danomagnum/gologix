@@ -77,7 +77,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 
 	// path is part of the forward open we've previously received.
 
-	return h.sendUnitDataReply(cipService_Write)
+	return h.sendUnitDataReply(CIPService_Write)
 }
 
 func (h *serverTCPHandler) connectedData(items []CIPItem) error {
@@ -134,7 +134,7 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 	typ := GoVarToCIPType(result)
 	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
-	return h.sendConnectedReadReply(cipService_FragRead, seq, connection.OT, typ, byte(0), result)
+	return h.sendConnectedReadReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
 
 }
 
@@ -219,6 +219,6 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	return h.sendConnectedReadReply(cipService_FragRead, seq, connection.OT, result)
+	return h.sendConnectedReadReply(CIPService_FragRead, seq, connection.OT, result)
 
 }
