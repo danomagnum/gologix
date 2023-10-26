@@ -1,4 +1,4 @@
-package gologix
+package cipclass
 
 import (
 	"encoding/binary"
@@ -79,30 +79,30 @@ type CIPElement uint32
 
 // Used to indicate how many bytes are used for the data. If they are more than 8 bits,
 // they actually actually take n+1 bytes.  First byte after specifier is a 0
-type cipElementType byte
+type CipElementType byte
 
 const (
-	cipElement_8bit  cipElementType = 0x28
-	cipElement_16bit cipElementType = 0x29
-	cipElement_32bit cipElementType = 0x2A
+	CipElement_8bit  CipElementType = 0x28
+	CipElement_16bit CipElementType = 0x29
+	CipElement_32bit CipElementType = 0x2A
 )
 
 func (p CIPElement) Bytes() []byte {
 	if p < 256 {
 		b := make([]byte, 2)
-		b[0] = byte(cipElement_8bit)
+		b[0] = byte(CipElement_8bit)
 		b[1] = byte(p)
 		return b
 	} else if p < 65536 {
 
 		b := make([]byte, 4)
-		b[0] = byte(cipElement_16bit)
+		b[0] = byte(CipElement_16bit)
 		binary.LittleEndian.PutUint16(b[2:], uint16(p))
 		return b
 	} else {
 
 		b := make([]byte, 6)
-		b[0] = byte(cipElement_16bit)
+		b[0] = byte(CipElement_16bit)
 		binary.LittleEndian.PutUint32(b[2:], uint32(p))
 		return b
 	}
@@ -119,11 +119,11 @@ func (p CIPElement) Len() int {
 
 // Used to indicate how many bytes are used for the data. If they are more than 8 bits,
 // they actually actually take n+1 bytes.  First byte after specifier is a 0
-type cipInstanceSize byte
+type CipInstanceSize byte
 
 const (
-	cipInstance_8bit  cipInstanceSize = 0x24
-	cipInstance_16bit cipInstanceSize = 0x25
+	CipInstance_8bit  CipInstanceSize = 0x24
+	CipInstance_16bit CipInstanceSize = 0x25
 )
 
 type CIPInstance uint16
@@ -131,27 +131,27 @@ type CIPInstance uint16
 func (p CIPInstance) Bytes() []byte {
 	if p < 256 {
 		b := make([]byte, 2)
-		b[0] = byte(cipInstance_8bit)
+		b[0] = byte(CipInstance_8bit)
 		b[1] = byte(p)
 		return b
 	} else {
 
 		b := make([]byte, 4)
-		b[0] = byte(cipInstance_16bit)
+		b[0] = byte(CipInstance_16bit)
 		binary.LittleEndian.PutUint16(b[2:], uint16(p))
 		return b
 	}
 }
 func (p *CIPInstance) Read(r io.Reader) error {
-	var size cipInstanceSize
+	var size CipInstanceSize
 	binary.Read(r, binary.LittleEndian, &size)
 	switch size {
-	case cipInstance_8bit:
+	case CipInstance_8bit:
 		var val byte
 		binary.Read(r, binary.LittleEndian, &val)
 		*p = CIPInstance(val)
 		return nil
-	case cipInstance_16bit:
+	case CipInstance_16bit:
 		binary.Read(r, binary.LittleEndian, p)
 		return nil
 	default:
@@ -170,12 +170,12 @@ type JustBytes []byte
 func (p JustBytes) Bytes() []byte {
 	if len(p) == 1 {
 		b := make([]byte, len(p)+1)
-		b[0] = byte(cipInstance_8bit)
+		b[0] = byte(CipInstance_8bit)
 		copy(b[1:], p)
 		return b
 	} else {
 		b := make([]byte, len(p)+2)
-		b[0] = byte(cipInstance_16bit)
+		b[0] = byte(CipInstance_16bit)
 		copy(b[2:], p)
 		return b
 	}
@@ -191,20 +191,20 @@ type CIPClass uint16
 type CIPClassSize byte
 
 const (
-	cipClass_8bit  CIPClassSize = 0x20
-	cipClass_16bit CIPClassSize = 0x21
+	CipClass_8bit  CIPClassSize = 0x20
+	CipClass_16bit CIPClassSize = 0x21
 )
 
 func (p CIPClass) Bytes() []byte {
 	if p < 256 {
 		b := make([]byte, 2)
-		b[0] = byte(cipClass_8bit)
+		b[0] = byte(CipClass_8bit)
 		b[1] = byte(p)
 		return b
 	} else {
 
 		b := make([]byte, 4)
-		b[0] = byte(cipClass_16bit)
+		b[0] = byte(CipClass_16bit)
 		binary.LittleEndian.PutUint16(b[2:], uint16(p))
 		return b
 	}
@@ -214,12 +214,12 @@ func (p *CIPClass) Read(r io.Reader) error {
 	var classSize CIPClassSize
 	binary.Read(r, binary.LittleEndian, &classSize)
 	switch classSize {
-	case cipClass_8bit:
+	case CipClass_8bit:
 		var val byte
 		binary.Read(r, binary.LittleEndian, &val)
 		*p = CIPClass(val)
 		return nil
-	case cipClass_16bit:
+	case CipClass_16bit:
 		binary.Read(r, binary.LittleEndian, p)
 		return nil
 	default:

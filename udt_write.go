@@ -5,6 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // convert tagged struct to a map in the format of {"fieldTag": fieldvalue}
@@ -84,9 +88,9 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	// build the tag list from the structure
 	tags := make([]string, 0)
-	types := make([]CIPType, 0)
+	types := make([]ciptype.CIPType, 0)
 	for k := range tag_str {
-		ct := GoVarToCIPType(tag_str[k])
+		ct := ciptype.GoVarToCIPType(tag_str[k])
 		types = append(types, ct)
 		tags = append(tags, k)
 	}
@@ -107,7 +111,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
-		Service:      CIPService_MultipleService,
+		Service:      cipservice.MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -122,7 +126,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
 		h := msgCIPMultiIOIHeader{
-			Service: CIPService_Write,
+			Service: cipservice.Write,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPWriteIOIFooter{
@@ -163,7 +167,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(b.Bytes())
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}

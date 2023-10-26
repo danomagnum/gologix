@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 // Demo program for readng an INT tag named "TestInt" in the controller.
@@ -50,7 +51,7 @@ func main() {
 // poll at an interval of pollrate
 // sends a single true on the output channel if the value starts to change
 // sends a single false on the output channel if the value stops changing for timeout
-func Heartbeat[T gologix.GoLogixTypes](client *gologix.Client, tag string, pollrate, timeout time.Duration) <-chan bool {
+func Heartbeat[T ciptype.GoLogixTypes](client *gologix.Client, tag string, pollrate, timeout time.Duration) <-chan bool {
 
 	hbstatus := make(chan bool)
 

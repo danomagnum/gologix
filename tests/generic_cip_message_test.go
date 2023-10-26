@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
 )
 
 // This test uses the GenericCIPMessage function to read attributes from a controller.  In this case it is reading
@@ -24,7 +26,7 @@ func TestGenericCIPMessage1(t *testing.T) {
 		}
 	}()
 
-	r, err := client.GenericCIPMessage(gologix.CIPService_GetAttributeList, gologix.CipObject_TIME, 1, []byte{0x01, 0x00, 0x0B, 0x00})
+	r, err := client.GenericCIPMessage(cipservice.GetAttributeList, cipclass.CipObject_TIME, 1, []byte{0x01, 0x00, 0x0B, 0x00})
 	if err != nil {
 		t.Errorf("bad result: %v", err)
 		return

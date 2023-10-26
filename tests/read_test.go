@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 func TestReadArrNew(t *testing.T) {
@@ -183,7 +184,7 @@ func TestReadNew(t *testing.T) {
 
 }
 
-func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
+func testReadNew[T ciptype.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
 
 	t.Run(tag, func(t *testing.T) {
 		//tag, want := "Program:gologix_tests:ReadInt", int16(999)
@@ -304,13 +305,13 @@ func TestReadTooManyTags(t *testing.T) {
 	tag := "Program:gologix_tests.LongDints"
 
 	tags := make([]string, 0)
-	types := make([]gologix.CIPType, 0)
+	types := make([]ciptype.CIPType, 0)
 
 	tagcount := 100
 
 	for i := 0; i < tagcount; i++ {
 		tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
-		types = append(types, gologix.CIPTypeDINT)
+		types = append(types, ciptype.DINT)
 	}
 
 	vals, err := client.ReadList(tags, types)

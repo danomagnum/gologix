@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cippath"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	// of the computer running this server) The message path before the IP address in the msg instruction will be different
 	// based on the actual controller you're using, but the part after the IP address is what this matches
 	p1 := gologix.MapTagProvider{}
-	path1, err := gologix.ParsePath("1,0")
+	path1, err := cippath.ParsePath("1,0")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)

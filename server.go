@@ -9,6 +9,10 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // use NewServer() to get a new server object that is properly initialized.
@@ -20,7 +24,7 @@ type Server struct {
 	UDPListener net.PacketConn
 	ConnMgr     serverConnectionManager
 	Router      *PathRouter
-	Attributes  map[CIPAttribute]any
+	Attributes  map[cipclass.CIPAttribute]any
 }
 
 // an instance of serverTCPHandler will be created for every incomming connection to the EIP tcp port.
@@ -44,7 +48,7 @@ func NewServer(r *PathRouter) *Server {
 	srv := Server{}
 	srv.ConnMgr.Init()
 	srv.Router = r
-	srv.Attributes = make(map[CIPAttribute]any)
+	srv.Attributes = make(map[cipclass.CIPAttribute]any)
 	srv.Attributes[1] = int16(0x1776) // vendor ID
 	srv.Attributes[2] = int16(0x000E) // device type
 	srv.Attributes[3] = int16(0x0001) // Product Code
@@ -213,18 +217,18 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 		h.context = eiphdr.Context
 		log.Printf("context: %v\n", h.context)
 		switch eiphdr.Command {
-		case cipCommandRegisterSession:
+		case eipcommand.RegisterSession:
 			err = h.registerSession(eiphdr)
 			if err != nil {
 				return fmt.Errorf("problem with register session %w", err)
 			}
-		case cipCommandSendRRData:
+		case eipcommand.SendRRData:
 			// this is things like forward opens
 			err = h.sendRRData(eiphdr)
 			if err != nil {
 				return fmt.Errorf("problem with sendrrdata %w", err)
 			}
-		case cipCommandSendUnitData:
+		case eipcommand.SendUnitData:
 			// this is things like writes and reads
 			err = h.sendUnitData(eiphdr)
 			if err != nil {
@@ -271,33 +275,33 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	if err != nil {
 		return fmt.Errorf("problem deserializing unit data seq %w", err)
 	}
-	var service CIPService
+	var service cipservice.CIPService
 	err = items[1].DeSerialize(&service)
 	if err != nil {
 		return fmt.Errorf("problem deserializing service %w", err)
 	}
 	switch service {
-	case CIPService_Write:
+	case cipservice.Write:
 		err = h.cipConnectedWrite(items)
 		if err != nil {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
-	case CIPService_FragRead:
+	case cipservice.FragRead:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
-	case CIPService_Read:
+	case cipservice.Read:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
-	case CIPService_MultipleService:
+	case cipservice.MultipleService:
 		err = h.connectedData(items)
 		if err != nil {
 			return fmt.Errorf("problem handling multi service. %w", err)
 		}
-	case CIPService_GetAttributeSingle:
+	case cipservice.GetAttributeSingle:
 		err = h.connectedGetAttr(items)
 		if err != nil {
 			return fmt.Errorf("problem handling getAttrSingle %w", err)
@@ -309,7 +313,7 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 	return nil
 }
 
-func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
+func (h *serverTCPHandler) sendUnitDataReply(s cipservice.CIPService) error {
 	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)
 	items[1] = NewItem(cipItem_ConnectedData, nil)
@@ -318,7 +322,7 @@ func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	return h.send(cipCommandSendUnitData, SerializeItems(items))
+	return h.send(eipcommand.SendUnitData, SerializeItems(items))
 }
 
 func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
@@ -343,7 +347,7 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 	}
 	switch items[1].Header.ID {
 	case cipItem_ConnectedData:
-		var service CIPService
+		var service cipservice.CIPService
 		err = items[1].DeSerialize(&service)
 		if err != nil {
 			return fmt.Errorf("failed to get service. %w", err)
@@ -424,7 +428,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 
 	items[1].Serialize(fwopenresphdr)
 
-	err = h.send(cipCommandSendRRData, SerializeItems(items))
+	err = h.send(eipcommand.SendRRData, SerializeItems(items))
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -492,7 +496,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 
 	items[1].Serialize(fwopenresphdr)
 
-	err = h.send(cipCommandSendRRData, SerializeItems(items))
+	err = h.send(eipcommand.SendRRData, SerializeItems(items))
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -588,7 +592,7 @@ func (h *serverTCPHandler) registerSession(hdr EIPHeader) error {
 	}
 	h.options = hdr.Options
 
-	err = h.send(cipCommandRegisterSession, reg_msg)
+	err = h.send(eipcommand.RegisterSession, reg_msg)
 	if err != nil {
 		return fmt.Errorf("problem sending register response. %w", err)
 	}
@@ -600,7 +604,7 @@ func (h *serverTCPHandler) registerSession(hdr EIPHeader) error {
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
+func (h *serverTCPHandler) send(cmd eipcommand.CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -640,7 +644,7 @@ func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
 
 }
 
-func (h *serverTCPHandler) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (h *serverTCPHandler) newEIPHeader(cmd eipcommand.CIPCommand, size int) (hdr EIPHeader) {
 
 	hdr.Command = cmd
 	//hdr.Command = 0x0070

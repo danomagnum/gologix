@@ -3,6 +3,11 @@ package gologix
 import (
 	"fmt"
 	"log"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
@@ -18,7 +23,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 		return fmt.Errorf("problem deserializing tag bytes %w", err)
 	}
 
-	var typ CIPType
+	var typ ciptype.CIPType
 	err = item.DeSerialize(&typ)
 	if err != nil {
 		return fmt.Errorf("problem deserializing cip type %w", err)
@@ -37,7 +42,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 	results := make([]any, qty)
 	log.Printf("tag: %s", tag)
 	for i := 0; i < int(qty); i++ {
-		results[i], err = typ.readValue(&item)
+		results[i], err = typ.ReadValue(&item)
 		if err != nil {
 			return fmt.Errorf("problem reading element %d: %w", i, err)
 		}
@@ -77,7 +82,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 
 	// path is part of the forward open we've previously received.
 
-	return h.sendUnitDataReply(CIPService_Write)
+	return h.sendUnitDataReply(cipservice.Write)
 }
 
 func (h *serverTCPHandler) connectedData(items []CIPItem) error {
@@ -131,14 +136,14 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
-	typ := GoVarToCIPType(result)
+	typ := ciptype.GoVarToCIPType(result)
 	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
-	return h.sendConnectedReadReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+	return h.sendConnectedReadReply(cipservice.FragRead, seq, connection.OT, typ, byte(0), result)
 
 }
 
-func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
+func (h *serverTCPHandler) sendConnectedReadReply(s cipservice.CIPService, seq uint16, connID uint32, payload ...any) error {
 	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_ConnectionAddress, connID)
 	items[1] = NewItem(cipItem_ConnectedData, seq)
@@ -149,7 +154,7 @@ func (h *serverTCPHandler) sendConnectedReadReply(s CIPService, seq uint16, conn
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendUnitData, SerializeItems(items))
+	return h.send(eipcommand.SendUnitData, SerializeItems(items))
 }
 
 func (h *serverTCPHandler) connectedGetAttr(items []CIPItem) error {
@@ -192,13 +197,13 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("currently only support getattrsingle path size of 3. got %d", path_size)
 	}
 
-	var cls CIPClass
+	var cls cipclass.CIPClass
 	err = cls.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read class: %w", err)
 	}
 
-	var inst CIPInstance
+	var inst cipclass.CIPInstance
 	err = inst.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read instance: %w", err)
@@ -208,7 +213,7 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("only support class 1 instance 1 so far. got %d:%d", cls, inst)
 	}
 
-	var attr CIPAttribute
+	var attr cipclass.CIPAttribute
 	err = attr.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read attribute ID: %w", err)
@@ -219,6 +224,6 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	return h.sendConnectedReadReply(CIPService_FragRead, seq, connection.OT, result)
+	return h.sendConnectedReadReply(cipservice.FragRead, seq, connection.OT, result)
 
 }

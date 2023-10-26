@@ -1,4 +1,4 @@
-package gologix
+package cippath
 
 // based on code from https://github.com/loki-os/go-ethernet-ip
 

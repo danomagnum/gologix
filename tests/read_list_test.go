@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 // bug report (issue 8): read list fails if one of the tags is a string.
@@ -22,7 +23,7 @@ func TestReadListWithString(t *testing.T) {
 	}()
 
 	tags := make([]string, 5)
-	types := make([]gologix.CIPType, 5)
+	types := make([]ciptype.CIPType, 5)
 
 	tags[0] = "program:gologix_tests.ReadBool"     // false
 	tags[1] = "program:gologix_tests.ReadDint"     // 36
@@ -30,11 +31,11 @@ func TestReadListWithString(t *testing.T) {
 	tags[3] = "program:gologix_tests.ReadReal"     // 93.45
 	tags[4] = "program:gologix_tests.ReadDints[0]" // 4351
 
-	types[0] = gologix.CIPTypeBOOL
-	types[1] = gologix.CIPTypeDINT
-	types[2] = gologix.CIPTypeSTRING
-	types[3] = gologix.CIPTypeREAL
-	types[4] = gologix.CIPTypeDINT
+	types[0] = ciptype.BOOL
+	types[1] = ciptype.DINT
+	types[2] = ciptype.STRING
+	types[3] = ciptype.REAL
+	types[4] = ciptype.DINT
 
 	vals, err := client.ReadList(tags, types)
 	if err != nil {

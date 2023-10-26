@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
 )
 
 // this program will read the current controller time out of the PLC using a custom generic CIP message.
@@ -26,7 +28,7 @@ func main() {
 		}
 	}()
 
-	r, err := client.GenericCIPMessage(gologix.CIPService_GetAttributeList, gologix.CipObject_TIME, 1, []byte{0x01, 0x00, 0x0B, 0x00})
+	r, err := client.GenericCIPMessage(cipservice.GetAttributeList, cipclass.CipObject_TIME, 1, []byte{0x01, 0x00, 0x0B, 0x00})
 	if err != nil {
 		fmt.Printf("bad result: %v", err)
 		return

@@ -6,6 +6,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 type msgtagResultDataHeader struct {
@@ -14,7 +19,7 @@ type msgtagResultDataHeader struct {
 }
 
 type TagInfo struct {
-	Type       CIPType
+	Type       ciptype.CIPType
 	TypeInfo   byte
 	Dimension1 uint32
 	Dimension2 uint32
@@ -57,7 +62,7 @@ func (f TagInfo) Template_ID() uint16 {
 }
 
 type msgListInstanceHeader struct {
-	Service       CIPService
+	Service       cipservice.CIPService
 	Reserved      byte
 	SequenceCount uint16
 	Status        uint16
@@ -80,7 +85,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CipObject_Symbol, CIPInstance(start_instance),
+		cipclass.CipObject_Symbol, cipclass.CIPInstance(start_instance),
 	)
 	if err != nil {
 		return fmt.Errorf("couldn't build path. %w", err)
@@ -88,7 +93,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_GetInstanceAttributeList,
+		Service:       cipservice.GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -111,7 +116,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		reqitems[1].Serialize(uint16(1))
 	}
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}
@@ -169,7 +174,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		kt := KnownTag{
 			Name:     string(tag_name),
 			Info:     *tag_ftr,
-			Instance: CIPInstance(tag_hdr.InstanceID),
+			Instance: cipclass.CIPInstance(tag_hdr.InstanceID),
 		}
 		if tag_ftr.Dimension3 != 0 {
 			kt.Array_Order = make([]int, 3)

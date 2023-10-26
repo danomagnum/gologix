@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // The write equivalent to ReadMulti.  value should be a struct where each field has a tag of the form `gologix:"tagname"` that maps
@@ -48,7 +52,7 @@ func (client *Client) Write(tag string, value any) error {
 // write a single value to a single tag.
 func (client *Client) write_single(tag string, value any) error {
 	//service = 0x4D // cipService_Write
-	datatype := GoVarToCIPType(value)
+	datatype := ciptype.GoVarToCIPType(value)
 	ioi, err := client.NewIOI(tag, datatype)
 	if err != nil {
 		return fmt.Errorf("problem generating IOI. %w", err)
@@ -62,7 +66,7 @@ func (client *Client) write_single(tag string, value any) error {
 
 	ioi_header := msgCIPIOIHeader{
 		Sequence: uint16(sequencer()),
-		Service:  CIPService_Write,
+		Service:  cipservice.Write,
 		Size:     byte(len(ioi.Buffer) / 2),
 	}
 	ioi_footer := msgCIPWriteIOIFooter{
@@ -78,7 +82,7 @@ func (client *Client) write_single(tag string, value any) error {
 	reqitems[1].Serialize(ioi_footer)
 	reqitems[1].Serialize(value)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return err
 	}
@@ -117,14 +121,14 @@ func (client *Client) write_single(tag string, value any) error {
 
 type msgWriteResultHeader struct {
 	SequenceCount  uint16
-	Service        CIPService
+	Service        cipservice.CIPService
 	Reserved       byte
 	Status         byte
 	StatusExtended byte
 }
 
 type msgUnconnWriteResultHeader struct {
-	Service        CIPService
+	Service        cipservice.CIPService
 	Reserved       byte
 	Status         byte
 	StatusExtended byte

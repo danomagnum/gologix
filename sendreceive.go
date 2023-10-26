@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 type EIPHeader struct {
-	Command       CIPCommand
+	Command       eipcommand.CIPCommand
 	Length        uint16
 	SessionHandle uint32
 	Status        uint32
@@ -19,7 +21,7 @@ type EIPHeader struct {
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (client *Client) send(cmd CIPCommand, msgs ...any) error {
+func (client *Client) send(cmd eipcommand.CIPCommand, msgs ...any) error {
 	// calculate size of all message parts
 	size := 0
 	for _, msg := range msgs {
@@ -62,7 +64,7 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 }
 
 // sends one message and gets one response in a mutex-protected way.
-func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (EIPHeader, *bytes.Buffer, error) {
+func (client *Client) send_recv_data(cmd eipcommand.CIPCommand, msgs ...any) (EIPHeader, *bytes.Buffer, error) {
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 	err := client.send(cmd, msgs...)
@@ -104,7 +106,7 @@ func (client *Client) DebugCloseConn() {
 	client.conn.Close()
 }
 
-func (client *Client) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (client *Client) newEIPHeader(cmd eipcommand.CIPCommand, size int) (hdr EIPHeader) {
 
 	client.HeaderSequenceCounter++
 

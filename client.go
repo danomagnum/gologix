@@ -8,6 +8,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cippath"
 )
 
 // you have to change this read sequencer every time you make a new tag request.  If you don't, you
@@ -84,7 +87,7 @@ type Client struct {
 // Default path is backplane, slot 0.
 func NewClient(ip string) *Client {
 	// default path is backplane -> slot 0
-	p, err := ParsePath("1,0")
+	p, err := cippath.ParsePath("1,0")
 	if err != nil {
 		log.Panicf("this should not have failed since the path is hardcoded.  problem with path. %v", err)
 	}
@@ -104,15 +107,15 @@ func NewClient(ip string) *Client {
 type KnownTag struct {
 	Name        string
 	Info        TagInfo
-	Instance    CIPInstance
+	Instance    cipclass.CIPInstance
 	Array_Order []int
 	UDT         *UDTDescriptor
 }
 
 func (t KnownTag) Bytes() []byte {
-	ins := CIPInstance(t.Instance)
+	ins := cipclass.CIPInstance(t.Instance)
 	b := bytes.Buffer{}
-	b.Write(CipObject_Symbol.Bytes()) // 0x20 0x6B
+	b.Write(cipclass.CipObject_Symbol.Bytes()) // 0x20 0x6B
 	b.Write(ins.Bytes())
 	return b.Bytes()
 }

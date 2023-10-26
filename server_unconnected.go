@@ -3,30 +3,35 @@ package gologix
 import (
 	"fmt"
 	"log"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
-	var service CIPService
+	var service cipservice.CIPService
 	var err error
 	err = item.DeSerialize(&service)
 	if err != nil {
 		return fmt.Errorf("problem unmarshling service %w", err)
 	}
 	switch service {
-	case CIPService_ForwardOpen:
+	case cipservice.ForwardOpen:
 		item.Reset()
 		err = h.forwardOpen(item)
 		if err != nil {
 			return fmt.Errorf("problem handling forward open. %w", err)
 		}
 
-	case CIPService_LargeForwardOpen:
+	case cipservice.LargeForwardOpen:
 		item.Reset()
 		err = h.largeforwardOpen(item)
 		if err != nil {
 			return fmt.Errorf("problem handling large forward open. %w", err)
 		}
-	case CIPService_ForwardClose:
+	case cipservice.ForwardClose:
 		item.Reset()
 		err = h.forwardClose(item)
 		if err != nil {
@@ -55,17 +60,17 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 		if err != nil {
 			return fmt.Errorf("error getting embedded size. %w", err)
 		}
-		var emService CIPService
+		var emService cipservice.CIPService
 		err = item.DeSerialize(&emService)
 		if err != nil {
 			return fmt.Errorf("error getting embedded service. %w", err)
 		}
 		switch emService {
-		case CIPService_Write:
+		case cipservice.Write:
 			return h.unconnectedServiceWrite(item)
-		case CIPService_Read:
+		case cipservice.Read:
 			return h.unconnectedServiceRead(item)
-		case CIPService_GetAttributeSingle:
+		case cipservice.GetAttributeSingle:
 			return h.unconnectedServiceGetAttrSingle(item)
 		//case cipService_GetAttributeAll:
 		//return h.unconnectedServiceGetAttrAll(item)
@@ -87,7 +92,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}
-	var typ CIPType
+	var typ ciptype.CIPType
 	err = item.DeSerialize(&typ)
 	if err != nil {
 		return fmt.Errorf("error getting write type. %w", err)
@@ -103,13 +108,13 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 		return fmt.Errorf("error getting write qty. %w", err)
 	}
 	// TODO: read structs gracefully.
-	if typ == CIPTypeStruct {
+	if typ == ciptype.Struct {
 		log.Printf("read %s as %s * %v = %v", tag, typ, qty, item.Data[item.Pos:])
-		return h.sendUnconnectedRRDataReply(CIPService_Write)
+		return h.sendUnconnectedRRDataReply(cipservice.Write)
 	}
 	results := make([]any, qty)
 	for i := 0; i < int(qty); i++ {
-		results[i], err = typ.readValue(&item)
+		results[i], err = typ.ReadValue(&item)
 		if err != nil {
 			return fmt.Errorf("problem reading element %d: %w", i, err)
 		}
@@ -143,7 +148,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 		}
 	}
 
-	return h.sendUnconnectedRRDataReply(CIPService_Write)
+	return h.sendUnconnectedRRDataReply(cipservice.Write)
 
 }
 
@@ -158,13 +163,13 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 		return fmt.Errorf("currently only support getattrsingle path size of 3. got %d", path_size)
 	}
 
-	var cls CIPClass
+	var cls cipclass.CIPClass
 	err = cls.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read class: %w", err)
 	}
 
-	var inst CIPInstance
+	var inst cipclass.CIPInstance
 	err = inst.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read instance: %w", err)
@@ -174,7 +179,7 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 		return fmt.Errorf("only support class 1 instance 1 so far. got %d:%d", cls, inst)
 	}
 
-	var attr CIPAttribute
+	var attr cipclass.CIPAttribute
 	err = attr.Read(&item)
 	if err != nil {
 		return fmt.Errorf("could not read attribute ID: %w", err)
@@ -185,9 +190,9 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	typ := GoVarToCIPType(val)
+	typ := ciptype.GoVarToCIPType(val)
 
-	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
+	return h.sendUnconnectedRRDataReply(cipservice.GetAttributeSingle, typ, byte(0), val)
 }
 
 func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
@@ -228,13 +233,13 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
 	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
-	typ := GoVarToCIPType(result)
+	typ := ciptype.GoVarToCIPType(result)
 
-	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
+	return h.sendUnconnectedRRDataReply(cipservice.Read, typ, byte(0), result)
 
 }
 
-func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
+func (h *serverTCPHandler) sendUnconnectedRRDataReply(s cipservice.CIPService, payload ...any) error {
 	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
@@ -245,10 +250,10 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendRRData, SerializeItems(items))
+	return h.send(eipcommand.SendRRData, SerializeItems(items))
 }
 
-func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
+func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s cipservice.CIPService) error {
 	items := make([]CIPItem, 2)
 	items[0] = NewItem(cipItem_Null, nil)
 	items[1] = NewItem(cipItem_UnconnectedData, nil)
@@ -257,5 +262,5 @@ func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	return h.send(cipCommandSendUnitData, SerializeItems(items))
+	return h.send(eipcommand.SendUnitData, SerializeItems(items))
 }

@@ -5,6 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 // Read a list of tags of specified types.
@@ -13,7 +16,7 @@ import (
 // interface{} so you'll need to type assert to get the values back out.
 //
 // To read multiple tags at once without type assertion you can use ReadMulti()
-func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
+func (client *Client) ReadList(tags []string, types []ciptype.CIPType) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not start list read: %w", err)
@@ -43,13 +46,13 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	return results, nil
 }
 
-func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, error) {
+func (client *Client) countIOIsThatFit(tags []string, types []ciptype.CIPType) (int, error) {
 	// first generate IOIs for each tag
 	qty := len(tags)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
-		Service:      CIPService_MultipleService,
+		Service:      cipservice.MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -78,7 +81,7 @@ func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, err
 		jump_table[i] = uint16(b.Len())
 
 		h := msgCIPMultiIOIHeader{
-			Service: CIPService_Read,
+			Service: cipservice.Read,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{

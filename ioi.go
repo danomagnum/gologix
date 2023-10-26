@@ -9,6 +9,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cippath"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 type tagPartDescriptor struct {
@@ -86,7 +90,7 @@ func parse_tag_name(tagpath string) (tag tagPartDescriptor) {
 // the Buffer has the CIP route for a tag path.
 type tagIOI struct {
 	Path        string
-	Type        CIPType
+	Type        ciptype.CIPType
 	BitAccess   bool
 	BitPosition int
 	Buffer      []byte
@@ -109,7 +113,7 @@ const defaultIOIBufferSize = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
+func (client *Client) NewIOI(tagpath string, datatype ciptype.CIPType) (ioi *tagIOI, err error) {
 	if client.ioi_cache == nil {
 		client.ioi_cache = make(map[string]*tagIOI)
 	}
@@ -119,7 +123,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	tagpath = strings.ToLower(tagpath)
 	tag_info, ok := client.KnownTags[tagpath]
 	if ok {
-		if tag_info.Info.Type != datatype && datatype != CIPTypeUnknown {
+		if tag_info.Info.Type != datatype && datatype != ciptype.Unknown {
 			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
 			return
 		}
@@ -156,21 +160,21 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 			for _, order_size := range t.Array_Order {
 				if order_size < 256 {
 					// byte, byte
-					index_part := []byte{byte(cipElement_8bit), byte(order_size)}
+					index_part := []byte{byte(cipclass.CipElement_8bit), byte(order_size)}
 					err = binary.Write(ioi, binary.LittleEndian, index_part)
 					if err != nil {
 						return nil, fmt.Errorf("problem reading index part. %w", err)
 					}
 				} else if order_size < 65536 {
 					// uint16, uint16
-					index_part := []uint16{uint16(cipElement_16bit), uint16(order_size)}
+					index_part := []uint16{uint16(cipclass.CipElement_16bit), uint16(order_size)}
 					err = binary.Write(ioi, binary.LittleEndian, index_part)
 					if err != nil {
 						return nil, fmt.Errorf("problem reading index part. %w", err)
 					}
 				} else {
 					// uint16, uint32
-					index_part0 := []uint16{uint16(cipElement_32bit)}
+					index_part0 := []uint16{uint16(cipclass.CipElement_32bit)}
 					err = binary.Write(ioi, binary.LittleEndian, index_part0)
 					if err != nil {
 						return nil, err
@@ -217,7 +221,7 @@ func marshalIOIPart(tagpath string) []byte {
 		//tag_size += 1
 	}
 
-	tag_name_header := [2]byte{byte(SegmentTypeExtendedSymbolic), byte(tag_size)}
+	tag_name_header := [2]byte{byte(cippath.SegmentTypeExtendedSymbolic), byte(tag_size)}
 	tag_name_msg := append(tag_name_header[:], []byte(t.BasePath)...)
 	// has to be an even number of bytes.
 	if need_extend {
@@ -249,7 +253,7 @@ func getAsciiTagPart(item *CIPItem) (string, error) {
 	tag_str := string(b)
 	return tag_str, nil
 }
-func getTagFromPath(item *CIPItem) (string, error) {
+func GetTagFromPath(item *CIPItem) (string, error) {
 
 	tag_str := ""
 

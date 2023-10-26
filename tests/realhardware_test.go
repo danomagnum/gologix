@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 func TestRealHardware(t *testing.T) {
@@ -99,7 +100,7 @@ func TestRealHardware(t *testing.T) {
 
 }
 
-func read[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, path string) {
+func read[T ciptype.GoLogixTypes](t *testing.T, client *gologix.Client, path string) {
 	var have T
 	err := client.Read(path, &have)
 	if err != nil {

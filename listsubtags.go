@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
@@ -35,7 +39,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 	p, err := Serialize(
 		ioi.Buffer,
-		CipObject_Symbol, CIPInstance(start_instance),
+		cipclass.CipObject_Symbol, cipclass.CIPInstance(start_instance),
 	)
 	if err != nil {
 		return new_kts, fmt.Errorf("couldn't build path. %w", err)
@@ -43,7 +47,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_GetInstanceAttributeList,
+		Service:       cipservice.GetInstanceAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -58,7 +62,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return new_kts, err
 	}
@@ -114,7 +118,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 		kt := KnownTag{
 			Name:     newtag_name,
 			Info:     *tag_ftr,
-			Instance: CIPInstance(tag_hdr.InstanceID),
+			Instance: cipclass.CIPInstance(tag_hdr.InstanceID),
 		}
 		if tag_ftr.Dimension3 != 0 {
 			kt.Array_Order = make([]int, 3)

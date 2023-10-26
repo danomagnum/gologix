@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cippath"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 	// the message path before the IP address in the msg instruction will be different based on the actual controller
 	// you're using, but the part after the IP address is what this matches
 	p1 := gologix.MapTagProvider{}
-	path1, err := gologix.ParsePath("1,0")
+	path1, err := cippath.ParsePath("1,0")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
@@ -60,7 +61,7 @@ func main() {
 
 	// a different memory based tag provider at slot 1 on the virtual "backplane" this would be "2,xxx.xxx.xxx.xxx,1,1" in the msg connection path
 	p2 := gologix.MapTagProvider{}
-	path2, err := gologix.ParsePath("1,1")
+	path2, err := cippath.ParsePath("1,1")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)

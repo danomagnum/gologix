@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // Read a single tag into data.  Data should be a pointer to the variable where the data will be deposited.
@@ -228,7 +232,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []interface{}:
 		// a pointer to a struct.
-		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		val, err := client.Read_single(tag, ciptype.Struct, 1)
 		if err != nil {
 			return err
 		}
@@ -248,7 +252,7 @@ func (client *Client) Read(tag string, data any) error {
 	switch v.Kind() {
 	case reflect.Pointer:
 		// a pointer to a struct.
-		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		val, err := client.Read_single(tag, ciptype.Struct, 1)
 		if err != nil {
 			return err
 		}
@@ -267,7 +271,7 @@ func (client *Client) Read(tag string, data any) error {
 	case reflect.Slice:
 		// slice of structs.
 		elements := uint16(v.Len())
-		val, err := client.Read_single(tag, CIPTypeStruct, elements)
+		val, err := client.Read_single(tag, ciptype.Struct, elements)
 		if err != nil {
 			return err
 		}
@@ -291,7 +295,7 @@ func (client *Client) Read(tag string, data any) error {
 // Read a single tag with the datatype given by a parameter instead of inferred from a pointer.
 //
 // The data is returned as an interface{} so you'll probably have to type assert it.
-func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+func (client *Client) Read_single(tag string, datatype ciptype.CIPType, elements uint16) (any, error) {
 
 	err := client.checkConnection()
 	if err != nil {
@@ -309,7 +313,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_Read,
+		Service:       cipservice.Read,
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
 	// setup item
@@ -319,7 +323,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	// add service specific data
 	reqitems[1].Serialize(elements)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -344,8 +348,8 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}
 
-	if hdr2.Type == CIPTypeStruct {
-		if datatype == CIPTypeSTRING {
+	if hdr2.Type == ciptype.Struct {
+		if datatype == ciptype.STRING {
 			str_hdr := CIPStringHeader{}
 			err = items[1].DeSerialize(&str_hdr)
 			if err != nil {
@@ -367,16 +371,16 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		return str, nil
 	}
 	if elements == 1 {
-		if datatype == CIPTypeBOOL && hdr2.Type != CIPTypeBOOL && ioi.BitAccess {
+		if datatype == ciptype.BOOL && hdr2.Type != ciptype.BOOL && ioi.BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
-			value, err := readValue(hdr2.Type, &items[1])
+			value, err := ciptype.ReadValue(hdr2.Type, &items[1])
 			if err != nil {
 				return nil, fmt.Errorf("problem reading bool tag %s: %w", tag, err)
 			}
-			return getBit(hdr2.Type, value, ioi.BitPosition)
+			return ciptype.GetBit(hdr2.Type, value, ioi.BitPosition)
 		}
 		// not a struct so we can read the value directly
-		value, err := readValue(hdr2.Type, &items[1])
+		value, err := ciptype.ReadValue(hdr2.Type, &items[1])
 		if err != nil {
 			return nil, fmt.Errorf("problem reading tag %s: %w", tag, err)
 		}
@@ -384,7 +388,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	} else {
 		value := make([]any, elements)
 		for i := 0; i < int(elements); i++ {
-			value[i], err = readValue(hdr2.Type, &items[1])
+			value[i], err = ciptype.ReadValue(hdr2.Type, &items[1])
 			if err != nil {
 				return nil, fmt.Errorf("problem reading element %d of %s: %w", i, tag, err)
 			}
@@ -395,15 +399,15 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	}
 }
 
-func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
+func readArray[T ciptype.GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
-	ct := GoVarToCIPType(t[0])
+	ct := ciptype.GoVarToCIPType(t[0])
 	val, err := client.Read_single(tag, ct, elements)
 	if err != nil {
 		return t, err
 	}
 
-	if ct == CIPTypeStruct {
+	if ct == ciptype.Struct {
 		b, ok := val.([]byte)
 		if !ok {
 			return t, fmt.Errorf("couldn't cast to bytes. %w", err)
@@ -417,7 +421,7 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 		return t, fmt.Errorf("couldn't cast array. %w", err)
 	}
 	for i, v := range cast {
-		if ct == CIPTypeSTRING {
+		if ct == ciptype.STRING {
 			// v should be a byte slice
 			cast2, ok := any(v).([]byte)
 			if !ok {
@@ -439,14 +443,14 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 
 }
 
-func read[T GoLogixTypes](client *Client, tag string) (T, error) {
+func read[T ciptype.GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
-	ct := GoVarToCIPType(t)
+	ct := ciptype.GoVarToCIPType(t)
 	val, err := client.Read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
 	}
-	if ct == CIPTypeStruct {
+	if ct == ciptype.Struct {
 		// val should be a byte slice
 		cast, ok := val.([]byte)
 		if !ok {
@@ -459,7 +463,7 @@ func read[T GoLogixTypes](client *Client, tag string) (T, error) {
 		}
 		return t, nil
 	}
-	if ct == CIPTypeSTRING {
+	if ct == ciptype.STRING {
 		// val should be a byte slice
 		cast, ok := val.([]byte)
 		if !ok {
@@ -503,14 +507,14 @@ func (client *Client) ReadMulti(tag_str any) error {
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
-	types := make([]CIPType, 0)
+	types := make([]ciptype.CIPType, 0)
 	tag_map := make(map[string]int)
 	val := reflect.ValueOf(tag_str).Elem()
 	for i := range vf {
 		field := vf[i]
 		tagpath, ok := field.Tag.Lookup("gologix")
 		v := val.Field(i).Interface()
-		ct := GoVarToCIPType(v)
+		ct := ciptype.GoVarToCIPType(v)
 		types = append(types, ct)
 		if !ok {
 			continue
@@ -544,7 +548,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	return nil
 }
 
-func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
+func (client *Client) readList(tags []string, types []ciptype.CIPType) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
@@ -562,7 +566,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
-		Service:      CIPService_MultipleService,
+		Service:      cipservice.MultipleService,
 		PathSize:     2,
 		Path:         [4]byte{0x20, 0x02, 0x24, 0x01},
 		ServiceCount: uint16(qty),
@@ -577,7 +581,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 		jump_table[i] = uint16(jump_start + b.Len())
 		ioi := iois[i]
 		h := msgCIPMultiIOIHeader{
-			Service: CIPService_Read,
+			Service: cipservice.Read,
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{
@@ -609,7 +613,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(&b)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -657,19 +661,19 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 		if rhdr.Status != 0 {
 			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
 		}
-		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
+		if types[i] == ciptype.BOOL && rhdr.Type != ciptype.BOOL && iois[i].BitAccess {
 			// we have requested a bool from some other type.  Maybe a bit access?
-			value, err := readValue(rhdr.Type, mybytes)
+			value, err := ciptype.ReadValue(rhdr.Type, mybytes)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
 			}
-			val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
+			val, err := ciptype.GetBit(rhdr.Type, value, iois[i].BitPosition)
 			if err != nil {
 				log.Printf("problem reading value for this guy")
 				continue
 			}
 			result_values[i] = val
-		} else if types[i] == CIPTypeSTRING {
+		} else if types[i] == ciptype.STRING {
 			str_hdr := CIPStringHeader{}
 			err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
 			if err != nil {
@@ -682,7 +686,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 			}
 			result_values[i] = string(str)
 		} else {
-			result_values[i], err = rhdr.Type.readValue(mybytes)
+			result_values[i], err = rhdr.Type.ReadValue(mybytes)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
 			}
@@ -697,7 +701,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 
 }
 
-func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
+func parseArrayStuct[T ciptype.GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	// val should be a byte slice
 	b := bytes.NewBuffer(dat)
@@ -713,16 +717,16 @@ func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 
 type msgMultiReadResultHeader struct {
 	SequenceCount uint16
-	Service       CIPService
+	Service       cipservice.CIPService
 	Reserved      byte
 	Status        uint16
 	Reply_Count   uint16
 }
 
 type msgMultiReadResult struct {
-	Service   CIPService
+	Service   cipservice.CIPService
 	Reserved  byte
 	Status    uint16
-	Type      CIPType
+	Type      ciptype.CIPType
 	Reserved2 byte
 }

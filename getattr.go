@@ -4,16 +4,20 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 type cipAttributeResponseHdr struct {
 	SequenceCount   uint16
-	ResponseService CIPService
+	ResponseService cipservice.CIPService
 	_               byte
 	Status          uint16
 }
 
-func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr CIPAttribute) (*CIPItem, error) {
+func (client *Client) GetAttrSingle(class cipclass.CIPClass, instance cipclass.CIPInstance, attr cipclass.CIPAttribute) (*CIPItem, error) {
 
 	err := client.checkConnection()
 	if err != nil {
@@ -25,7 +29,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_GetAttributeSingle,
+		Service:       cipservice.GetAttributeSingle,
 		PathLength:    3,
 	}
 	// setup item
@@ -35,7 +39,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	reqitems[1].Serialize(instance)
 	reqitems[1].Serialize(attr)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +111,7 @@ func (old msgGetControllerPropList) Match(new msgGetControllerPropList) bool {
 // don't exactly know what they are, just going off of what 1756-pm020_-en-p.pdf says on page 51
 func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) {
 
-	item, err := client.GetAttrList(CipObject_ControllerInfo, 1, 1, 2, 3, 4, 10)
+	item, err := client.GetAttrList(cipclass.CipObject_ControllerInfo, 1, 1, 2, 3, 4, 10)
 	if err != nil {
 		return msgGetControllerPropList{}, err
 	}
@@ -142,7 +146,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 // where the subsequent fields are in the binary data.
 // If there are no variable-length fields in the attributes you are getting, the best way is to create the equivalent
 // struct as above with the proper types for the AttrX_Value instead of []byte and do an item.Serialize(&InstanceOfMyType)
-func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ...CIPAttribute) (*CIPItem, error) {
+func (client *Client) GetAttrList(class cipclass.CIPClass, instance cipclass.CIPInstance, attrs ...cipclass.CIPAttribute) (*CIPItem, error) {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
@@ -157,7 +161,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_GetAttributeList,
+		Service:       cipservice.GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -171,7 +175,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 
 	if err != nil {
 		return nil, err
@@ -211,7 +215,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 //
 // If there are no variable-length fields in the response data you are expecting, the best way may be to create the equivalent
 // struct with the proper types and do an item.Serialize(&InstanceOfMyType)
-func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, instance CIPInstance, msg_data []byte) (*CIPItem, error) {
+func (client *Client) GenericCIPMessage(service cipservice.CIPService, class cipclass.CIPClass, instance cipclass.CIPInstance, msg_data []byte) (*CIPItem, error) {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
@@ -234,7 +238,7 @@ func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, inst
 	reqitems[1].Serialize(p.Bytes())
 	reqitems[1].Serialize(msg_data)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 
 	if err != nil {
 		return nil, err
@@ -262,8 +266,8 @@ func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, inst
 		return nil, fmt.Errorf("problem reading service response: %w", err)
 	}
 
-	if CIPService(s_response).UnResponse() != service {
-		return nil, fmt.Errorf("expected service response 0x%X but got 0x%X", service, CIPService(s_response).UnResponse())
+	if cipservice.CIPService(s_response).UnResponse() != service {
+		return nil, fmt.Errorf("expected service response 0x%X but got 0x%X", service, cipservice.CIPService(s_response).UnResponse())
 	}
 	status, err := items[1].Int16()
 	if err != nil {

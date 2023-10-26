@@ -1,4 +1,4 @@
-package gologix
+package ciptype
 
 import (
 	"encoding/binary"
@@ -22,139 +22,139 @@ type GoLogixTypes interface {
 func GoVarToCIPType(T any) CIPType {
 	switch T.(type) {
 	case bool:
-		return CIPTypeBOOL
+		return BOOL
 	case byte:
-		return CIPTypeBYTE
+		return BYTE
 	case uint16:
-		return CIPTypeUINT
+		return UINT
 	case int16:
-		return CIPTypeINT
+		return INT
 	case uint32:
-		return CIPTypeUDINT
+		return UDINT
 	case int32:
-		return CIPTypeDINT
+		return DINT
 	case uint64:
-		return CIPTypeLWORD
+		return LWORD
 	case int64:
-		return CIPTypeLINT
+		return LINT
 	case float32:
-		return CIPTypeREAL
+		return REAL
 	case float64:
-		return CIPTypeLREAL
+		return LREAL
 	case string:
-		return CIPTypeSTRING
+		return STRING
 	case []byte:
-		return CIPTypeBYTE
+		return BYTE
 	case []uint16:
-		return CIPTypeUINT
+		return UINT
 	case []int16:
-		return CIPTypeINT
+		return INT
 	case []uint32:
-		return CIPTypeUDINT
+		return UDINT
 	case []int32:
-		return CIPTypeDINT
+		return DINT
 	case []uint64:
-		return CIPTypeLWORD
+		return LWORD
 	case []int64:
-		return CIPTypeLINT
+		return LINT
 	case []float32:
-		return CIPTypeREAL
+		return REAL
 	case []float64:
-		return CIPTypeLREAL
+		return LREAL
 	case []string:
-		return CIPTypeSTRING
+		return STRING
 	case interface{}:
-		return CIPTypeStruct
+		return Struct
 	}
-	return CIPTypeUnknown
+	return Unknown
 }
 
 const (
-	CIPTypeUnknown         CIPType = 0x00
-	CIPTypeStruct          CIPType = 0xA0 // also used for strings.  Not sure what's up with CIPTypeSTRING
-	CIPTypeUTIME           CIPType = 0xC0
-	CIPTypeBOOL            CIPType = 0xC1
-	CIPTypeSINT            CIPType = 0xC2
-	CIPTypeINT             CIPType = 0xC3
-	CIPTypeDINT            CIPType = 0xC4
-	CIPTypeLINT            CIPType = 0xC5
-	CIPTypeUSINT           CIPType = 0xC6
-	CIPTypeUINT            CIPType = 0xC7
-	CIPTypeUDINT           CIPType = 0xC8
-	CIPTypeULINT           CIPType = 0xC9
-	CIPTypeREAL            CIPType = 0xCA
-	CIPTypeLREAL           CIPType = 0xCB
-	CIPTypeSTIME           CIPType = 0xCC
-	CIPTypeDATE            CIPType = 0xCD
-	CIPTypeTIMEOFDAY       CIPType = 0xCE
-	CIPTypeDATETIME        CIPType = 0xCF
-	CIPTypeSTRING_UNKNOWN  CIPType = 0xD0
-	CIPTypeBYTE            CIPType = 0xD1 // 8 bits packed into one byte
-	CIPTypeWORD            CIPType = 0xD2
-	CIPTypeDWORD           CIPType = 0xD3
-	CIPTypeLWORD           CIPType = 0xD4
-	CIPTypeSTRING_UNKNOWN2 CIPType = 0xD5
-	CIPTypeFTIME           CIPType = 0xD6
-	CIPTypeLTIME           CIPType = 0xD7
-	CIPTypeITIME           CIPType = 0xD8
-	CIPTypeSTRING_UNKNOWN3 CIPType = 0xD9
-	CIPTypeSTRING_SHORT    CIPType = 0xDA
-	CIPTypeTIMEOFDAY2      CIPType = 0xDB
-	CIPTypeEPATH           CIPType = 0xDC
-	CIPTypeENGUNIT         CIPType = 0xDD
+	Unknown         CIPType = 0x00
+	Struct          CIPType = 0xA0 // also used for strings.  Not sure what's up with CIPTypeSTRING
+	UTIME           CIPType = 0xC0
+	BOOL            CIPType = 0xC1
+	SINT            CIPType = 0xC2
+	INT             CIPType = 0xC3
+	DINT            CIPType = 0xC4
+	LINT            CIPType = 0xC5
+	USINT           CIPType = 0xC6
+	UINT            CIPType = 0xC7
+	UDINT           CIPType = 0xC8
+	ULINT           CIPType = 0xC9
+	REAL            CIPType = 0xCA
+	LREAL           CIPType = 0xCB
+	STIME           CIPType = 0xCC
+	DATE            CIPType = 0xCD
+	TIMEOFDAY       CIPType = 0xCE
+	DATETIME        CIPType = 0xCF
+	STRING_UNKNOWN  CIPType = 0xD0
+	BYTE            CIPType = 0xD1 // 8 bits packed into one byte
+	WORD            CIPType = 0xD2
+	DWORD           CIPType = 0xD3
+	LWORD           CIPType = 0xD4
+	STRING_UNKNOWN2 CIPType = 0xD5
+	FTIME           CIPType = 0xD6
+	LTIME           CIPType = 0xD7
+	ITIME           CIPType = 0xD8
+	STRING_UNKNOWN3 CIPType = 0xD9
+	STRING_SHORT    CIPType = 0xDA
+	TIMEOFDAY2      CIPType = 0xDB
+	EPATH           CIPType = 0xDC
+	ENGUNIT         CIPType = 0xDD
 
 	//  Strings actually come accross as 0xA0 = CIPTypeStruct.
 	//In this library we're using this as kind of a flag to keep track of whether
 	// a structure is a normal logix string or not.
-	CIPTypeSTRING CIPType = 0xFF
+	STRING CIPType = 0xFF
 )
 
 // return the size in bytes of the data structure
 func (c CIPType) Size() int {
 	switch c {
-	case CIPTypeUnknown:
+	case Unknown:
 		return 0
-	case CIPTypeStruct:
+	case Struct:
 		return 88
-	case CIPTypeUTIME:
+	case UTIME:
 		return 8
-	case CIPTypeBOOL:
+	case BOOL:
 		return 1
-	case CIPTypeBYTE:
+	case BYTE:
 		return 1
-	case CIPTypeSINT:
+	case SINT:
 		return 1
-	case CIPTypeINT:
+	case INT:
 		return 2
-	case CIPTypeDINT:
+	case DINT:
 		return 4
-	case CIPTypeLINT:
+	case LINT:
 		return 8
-	case CIPTypeUSINT:
+	case USINT:
 		return 1
-	case CIPTypeUINT:
+	case UINT:
 		return 2
-	case CIPTypeUDINT:
+	case UDINT:
 		return 4
-	case CIPTypeULINT:
+	case ULINT:
 		return 8
-	case CIPTypeLWORD:
+	case LWORD:
 		return 8
-	case CIPTypeREAL:
+	case REAL:
 		return 4
-	case CIPTypeLREAL:
+	case LREAL:
 		return 8
-	case CIPTypeWORD:
+	case WORD:
 		return 2
-	case CIPTypeDWORD:
+	case DWORD:
 		return 4
-	case CIPTypeDATE:
+	case DATE:
 		return 2
-	case CIPTypeTIMEOFDAY:
+	case TIMEOFDAY:
 		return 6
-	case CIPTypeDATETIME:
+	case DATETIME:
 		return 0 //?
-	case CIPTypeSTRING:
+	case STRING:
 		return 1
 	default:
 		return 0
@@ -170,39 +170,39 @@ func (c CIPType) NewBuffer() *[]byte {
 // human readable version of the cip type for printing.
 func (c CIPType) String() string {
 	switch c {
-	case CIPTypeUnknown:
+	case Unknown:
 		return "0x00 - Unknown"
-	case CIPTypeStruct:
+	case Struct:
 		return "0xA0 - Struct"
-	case CIPTypeBOOL:
+	case BOOL:
 		return "0xC1 - BOOL"
-	case CIPTypeBYTE:
+	case BYTE:
 		return "0xD1 - BYTE"
-	case CIPTypeSINT:
+	case SINT:
 		return "0xC2 - SINT"
-	case CIPTypeINT:
+	case INT:
 		return "0xC3 - INT"
-	case CIPTypeDINT:
+	case DINT:
 		return "0xC4 - DINT"
-	case CIPTypeLINT:
+	case LINT:
 		return "0xC5 - LINT"
-	case CIPTypeUSINT:
+	case USINT:
 		return "0xC6 - USINT"
-	case CIPTypeUINT:
+	case UINT:
 		return "0xC7 - UINT"
-	case CIPTypeUDINT:
+	case UDINT:
 		return "0xC8 - UDINT"
-	case CIPTypeLWORD:
+	case LWORD:
 		return "0xC9 - LWORD"
-	case CIPTypeREAL:
+	case REAL:
 		return "0xCA - REAL"
-	case CIPTypeLREAL:
+	case LREAL:
 		return "0xCB - LREAL"
-	case CIPTypeWORD:
+	case WORD:
 		return "0xD2 - WORD"
-	case CIPTypeDWORD:
+	case DWORD:
 		return "0xD3 - DWORD"
-	case CIPTypeSTRING:
+	case STRING:
 		return "0xFF - (gologix specific) String"
 	default:
 		return fmt.Sprintf("0x%2x - Unknown", byte(c))
@@ -213,79 +213,79 @@ func (t CIPType) IsAtomic() bool {
 	v := byte(t)
 	return v <= 254
 }
-func (t CIPType) readValue(r io.Reader) (any, error) {
-	return readValue(t, r)
+func (t CIPType) ReadValue(r io.Reader) (any, error) {
+	return ReadValue(t, r)
 }
 
 // readValue reads one unit of cip data type t into the correct go type.
 // To do this it reads the needed number of bytes from r.
 // It returns the value as an any so the caller will have to do a cast to get it back
-func readValue(t CIPType, r io.Reader) (any, error) {
+func ReadValue(t CIPType, r io.Reader) (any, error) {
 
 	var value any
 	var err error
 	switch t {
-	case CIPTypeUnknown:
+	case Unknown:
 		return nil, fmt.Errorf("unknown type")
-	case CIPTypeStruct:
+	case Struct:
 		return nil, fmt.Errorf("don't know what to do with a struct")
-	case CIPTypeBOOL:
+	case BOOL:
 		var trueval bool
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeBYTE:
+	case BYTE:
 		var trueval byte
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeSINT:
+	case SINT:
 		var trueval byte
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeINT:
+	case INT:
 		var trueval int16
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeDINT:
+	case DINT:
 		var trueval int32
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeLINT:
+	case LINT:
 		var trueval int64
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeUSINT:
+	case USINT:
 		var trueval uint8
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeUINT:
+	case UINT:
 		var trueval uint16
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeUDINT:
+	case UDINT:
 		var trueval uint32
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeLWORD:
+	case LWORD:
 		var trueval uint64
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeREAL:
+	case REAL:
 		var trueval float32
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeLREAL:
+	case LREAL:
 		var trueval float64
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeWORD:
+	case WORD:
 		var trueval uint16
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeDWORD:
+	case DWORD:
 		var trueval uint32
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
-	case CIPTypeSTRING:
+	case STRING:
 		var trueval [86]byte
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
@@ -303,17 +303,17 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 
 // after reading a value v from the controller, you can get a bit from it with
 // getBit. bitpos must be between 0 and the length of the CIPType you read.
-func getBit(t CIPType, v any, bitpos int) (bool, error) {
+func GetBit(t CIPType, v any, bitpos int) (bool, error) {
 
 	var err error
 	switch t {
-	case CIPTypeUnknown:
+	case Unknown:
 		return false, errors.New("unknown type")
 		//panic("Unknown type.")
-	case CIPTypeStruct:
+	case Struct:
 		return false, errors.New("got a struct - can't get a bit")
 		//panic("Struct!")
-	case CIPTypeBOOL:
+	case BOOL:
 		if bitpos == 0 {
 			x, ok := v.(bool)
 			if ok {
@@ -321,7 +321,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a bool, but bit %d was requested. must be 0 for bool", bitpos)
 		}
-	case CIPTypeBYTE:
+	case BYTE:
 		if bitpos >= 0 && bitpos < 8 {
 			x, ok := v.(byte)
 			if ok {
@@ -331,7 +331,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a byte, but bit %d was requested. must be 0-7 for byte", bitpos)
 		}
-	case CIPTypeSINT:
+	case SINT:
 		if bitpos >= 0 && bitpos < 8 {
 			x, ok := v.(byte)
 			if ok {
@@ -341,7 +341,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a SINT, but bit %d was requested. must be 0-7 for SINT", bitpos)
 		}
-	case CIPTypeINT:
+	case INT:
 		if bitpos >= 0 && bitpos < 16 {
 			x, ok := v.(int16)
 			if ok {
@@ -351,7 +351,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was an INT, but bit %d was requested. must be 0-15 for INT", bitpos)
 		}
-	case CIPTypeDINT:
+	case DINT:
 		if bitpos >= 0 && bitpos < 32 {
 			x, ok := v.(int32)
 			if ok {
@@ -361,7 +361,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a DINT, but bit %d was requested. must be 0-31 for DINT", bitpos)
 		}
-	case CIPTypeLINT:
+	case LINT:
 		if bitpos >= 0 && bitpos < 64 {
 			x, ok := v.(int64)
 			if ok {
@@ -371,7 +371,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a LINT, but bit %d was requested. must be 0-63 for LINT", bitpos)
 		}
-	case CIPTypeUSINT:
+	case USINT:
 		if bitpos >= 0 && bitpos < 8 {
 			x, ok := v.(byte)
 			if ok {
@@ -381,7 +381,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a USINT, but bit %d was requested. must be 0-7 for USINT", bitpos)
 		}
-	case CIPTypeUINT:
+	case UINT:
 		if bitpos >= 0 && bitpos < 16 {
 			x, ok := v.(uint16)
 			if ok {
@@ -391,7 +391,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was an UINT, but bit %d was requested. must be 0-15 for UINT", bitpos)
 		}
-	case CIPTypeUDINT:
+	case UDINT:
 		if bitpos >= 0 && bitpos < 32 {
 			x, ok := v.(uint32)
 			if ok {
@@ -401,7 +401,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a UDINT, but bit %d was requested. must be 0-31 for UDINT", bitpos)
 		}
-	case CIPTypeLWORD:
+	case LWORD:
 		if bitpos >= 0 && bitpos < 64 {
 			x, ok := v.(uint64)
 			if ok {
@@ -411,11 +411,11 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a LWORD, but bit %d was requested. must be 0-63 for LWORD", bitpos)
 		}
-	case CIPTypeREAL:
+	case REAL:
 		err = fmt.Errorf("value was a REAL, not finding bit of real")
-	case CIPTypeLREAL:
+	case LREAL:
 		err = fmt.Errorf("value was a LEAL, not finding bit of real")
-	case CIPTypeWORD:
+	case WORD:
 		if bitpos >= 0 && bitpos < 16 {
 			x, ok := v.(uint16)
 			if ok {
@@ -425,7 +425,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was an WORD, but bit %d was requested. must be 0-15 for WORD", bitpos)
 		}
-	case CIPTypeDWORD:
+	case DWORD:
 		if bitpos >= 0 && bitpos < 32 {
 			x, ok := v.(uint32)
 			if ok {
@@ -435,7 +435,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 			}
 			err = fmt.Errorf("value was a DWORD, but bit %d was requested. must be 0-31 for DWORD", bitpos)
 		}
-	case CIPTypeSTRING:
+	case STRING:
 		err = fmt.Errorf("value was a STRING, not finding bit of string")
 	default:
 		return false, errors.New("got an unknown type. don't know how to get bit")

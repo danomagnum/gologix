@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 func TestList(t *testing.T) {
@@ -35,14 +36,14 @@ func TestList(t *testing.T) {
 	tests["testdintarr"] = gologix.KnownTag{
 		Name: "TestDintArr",
 		Info: gologix.TagInfo{
-			Type: gologix.CIPTypeDINT,
+			Type: ciptype.DINT,
 		},
 		Array_Order: []int{10},
 	}
 	tests["testdint"] = gologix.KnownTag{
 		Name: "TestDint",
 		Info: gologix.TagInfo{
-			Type: gologix.CIPTypeDINT,
+			Type: ciptype.DINT,
 		},
 		Array_Order: []int{},
 	}

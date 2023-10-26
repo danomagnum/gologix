@@ -1,8 +1,11 @@
-package gologix
+package gologix_tests
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 // these tests came from the tag names in 1756-PM020H-EN-P
@@ -11,12 +14,12 @@ import (
 func TestIOI(t *testing.T) {
 	var tests = []struct {
 		path string
-		t    CIPType
+		t    ciptype.CIPType
 		want []byte
 	}{
 		{
 			"profile[0,1,257]",
-			CIPTypeDINT,
+			ciptype.DINT,
 			[]byte{
 				0x91, 0x07, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x00, // symbolic segment for "profile"
 				0x28, 0x00, // member segment for 0
@@ -26,7 +29,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"profile[1,2,258]",
-			CIPTypeDINT,
+			ciptype.DINT,
 			[]byte{
 				0x91, 0x07, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x00, // symbolic segment for "profile"
 				0x28, 0x01, // member segment for 1
@@ -36,7 +39,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"profile[300,2,258]",
-			CIPTypeDINT,
+			ciptype.DINT,
 			[]byte{
 				0x91, 0x07, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x00, // symbolic segment for "profile"
 				0x29, 0x00, 0x2c, 0x01, // member segment for 300
@@ -46,7 +49,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"dwell3.acc",
-			CIPTypeDINT,
+			ciptype.DINT,
 			[]byte{
 				0x91, 0x06, 0x64, 0x77, 0x65, 0x6C, 0x6C, 0x33, // symbolic segment for "dwell3"
 				0x91, 0x03, 0x61, 0x63, 0x63, 0x00, // member segment for ACC
@@ -54,7 +57,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"struct3.today.rate",
-			CIPTypeStruct,
+			ciptype.Struct,
 			[]byte{
 				0x91, 0x07, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x33, 0x00, // symbolic segment for "struct3"
 				0x91, 0x05, 0x74, 0x6F, 0x64, 0x61, 0x79, 0x00, // symbolic segment for today
@@ -63,7 +66,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"my2dstruct4[1].today.hourlycount[3]",
-			CIPTypeINT,
+			ciptype.INT,
 			[]byte{
 				0x91, 0x0B, 0x6d, 0x79, 0x32, 0x64, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x34, 0x00, // symbolic segment for my2dstruct4
 				0x28, 0x01, // index 1
@@ -74,7 +77,7 @@ func TestIOI(t *testing.T) {
 		},
 		{
 			"My2DstRucT4[1].ToDaY.hoURLycOuNt[3]",
-			CIPTypeINT,
+			ciptype.INT,
 			[]byte{
 				0x91, 0x0B, 0x6d, 0x79, 0x32, 0x64, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x34, 0x00, // symbolic segment for my2dstruct4
 				0x28, 0x01, // index 1
@@ -84,7 +87,7 @@ func TestIOI(t *testing.T) {
 			},
 		},
 	}
-	client := Client{}
+	client := gologix.Client{}
 
 	for _, tt := range tests {
 
@@ -115,16 +118,16 @@ func to_hex(b []byte) []string {
 func TestIOIToBytesAndBackAgain(t *testing.T) {
 	tests := []struct {
 		Tag  string
-		Type CIPType
+		Type ciptype.CIPType
 	}{
-		{"test", CIPTypeDINT},
-		{"test[2]", CIPTypeDINT},
-		{"test[2,3]", CIPTypeDINT},
-		{"test[3000,3]", CIPTypeDINT},
-		{"test.tester", CIPTypeDINT},
-		{"test[2,3].tester", CIPTypeDINT},
+		{"test", ciptype.DINT},
+		{"test[2]", ciptype.DINT},
+		{"test[2,3]", ciptype.DINT},
+		{"test[3000,3]", ciptype.DINT},
+		{"test.tester", ciptype.DINT},
+		{"test[2,3].tester", ciptype.DINT},
 	}
-	client := Client{}
+	client := gologix.Client{}
 
 	for _, tt := range tests {
 
@@ -134,8 +137,8 @@ func TestIOIToBytesAndBackAgain(t *testing.T) {
 			if err != nil {
 				t.Errorf("IOI Generation error. %v", err)
 			}
-			item := NewItem(cipItem_Null, res)
-			path, err := getTagFromPath(&item)
+			item := gologix.NewItem(0, res)
+			path, err := gologix.GetTagFromPath(&item)
 			if err != nil {
 				t.Errorf("problem parsing path from byte item")
 			}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 func TestWrite(t *testing.T) {
@@ -36,7 +37,7 @@ func TestWrite(t *testing.T) {
 
 }
 
-func write_and_check[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, values ...T) {
+func write_and_check[T ciptype.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, values ...T) {
 	var err error
 	var have T
 	t.Run(tag, func(t *testing.T) {
@@ -89,7 +90,7 @@ func TestMultiWrite(t *testing.T) {
 		"program:gologix_tests.MultiWriteDint",
 		"program:gologix_tests.MultiWriteString",
 		"program:gologix_tests.MultiWriteBool"},
-		[]gologix.CIPType{gologix.CIPTypeINT, gologix.CIPTypeREAL, gologix.CIPTypeDINT, gologix.CIPTypeSTRING, gologix.CIPTypeBOOL})
+		[]ciptype.CIPType{ciptype.INT, ciptype.REAL, ciptype.DINT, ciptype.STRING, ciptype.BOOL})
 
 	if err != nil {
 		t.Errorf("problem reading tags back: %v", err)
@@ -138,7 +139,7 @@ func TestMultiWrite(t *testing.T) {
 		"program:gologix_tests.MultiWriteDint",
 		"program:gologix_tests.MultiWriteString",
 		"program:gologix_tests.MultiWriteBool"},
-		[]gologix.CIPType{gologix.CIPTypeINT, gologix.CIPTypeREAL, gologix.CIPTypeDINT, gologix.CIPTypeSTRING, gologix.CIPTypeBOOL})
+		[]ciptype.CIPType{ciptype.INT, ciptype.REAL, ciptype.DINT, ciptype.STRING, ciptype.BOOL})
 
 	if err != nil {
 		t.Errorf("problem reading tags back: %v", err)

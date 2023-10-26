@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cipclass"
 )
 
 // Demo program for reading attributes from a logix PLC
@@ -38,7 +39,7 @@ func main() {
 	// 5 - Status
 	// 6 - Serial Number
 	// 7 - Product Name
-	item, err := client.GetAttrSingle(gologix.CipObject_Identity, 1, 1)
+	item, err := client.GetAttrSingle(cipclass.CipObject_Identity, 1, 1)
 	if err != nil {
 		log.Fatalf("problem reading attribute 1: %v", err)
 	}
@@ -55,7 +56,7 @@ func main() {
 	}
 	log.Printf("Vendor ID: %X", vendor)
 
-	item, err = client.GetAttrList(gologix.CipObject_Identity, 1, 1, 2, 3, 4)
+	item, err = client.GetAttrList(cipclass.CipObject_Identity, 1, 1, 2, 3, 4)
 	if err != nil {
 		log.Fatalf("problem reading list: %v", err)
 	}

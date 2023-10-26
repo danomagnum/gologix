@@ -5,6 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -17,7 +22,7 @@ import (
 //	1 = The handle of the template. not sure what this is for yet
 type msgGetTemplateAttrListResponse struct {
 	SequenceCount   uint16
-	Service         CIPService
+	Service         cipservice.CIPService
 	Reserved        byte
 	Status          byte
 	Status_extended byte
@@ -57,7 +62,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CipObject_Template, CIPInstance(str_instance),
+		cipclass.CipObject_Template, cipclass.CIPInstance(str_instance),
 		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
@@ -66,7 +71,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_GetAttributeList,
+		Service:       cipservice.GetAttributeList,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -88,7 +93,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -126,7 +131,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 type msgMemberInfoHdr struct {
 	SequenceCount uint16
-	Service       CIPService
+	Service       cipservice.CIPService
 	Reserved      byte
 	Status        uint16
 }
@@ -136,8 +141,8 @@ type msgMemberInfo struct {
 	Offset uint32
 }
 
-func (m msgMemberInfo) CIPType() CIPType {
-	return CIPType(m.Type & 0x00FF)
+func (m msgMemberInfo) CIPType() ciptype.CIPType {
+	return ciptype.CIPType(m.Type & 0x00FF)
 }
 
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
@@ -156,7 +161,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		CipObject_Template, CIPInstance(str_instance),
+		cipclass.CipObject_Template, cipclass.CIPInstance(str_instance),
 		//cipObject_Symbol, cipInstance(start_instance),
 	)
 	if err != nil {
@@ -165,7 +170,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
-		Service:       CIPService_Read,
+		Service:       cipservice.Read,
 		PathLength:    byte(p.Len() / 2),
 	}
 
@@ -179,7 +184,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	hdr, data, err := client.send_recv_data(eipcommand.SendUnitData, SerializeItems(reqitems))
 	if err != nil {
 		return UDTDescriptor{}, err
 	}

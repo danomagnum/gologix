@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
 )
 
 // Demo program for doing a generic CIP message.
@@ -32,7 +34,7 @@ func main() {
 	// This generic message would probably stop the controller, but you'd have to figure out how to elevate
 	// the privileges associated with your connection first.  As it stands, you will probably get an 0x0F status code
 	// and it won't do anything.
-	resp, err := client.GenericCIPMessage(gologix.CIPService_Stop, gologix.CipObject_RunMode, 1, []byte{})
+	resp, err := client.GenericCIPMessage(cipservice.Stop, cipclass.CipObject_RunMode, 1, []byte{})
 	if err != nil {
 		log.Printf("problem stopping PLC: %v", err)
 		return

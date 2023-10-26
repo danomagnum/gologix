@@ -3,17 +3,20 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/ciptype"
 )
 
 // todo: move sequence to a different struct and combine msgCIPIOIHeader and CIPMultiIOIHeader
 type msgCIPIOIHeader struct {
 	Sequence uint16
-	Service  CIPService
+	Service  cipservice.CIPService
 	Size     byte
 }
 
 type msgCIPMultiIOIHeader struct {
-	Service CIPService
+	Service cipservice.CIPService
 	Size    byte
 }
 
@@ -22,13 +25,13 @@ type msgCIPMultiIOIHeader struct {
 // a valid path.  The item specifies the cipService that goes with the message
 type msgCIPConnectedServiceReq struct {
 	SequenceCount uint16
-	Service       CIPService
+	Service       cipservice.CIPService
 	PathLength    byte
 }
 
 type msgCIPConnectedMultiServiceReq struct {
 	Sequence     uint16
-	Service      CIPService
+	Service      cipservice.CIPService
 	PathSize     byte
 	Path         [4]byte
 	ServiceCount uint16
@@ -40,7 +43,7 @@ type msgCIPWriteIOIFooter struct {
 }
 
 func (ftr msgCIPWriteIOIFooter) Bytes() []byte {
-	if ftr.DataType == uint16(CIPTypeSTRING) {
+	if ftr.DataType == uint16(ciptype.STRING) {
 		b := []byte{0xA0, 0x02, 0xCE, 0x0F, 0x00, 0x00}
 		binary.LittleEndian.PutUint16(b[4:], ftr.Elements)
 		return b
@@ -52,7 +55,7 @@ func (ftr msgCIPWriteIOIFooter) Bytes() []byte {
 
 }
 func (ftr msgCIPWriteIOIFooter) Len() int {
-	if ftr.DataType == uint16(CIPTypeSTRING) {
+	if ftr.DataType == uint16(ciptype.STRING) {
 		return 6
 	}
 
@@ -73,8 +76,8 @@ type msgCIPResultHeader struct {
 // read the actual value as the type indicated by Type
 type msgCIPReadResultData struct {
 	SequenceCounter uint16
-	Service         CIPService
+	Service         cipservice.CIPService
 	Status          [3]byte
-	Type            CIPType
+	Type            ciptype.CIPType
 	Unknown         byte
 }

@@ -3,6 +3,10 @@ package gologix
 import (
 	"errors"
 	"fmt"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // You will want to defer this after a successfull Connect() to make sure you free up the controller resources
@@ -17,11 +21,11 @@ func (client *Client) Disconnect() error {
 	items[0] = CIPItem{} // null item
 
 	reg_msg := msgCIPMessage_UnRegister{
-		Service:                CIPService_ForwardClose,
+		Service:                cipservice.ForwardClose,
 		CipPathSize:            0x02,
-		ClassType:              cipClass_8bit,
+		ClassType:              cipclass.CipClass_8bit,
 		Class:                  0x06,
-		InstanceType:           cipInstance_8bit,
+		InstanceType:           cipclass.CipInstance_8bit,
 		Instance:               0x01,
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
@@ -34,7 +38,7 @@ func (client *Client) Disconnect() error {
 
 	items[1] = NewItem(cipItem_UnconnectedData, reg_msg)
 
-	err = client.send(cipCommandSendRRData, SerializeItems(items)) // 0x65 is register session
+	err = client.send(eipcommand.SendRRData, SerializeItems(items)) // 0x65 is register session
 	if err != nil {
 		err2 := client.disconnect()
 		return fmt.Errorf("couldn't send unconnect req %w: %v", err, err2)
@@ -62,11 +66,11 @@ func (client *Client) disconnect() error {
 }
 
 type msgCIPMessage_UnRegister struct {
-	Service                CIPService
+	Service                cipservice.CIPService
 	CipPathSize            byte
-	ClassType              CIPClassSize
+	ClassType              cipclass.CIPClassSize
 	Class                  byte
-	InstanceType           cipInstanceSize
+	InstanceType           cipclass.CipInstanceSize
 	Instance               byte
 	Priority               byte
 	TimeoutTicks           byte

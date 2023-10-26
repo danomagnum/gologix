@@ -8,6 +8,11 @@ import (
 	"math/rand"
 	"net"
 	"time"
+
+	"github.com/danomagnum/gologix/cipclass"
+	"github.com/danomagnum/gologix/cippath"
+	"github.com/danomagnum/gologix/cipservice"
+	"github.com/danomagnum/gologix/eipcommand"
 )
 
 // Connect to the PLC.
@@ -33,7 +38,7 @@ func (client *Client) Connect() error {
 	// default path is backplane -> slot 0
 	var err error
 	if client.Path == nil {
-		client.Path, err = Serialize(CIPPort{PortNo: 1}, CIPAddress(0))
+		client.Path, err = Serialize(cippath.CIPPort{PortNo: 1}, cipclass.CIPAddress(0))
 		if err != nil {
 			return fmt.Errorf("can't setup default path. %w", err)
 
@@ -53,7 +58,7 @@ func (client *Client) register_session() error {
 
 	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
 	//client.Send(cipCommandRegisterSession, reg_msg)
-	resp_hdr, resp_data, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
+	resp_hdr, resp_data, err := client.send_recv_data(eipcommand.RegisterSession, reg_msg)
 	//resp_hdr, resp_data, err := client.recv_data(cipCommandRegisterSession, reg_msg)
 	if err != nil {
 		return fmt.Errorf("couldn't get connect response %w", err)
@@ -142,7 +147,7 @@ func (client *Client) connect() error {
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
-	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
+	hdr, dat, err := client.send_recv_data(eipcommand.SendRRData, SerializeItems(items0))
 	if err != nil {
 		return err
 	}
@@ -189,7 +194,7 @@ func (client *Client) connect() error {
 		items0 := make([]CIPItem, 2)
 		items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 		items0[1] = fwd_open
-		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
+		hdr, dat, err := client.send_recv_data(eipcommand.SendRRData, SerializeItems(items0))
 		if err != nil {
 			return err
 		}
@@ -251,7 +256,7 @@ type msgPreItemData struct {
 }
 
 type msgCIPMessageRouterResponse struct {
-	Service    CIPService
+	Service    cipservice.CIPService
 	Reserved   byte // always 0
 	Status     byte // result status
 	Status_Len byte // additional result word count - can be zero
@@ -268,7 +273,7 @@ type msgEIPForwardOpen_Reply struct {
 }
 
 type msgEIPForwardClose struct {
-	Service                CIPService
+	Service                cipservice.CIPService
 	PathSize               byte
 	ClassType              byte
 	Class                  byte
@@ -285,7 +290,7 @@ type msgEIPForwardClose struct {
 // in this message T is for target and O is for originator so
 // TO is target -> originator and OT is originator -> target
 type msgEIPForwardOpen_Standard struct {
-	Service                CIPService
+	Service                cipservice.CIPService
 	PathSize               byte
 	ClassType              byte
 	Class                  byte
@@ -309,12 +314,12 @@ type msgEIPForwardOpen_Standard struct {
 
 type msgEIPForwardOpen_Large struct {
 	// service
-	Service CIPService
+	Service cipservice.CIPService
 	// path
 	PathSize     byte
-	ClassType    CIPClassSize
+	ClassType    cipclass.CIPClassSize
 	Class        byte
-	InstanceType cipInstanceSize
+	InstanceType byte
 	Instance     byte
 
 	// service specific data
@@ -342,7 +347,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	p, err := Serialize(
 		client.Path,
 		//CIPPort{PortNo: 1}, CIPAddress(0),
-		CipObject_MessageRouter, CIPInstance(1))
+		cipclass.CipObject_MessageRouter, cipclass.CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -352,12 +357,12 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	ConnectionParams = ConnectionParams << 16 // for long packet
 	ConnectionParams += uint32(client.ConnectionSize)
 
-	msg.Service = CIPService_LargeForwardOpen
+	msg.Service = cipservice.LargeForwardOpen
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
-	msg.ClassType = cipClass_8bit
-	msg.Class = byte(CipObject_ConnectionManager)
-	msg.InstanceType = cipInstance_8bit
+	msg.ClassType = cipclass.CipClass_8bit
+	msg.Class = byte(cipclass.CipObject_ConnectionManager)
+	msg.InstanceType = byte(cipclass.CipInstance_8bit)
 	msg.Instance = 0x01
 	// end of path
 	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)
@@ -400,7 +405,7 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 
 	p, err := Serialize(
 		client.Path,
-		CipObject_MessageRouter, CIPInstance(1))
+		cipclass.CipObject_MessageRouter, cipclass.CIPInstance(1))
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
@@ -408,12 +413,12 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 	client.ConnectionSerialNumber = uint16(rand.Uint32())
 	ConnectionParams := uint16(0x43F6)
 
-	msg.Service = CIPService_ForwardOpen
+	msg.Service = cipservice.ForwardOpen
 	// this next section is the path
 	msg.PathSize = 0x02 // length in words
-	msg.ClassType = byte(cipClass_8bit)
-	msg.Class = byte(CipObject_ConnectionManager)
-	msg.InstanceType = byte(cipInstance_8bit)
+	msg.ClassType = byte(cipclass.CipClass_8bit)
+	msg.Class = byte(cipclass.CipObject_ConnectionManager)
+	msg.InstanceType = byte(cipclass.CipInstance_8bit)
 	msg.Instance = 0x01
 	// end of path
 	msg.Priority = 0x07     // 0x0A means normal multiplier (about 1 second?)
@@ -441,7 +446,7 @@ func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
 }
 
 type msgEIPForwardOpen_Standard_Reply struct {
-	Service                CIPService
+	Service                cipservice.CIPService
 	Reserved               byte
 	Status                 byte
 	StatusLen              byte

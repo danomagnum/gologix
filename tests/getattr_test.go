@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cipclass"
 )
 
 func TestGetAttrSingle(t *testing.T) {
@@ -23,7 +24,7 @@ func TestGetAttrSingle(t *testing.T) {
 	}()
 
 	//VendorID (UINT, attribute 1)
-	i, err := client.GetAttrSingle(gologix.CipObject_Identity, 1, 1)
+	i, err := client.GetAttrSingle(cipclass.CipObject_Identity, 1, 1)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -40,7 +41,7 @@ func TestGetAttrSingle(t *testing.T) {
 
 	//
 	//DeviceType (UINT, attribute 2)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 2)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 2)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -55,7 +56,7 @@ func TestGetAttrSingle(t *testing.T) {
 	}
 
 	//ProductCode (UINT, attribute 3)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 3)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 3)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -71,7 +72,7 @@ func TestGetAttrSingle(t *testing.T) {
 
 	//MajorRevision (USINT, attribute 4)
 	//MinorRevision (USINT, attribute 4)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 4)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 4)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -91,7 +92,7 @@ func TestGetAttrSingle(t *testing.T) {
 	}
 
 	//Status (UINT, attribute 5)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 5)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 5)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -103,7 +104,7 @@ func TestGetAttrSingle(t *testing.T) {
 	log.Printf("status: 0x%X", val)
 
 	//SerialNumber (UDINT, attribute 6)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 6)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 6)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -118,7 +119,7 @@ func TestGetAttrSingle(t *testing.T) {
 	}
 
 	//ProductName (STR_32, attribute 7)
-	i, err = client.GetAttrSingle(gologix.CipObject_Identity, 1, 7)
+	i, err = client.GetAttrSingle(cipclass.CipObject_Identity, 1, 7)
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
 	}
@@ -169,7 +170,7 @@ func TestGetAttrList(t *testing.T) {
 	}()
 
 	//VendorID (UINT, attribute 1)
-	i, err := client.GetAttrList(gologix.CipObject_Identity, 1,
+	i, err := client.GetAttrList(cipclass.CipObject_Identity, 1,
 		1, 2, 3, 4, 6, 7) // properties
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)

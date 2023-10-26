@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/danomagnum/gologix"
+	"github.com/danomagnum/gologix/cippath"
 )
 
 // these types will be the input and output data section for the io connection.
@@ -58,7 +59,7 @@ func main() {
 	// an IO handler in slot 2
 	//p3 := gologix.IOProvider[InStr, OutStr]{}
 	p3 := gologix.IOChannelProvider[InStr, OutStr]{}
-	path3, err := gologix.ParsePath("1,2")
+	path3, err := cippath.ParsePath("1,2")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)

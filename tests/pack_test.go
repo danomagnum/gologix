@@ -1,8 +1,10 @@
-package gologix
+package gologix_tests
 
 import (
 	"bytes"
 	"testing"
+
+	"github.com/danomagnum/gologix"
 )
 
 func TestPack(t *testing.T) {
@@ -47,7 +49,7 @@ func TestPack(t *testing.T) {
 	b := bytes.Buffer{}
 	//binary.Write(&b, binary.LittleEndian, s)
 
-	Pack(&b, CIPPack{}, s)
+	gologix.Pack(&b, gologix.CIPPack{}, s)
 
 	have := b.Bytes()
 
@@ -70,7 +72,7 @@ func TestPack(t *testing.T) {
 	}
 
 	have2 := S{}
-	_, err := Unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	_, err := gologix.Unpack(bytes.NewBuffer(b.Bytes()), gologix.CIPPack{}, &have2)
 	if err != nil {
 		t.Errorf("problem unpacking bytes. %v", err)
 	}
@@ -125,7 +127,7 @@ func TestPack2(t *testing.T) {
 	b := bytes.Buffer{}
 	//binary.Write(&b, binary.LittleEndian, s)
 
-	Pack(&b, CIPPack{}, s)
+	gologix.Pack(&b, gologix.CIPPack{}, s)
 
 	have := b.Bytes()
 
@@ -152,7 +154,7 @@ func TestPack2(t *testing.T) {
 	}
 
 	have2 := S{}
-	_, err := Unpack(bytes.NewBuffer(b.Bytes()), CIPPack{}, &have2)
+	_, err := gologix.Unpack(bytes.NewBuffer(b.Bytes()), gologix.CIPPack{}, &have2)
 	if err != nil {
 		t.Errorf("problem unpacking bytes. %v", err)
 	}
