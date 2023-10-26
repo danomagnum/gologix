@@ -50,12 +50,20 @@ func ReadItems(r io.Reader) ([]CIPItem, error) {
 	return items, nil
 }
 
+// The CIPItem is one of the core abstractions this library uses.
+//
+// When a response comes back from the controller it is structured in a CIPItem which can then
+// be used to deserialize it with its various methods.
 type CIPItem struct {
 	Header cipItemHeader
 	Data   []byte
 	Pos    int
 }
 
+// Allows the CIPItem to behave as an io.Reader
+//
+// Reads bytes from the current position in the item's buffer to the end or
+// until we reach the requested read size.
 func (item *CIPItem) Read(p []byte) (n int, err error) {
 	if item.Pos >= len(item.Data) {
 		return 0, io.EOF
@@ -64,6 +72,10 @@ func (item *CIPItem) Read(p []byte) (n int, err error) {
 	item.Pos += n
 	return
 }
+
+// Allows the CIPItem to behave as an io.Writer.
+//
+// Appends bytes to the end of the item's buffer.
 func (item *CIPItem) Write(p []byte) (n int, err error) {
 	item.Data = append(item.Data, p...)
 	n = len(p)
@@ -84,10 +96,12 @@ func NewItem(id CIPItemID, str any) CIPItem {
 	return c
 }
 
+// returns all unprocessed bytes remaining in the item's buffer.
 func (item *CIPItem) Rest() []byte {
 	return item.Data[item.Pos:]
 }
 
+// Retreive the next byte in the item's buffer and increment the buffer position.
 func (item *CIPItem) Byte() (byte, error) {
 	if len(item.Data) <= item.Pos {
 		return 0, fmt.Errorf("item out of data")
@@ -97,6 +111,8 @@ func (item *CIPItem) Byte() (byte, error) {
 	return b, nil
 }
 
+// Retreive 2 bytes from the buffer and increment the buffer position by 2.  The
+// data is interpreted as a 16 bit unsigned integer.
 func (item *CIPItem) Uint16() (uint16, error) {
 	if len(item.Data) <= item.Pos+1 {
 		return 0, fmt.Errorf("item out of data")
@@ -106,6 +122,8 @@ func (item *CIPItem) Uint16() (uint16, error) {
 	return val, nil
 }
 
+// Retreive 2 bytes from the buffer and increment the buffer position by 2.  The
+// data is interpreted as a 16 bit signed integer.
 func (item *CIPItem) Int16() (int16, error) {
 	if len(item.Data) <= item.Pos+1 {
 		return 0, fmt.Errorf("item out of data")
@@ -115,6 +133,8 @@ func (item *CIPItem) Int16() (int16, error) {
 	return int16(val), nil
 }
 
+// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// data is interpreted as a 32 bit unsigned integer.
 func (item *CIPItem) Uint32() (uint32, error) {
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
@@ -124,6 +144,8 @@ func (item *CIPItem) Uint32() (uint32, error) {
 	return val, nil
 }
 
+// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// data is interpreted as a 32 bit signed integer.
 func (item *CIPItem) Int32() (int32, error) {
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
@@ -133,6 +155,8 @@ func (item *CIPItem) Int32() (int32, error) {
 	return int32(val), nil
 }
 
+// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// data is interpreted as a 64 bit unsigned integer.
 func (item *CIPItem) Uint64() (uint64, error) {
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
@@ -142,6 +166,8 @@ func (item *CIPItem) Uint64() (uint64, error) {
 	return val, nil
 }
 
+// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// data is interpreted as a 64 bit signed integer.
 func (item *CIPItem) Int64() (int64, error) {
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
@@ -151,6 +177,8 @@ func (item *CIPItem) Int64() (int64, error) {
 	return int64(val), nil
 }
 
+// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// data is interpreted as a 32 bit floating point number.
 func (item *CIPItem) Float32() (float32, error) {
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
@@ -160,6 +188,8 @@ func (item *CIPItem) Float32() (float32, error) {
 	return val, err
 }
 
+// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// data is interpreted as a 64 bit floating point number.
 func (item *CIPItem) Float64() (float64, error) {
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
@@ -169,7 +199,7 @@ func (item *CIPItem) Float64() (float64, error) {
 	return val, err
 }
 
-// Serialize a sturcture into the item's data.
+// Serialize a structure into the item's data.
 //
 // If called more than once the []byte data for the additional structures is appended to the
 // end of the item's data buffer.
@@ -209,8 +239,8 @@ func (item *CIPItem) Serialize(str any) {
 
 // DeSerialize an item's data into the given sturcture.
 //
-// If called more than once the []byte data for the additional structures is continuously
-// read from the current position of the item's data buffer.
+// The position in the item's buffer is updated to account for the number of bytes
+// required.
 func (item *CIPItem) DeSerialize(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }
@@ -230,7 +260,8 @@ func (item *CIPItem) Bytes() []byte {
 	return b.Bytes()
 }
 
-// Sets the items data position back to zero.  Can be used to overrite the item's internal data or to re-read the item's data
+// Sets the items data position back to zero without removing the data.
+// Can be used to overrite the item's internal data or to re-read the item's data
 func (item *CIPItem) Reset() {
 	item.Pos = 0
 }

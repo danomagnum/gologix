@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// You will want to defer this after a successfull Connect() to make sure you free up the controller resources
 // to disconect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
 	if !client.Connected {

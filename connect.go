@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Connect to the PLC.
 func (client *Client) Connect() error {
 	if client.ConnectionSize == 0 {
 		client.ConnectionSize = 4000

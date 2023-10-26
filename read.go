@@ -9,6 +9,9 @@ import (
 	"reflect"
 )
 
+// Read a single tag into data.  Data should be a pointer to the variable where the data will be deposited.
+//
+// If the data type does not match what is returned by the controller you will get an error.
 func (client *Client) Read(tag string, data any) error {
 	err := client.checkConnection()
 	if err != nil {
@@ -285,6 +288,9 @@ func (client *Client) Read(tag string, data any) error {
 	return nil
 }
 
+// Read a single tag with the datatype given by a parameter instead of inferred from a pointer.
+//
+// The data is returned as an interface{} so you'll probably have to type assert it.
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 
 	err := client.checkConnection()
@@ -482,8 +488,10 @@ type CIPStructHeader struct {
 	Unknown uint16
 }
 
-// tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
+// Tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
+//
+// To read multiple tags without creating a tagged struct, use the ReadList() function instead.
 func (client *Client) ReadMulti(tag_str any) error {
 
 	err := client.checkConnection()

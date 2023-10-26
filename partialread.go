@@ -7,6 +7,12 @@ import (
 	"log"
 )
 
+// Read a list of tags of specified types.
+//
+// The result slice will be in the same order as the tag list.  Each value in the list will be an
+// interface{} so you'll need to type assert to get the values back out.
+//
+// To read multiple tags at once without type assertion you can use ReadMulti()
 func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {

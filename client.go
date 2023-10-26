@@ -13,7 +13,7 @@ import (
 // you have to change this read sequencer every time you make a new tag request.  If you don't, you
 // won't get an error but it will return the last value you requested again.
 // You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
-// Use Sequencer() instead of accessing this directly to achieve that.
+// Use sequencer() instead of accessing this directly to achieve that.
 var sequenceValue uint32 = 0
 
 func init() {
@@ -24,6 +24,9 @@ func sequencer() uint32 {
 	return atomic.AddUint32(&sequenceValue, 1)
 }
 
+// Client is the main class for reading and writing tags in the PLC.
+// You probably want to create a new client using NewClient() instead of instantiating
+// the struct directly.
 type Client struct {
 	// ip address for connecting to the PLC comms module.
 	IPAddress string
@@ -77,8 +80,8 @@ type Client struct {
 	ioi_cache map[string]*tagIOI
 }
 
-// create a client with reasonable defaults for the given ip address.
-// Default path is backplane, slot 0
+// Create a client with reasonable defaults for the given ip address.
+// Default path is backplane, slot 0.
 func NewClient(ip string) *Client {
 	// default path is backplane -> slot 0
 	p, err := ParsePath("1,0")

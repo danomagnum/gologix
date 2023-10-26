@@ -8,7 +8,9 @@ import (
 )
 
 // The write equivalent to ReadMulti.  value should be a struct where each field has a tag of the form `gologix:"tagname"` that maps
-// what tag in the controller it corresponds to
+// what tag in the controller it corresponds to.
+//
+// To write multiple tags without creating a tagged struct, look at WriteMap()
 func (client *Client) WriteMulti(value any) error {
 	err := client.checkConnection()
 	if err != nil {

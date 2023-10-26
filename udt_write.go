@@ -76,6 +76,10 @@ func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 
 }
 
+// Write multiple tags at once where the tagnames are the keys of a map and the values are the corresponding
+// values.
+//
+// To write multiple tags with a struct, see WriteMulti()
 func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	// build the tag list from the structure
