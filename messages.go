@@ -78,17 +78,3 @@ type msgCIPReadResultData struct {
 	Type            CIPType
 	Unknown         byte
 }
-
-type msgGetAttrSignleReq struct {
-	Class     CIPClass
-	Instance  CIPInstance
-	Attribute CIPAttribute
-}
-
-func (msg msgGetAttrSignleReq) Bytes() []byte {
-	b := make([]byte, 16)
-	b = append(b, msg.Class.Bytes()...)
-	b = append(b, msg.Instance.Bytes()...)
-	b = append(b, msg.Attribute.Bytes()...)
-	return b
-}

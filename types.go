@@ -226,9 +226,9 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 	var err error
 	switch t {
 	case CIPTypeUnknown:
-		return nil, fmt.Errorf("Unknown Type")
+		return nil, fmt.Errorf("unknown type")
 	case CIPTypeStruct:
-		return nil, fmt.Errorf("Struct!")
+		return nil, fmt.Errorf("don't know what to do with a struct")
 	case CIPTypeBOOL:
 		var trueval bool
 		err = binary.Read(r, binary.LittleEndian, &trueval)
@@ -308,7 +308,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 	var err error
 	switch t {
 	case CIPTypeUnknown:
-		return false, errors.New("unknown type.")
+		return false, errors.New("unknown type")
 		//panic("Unknown type.")
 	case CIPTypeStruct:
 		return false, errors.New("got a struct - can't get a bit")

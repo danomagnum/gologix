@@ -23,13 +23,10 @@ type IOProvider[Tin, Tout any] struct {
 	Out      *Tout
 }
 
-var io_read_test_counter byte = 0
-
 // this gets called with the IO setup forward open as the items
 func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
 	p.InMutex.Lock()
 	defer p.InMutex.Unlock()
-	io_read_test_counter++
 	b := bytes.Buffer{}
 	_ = Pack(&b, CIPPack{}, *(p.In))
 	dat := b.Bytes()
