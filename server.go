@@ -72,7 +72,9 @@ func (srv *Server) Serve() error {
 		return fmt.Errorf("couldn't open tcp listener. %w", err)
 	}
 
-	srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
+	//srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
+	udpa := net.UDPAddr{Port: 2222}
+	srv.UDPListener, err = net.ListenUDP("udp", &udpa)
 	log.Printf("Listening on UDP port 2222")
 	if err != nil {
 		return fmt.Errorf("couldn't open udp listener. %v", err)

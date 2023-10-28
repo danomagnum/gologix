@@ -88,7 +88,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("error getting reserved byte. %w", err)
 	}
-	tag, err := getTagFromPath(&item)
+	tag, err := GetTagFromPath(&item)
 	if err != nil {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}
@@ -201,7 +201,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("error getting reserved byte. %w", err)
 	}
-	tag, err := getTagFromPath(&item)
+	tag, err := GetTagFromPath(&item)
 	if err != nil {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}

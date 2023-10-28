@@ -18,7 +18,7 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 		return fmt.Errorf("problem deserializing item length %w", err)
 	}
 
-	tag, err := getTagFromPath(&item)
+	tag, err := GetTagFromPath(&item)
 	if err != nil {
 		return fmt.Errorf("problem deserializing tag bytes %w", err)
 	}
@@ -115,7 +115,7 @@ func (h *serverTCPHandler) connectedFragRead(connection *serverConnection, item 
 	if err != nil {
 		return fmt.Errorf("error getting path len: %w", err)
 	}
-	tag, err := getTagFromPath(&item)
+	tag, err := GetTagFromPath(&item)
 	if err != nil {
 		return fmt.Errorf("couldn't parse path: %w", err)
 	}
