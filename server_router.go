@@ -65,6 +65,15 @@ type TagProvider interface {
 // If a tag is written that does not exist, that will create it.
 // if a tag is read that does not exist, that will result in an error
 // it does not handle IO messages.
+//
+// The built-in MapTagProvider type also only provides rudimentary tag access.
+// It doesn't support addressing arrays directly
+//
+//	It interprets "testtag[3]" as a tag with a literal "[3]" as a string at the end of the map key.
+//	Same thing for nested UDT tags - it interprets the dots as literals in the map keys.
+//
+// So if you need those for testing you'll have to kind of fake out the tag mapping on the server end by
+// creating an individual entry in the map for each nested tag with the key being the full access path.
 type MapTagProvider struct {
 	Mutex sync.Mutex
 	Data  map[string]any
