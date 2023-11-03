@@ -283,17 +283,17 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 			return fmt.Errorf("problem handling write. %w", err)
 		}
 	case CIPService_FragRead:
-		err = h.connectedData(items)
+		err = h.connectedRead(items)
 		if err != nil {
 			return fmt.Errorf("problem handling frag read. %w", err)
 		}
 	case CIPService_Read:
-		err = h.connectedData(items)
+		err = h.connectedRead(items)
 		if err != nil {
-			return fmt.Errorf("problem handling frag read. %w", err)
+			return fmt.Errorf("problem handling non-frag read. %w", err)
 		}
 	case CIPService_MultipleService:
-		err = h.connectedData(items)
+		err = h.connectedMulti(items)
 		if err != nil {
 			return fmt.Errorf("problem handling multi service. %w", err)
 		}
@@ -348,7 +348,7 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 		if err != nil {
 			return fmt.Errorf("failed to get service. %w", err)
 		}
-		return h.connectedData(items)
+		return h.connectedRead(items)
 	case cipItem_UnconnectedData:
 		return h.unconnectedData(items[1])
 	}

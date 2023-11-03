@@ -169,6 +169,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	}
 	_ = hdr
 	_ = data
+	//TODO: do something with the result here!
 
 	return nil
 }
