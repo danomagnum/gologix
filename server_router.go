@@ -14,24 +14,24 @@ import (
 // the .Handle() method.  Instead of an http path you use a CIP route byte slice and
 // instead of a handler function you use an object that provides the TagProvider interface.
 type PathRouter struct {
-	Path map[string]TagProvider
+	Path map[string]CIPEndpoint
 }
 
 func NewRouter() *PathRouter {
 	p := new(PathRouter)
-	p.Path = make(map[string]TagProvider)
+	p.Path = make(map[string]CIPEndpoint)
 	return p
 }
 
-func (router *PathRouter) Handle(path []byte, p TagProvider) {
+func (router *PathRouter) Handle(path []byte, p CIPEndpoint) {
 	if router.Path == nil {
-		router.Path = make(map[string]TagProvider)
+		router.Path = make(map[string]CIPEndpoint)
 	}
 	router.Path[string(path)] = p
 }
 
 // find the tag provider for a given cip path
-func (router *PathRouter) Resolve(path []byte) (TagProvider, error) {
+func (router *PathRouter) Resolve(path []byte) (CIPEndpoint, error) {
 	tp, ok := router.Path[string(path)]
 	if !ok {
 		return nil, fmt.Errorf("path %v not recognized", path)
@@ -42,7 +42,7 @@ func (router *PathRouter) Resolve(path []byte) (TagProvider, error) {
 // This interface specifies all the needed methods to handle incoming CIP messages.
 // currently supports Class1 IO messages and Class3 tag read/write messages.
 // if a type only handles some subset, it should return an error for those methods
-type TagProvider interface {
+type CIPEndpoint interface {
 	TagRead(tag string, qty int16) (any, error)
 	TagWrite(tag string, value any) error
 

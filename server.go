@@ -521,7 +521,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	return nil
 }
 
-func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp TagProvider, conn *serverConnection) {
+func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp CIPEndpoint, conn *serverConnection) {
 	rpi := time.Duration(fwd_open.TORPI) * time.Microsecond
 	log.Printf("IO RPI of %v", rpi)
 	t := time.NewTicker(rpi)
