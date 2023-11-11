@@ -43,6 +43,7 @@ func (router *PathRouter) Resolve(path []byte) (CIPEndpoint, error) {
 // currently supports Class1 IO messages and Class3 tag read/write messages.
 // if a type only handles some subset, it should return an error for those methods
 type CIPEndpoint interface {
+	// These functions are called when a cip service attempts to use the write or read services.
 	TagRead(tag string, qty int16) (any, error)
 	TagWrite(tag string, value any) error
 

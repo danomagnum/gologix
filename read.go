@@ -493,6 +493,10 @@ type CIPStructHeader struct {
 //
 // To read multiple tags without creating a tagged struct, use the ReadList() function instead.
 func (client *Client) ReadMulti(tag_str any) error {
+	switch x := tag_str.(type) {
+	case map[string]any:
+		return client.ReadMap(x)
+	}
 
 	err := client.checkConnection()
 	if err != nil {
@@ -725,4 +729,49 @@ type msgMultiReadResult struct {
 	Status    uint16
 	Type      CIPType
 	Reserved2 byte
+}
+
+// Function for reading multiple tags at once where the tags are in a go map.
+// the keys in the map are the tag names, and the values need to be the correct type
+// for the tag.  The ReadMap function will update the values in the map to the current values
+// in the controller.
+//
+// Example:
+//
+//	m := make(map[string]any) // define the map
+//	m["TestInt"] = int16(0) // the controller has a tag "TestInt" that is an INT
+//	m["TestDint"] = int32(0) // the controller has a tag "TestDint" that is a DINT
+//  err = client.ReadMulti(&mr) // do the read.
+
+func (client *Client) ReadMap(m map[string]any) error {
+
+	err := client.checkConnection()
+	if err != nil {
+		return fmt.Errorf("could not start multi read: %w", err)
+	}
+
+	size := len(m)
+	tags := make([]string, 0, size)
+	types := make([]CIPType, 0, size)
+	i := 0
+	for k := range m {
+		v := m[k]
+		ct := GoVarToCIPType(v)
+		types = append(types, ct)
+		tags = append(tags, k)
+		i++
+	}
+
+	// first generate IOIs for each tag
+	result_values, err := client.ReadList(tags, types)
+	if err != nil {
+		return fmt.Errorf("problem in read list: %w", err)
+	}
+
+	// now unpack the result values back into the given structure
+	for i := range result_values {
+		m[tags[i]] = result_values[i]
+	}
+
+	return nil
 }
