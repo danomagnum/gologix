@@ -185,7 +185,7 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	typ := GoVarToCIPType(val)
+	typ, _ := GoVarToCIPType(val)
 
 	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
 }
@@ -228,7 +228,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
 	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
-	typ := GoVarToCIPType(result)
+	typ, _ := GoVarToCIPType(result)
 
 	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
 

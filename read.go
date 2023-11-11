@@ -397,7 +397,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 
 func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
-	ct := GoVarToCIPType(t[0])
+	ct, _ := GoVarToCIPType(t[0])
 	val, err := client.Read_single(tag, ct, elements)
 	if err != nil {
 		return t, err
@@ -441,7 +441,7 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 
 func read[T GoLogixTypes](client *Client, tag string) (T, error) {
 	var t T
-	ct := GoVarToCIPType(t)
+	ct, _ := GoVarToCIPType(t)
 	val, err := client.Read_single(tag, ct, 1)
 	if err != nil {
 		return t, err
@@ -514,7 +514,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		field := vf[i]
 		tagpath, ok := field.Tag.Lookup("gologix")
 		v := val.Field(i).Interface()
-		ct := GoVarToCIPType(v)
+		ct, _ := GoVarToCIPType(v)
 		types = append(types, ct)
 		if !ok {
 			continue
@@ -755,7 +755,7 @@ func (client *Client) ReadMap(m map[string]any) error {
 	i := 0
 	for k := range m {
 		v := m[k]
-		ct := GoVarToCIPType(v)
+		ct, _ := GoVarToCIPType(v)
 		types = append(types, ct)
 		tags = append(tags, k)
 		i++

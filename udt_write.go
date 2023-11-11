@@ -86,7 +86,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	tags := make([]string, 0)
 	types := make([]CIPType, 0)
 	for k := range tag_str {
-		ct := GoVarToCIPType(tag_str[k])
+		ct, _ := GoVarToCIPType(tag_str[k])
 		types = append(types, ct)
 		tags = append(tags, k)
 	}

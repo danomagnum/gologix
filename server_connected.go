@@ -172,7 +172,8 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 
 			// build this portion of the response msg
 
-			rhdr := msgMultiReadResult{Service: svc.AsResponse(), Status: 0, Type: GoVarToCIPType(result)}
+			typ, _ := GoVarToCIPType(result)
+			rhdr := msgMultiReadResult{Service: svc.AsResponse(), Status: 0, Type: typ}
 			b, err := Serialize(rhdr)
 			if err != nil {
 				return fmt.Errorf("problem serializing header for %s: %w", tagname, err)
@@ -303,7 +304,7 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
-	typ := GoVarToCIPType(result)
+	typ, _ := GoVarToCIPType(result)
 	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
 	return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)

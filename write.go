@@ -48,7 +48,7 @@ func (client *Client) Write(tag string, value any) error {
 // write a single value to a single tag.
 func (client *Client) write_single(tag string, value any) error {
 	//service = 0x4D // cipService_Write
-	datatype := GoVarToCIPType(value)
+	datatype, _ := GoVarToCIPType(value)
 	ioi, err := client.NewIOI(tag, datatype)
 	if err != nil {
 		return fmt.Errorf("problem generating IOI. %w", err)

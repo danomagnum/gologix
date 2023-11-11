@@ -19,54 +19,55 @@ type GoLogixTypes interface {
 }
 
 // return the CIPType that corresponds to go type of variable T
-func GoVarToCIPType(T any) CIPType {
-	switch T.(type) {
+// also return the element count
+func GoVarToCIPType(T any) (CIPType, int) {
+	switch x := T.(type) {
 	case bool:
-		return CIPTypeBOOL
+		return CIPTypeBOOL, 1
 	case byte:
-		return CIPTypeBYTE
+		return CIPTypeBYTE, 1
 	case uint16:
-		return CIPTypeUINT
+		return CIPTypeUINT, 1
 	case int16:
-		return CIPTypeINT
+		return CIPTypeINT, 1
 	case uint32:
-		return CIPTypeUDINT
+		return CIPTypeUDINT, 1
 	case int32:
-		return CIPTypeDINT
+		return CIPTypeDINT, 1
 	case uint64:
-		return CIPTypeLWORD
+		return CIPTypeLWORD, 1
 	case int64:
-		return CIPTypeLINT
+		return CIPTypeLINT, 1
 	case float32:
-		return CIPTypeREAL
+		return CIPTypeREAL, 1
 	case float64:
-		return CIPTypeLREAL
+		return CIPTypeLREAL, 1
 	case string:
-		return CIPTypeSTRING
+		return CIPTypeSTRING, 1
 	case []byte:
-		return CIPTypeBYTE
+		return CIPTypeBYTE, len(x)
 	case []uint16:
-		return CIPTypeUINT
+		return CIPTypeUINT, len(x)
 	case []int16:
-		return CIPTypeINT
+		return CIPTypeINT, len(x)
 	case []uint32:
-		return CIPTypeUDINT
+		return CIPTypeUDINT, len(x)
 	case []int32:
-		return CIPTypeDINT
+		return CIPTypeDINT, len(x)
 	case []uint64:
-		return CIPTypeLWORD
+		return CIPTypeLWORD, len(x)
 	case []int64:
-		return CIPTypeLINT
+		return CIPTypeLINT, len(x)
 	case []float32:
-		return CIPTypeREAL
+		return CIPTypeREAL, len(x)
 	case []float64:
-		return CIPTypeLREAL
+		return CIPTypeLREAL, len(x)
 	case []string:
-		return CIPTypeSTRING
+		return CIPTypeSTRING, len(x)
 	case interface{}:
-		return CIPTypeStruct
+		return CIPTypeStruct, 1
 	}
-	return CIPTypeUnknown
+	return CIPTypeUnknown, 1
 }
 
 const (
