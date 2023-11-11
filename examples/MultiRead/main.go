@@ -32,10 +32,12 @@ func main() {
 	// define a struct where fields have the tag to read from the controller specified
 	// note that tag names are case insensitive.
 	type multiread struct {
-		TestInt  int16 `gologix:"TestInt"`
-		TestDint int32 `gologix:"TestDint"`
+		TestInt  int16   `gologix:"TestInt"`
+		TestDint int32   `gologix:"TestDint"`
+		TestArr  []int32 `gologix:"TestDintArr[2]"`
 	}
 	var mr multiread
+	mr.TestArr = make([]int32, 5)
 
 	// call the read multi function with the structure passed in as a pointer.
 	err = client.ReadMulti(&mr)

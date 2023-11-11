@@ -13,24 +13,30 @@ import (
 // interface{} so you'll need to type assert to get the values back out.
 //
 // To read multiple tags at once without type assertion you can use ReadMulti()
-func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
+func (client *Client) ReadList(tagnames []string, types []CIPType, elements []int) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not start list read: %w", err)
 	}
 	n := 0
 	n_new := 0
-	total := len(tags)
+	total := len(tagnames)
 	results := make([]any, 0, total)
 	msgs := 0
 
+	tags := make([]TagDescr, total)
+
+	for i := range tagnames {
+		tags[i] = TagDescr{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
+	}
+
 	for n < total {
 		msgs += 1
-		n_new, err = client.countIOIsThatFit(tags[n:], types[n:])
+		n_new, err = client.countIOIsThatFit(tags[n:])
 		if err != nil {
 			return nil, err
 		}
-		subresults, err := client.readList(tags[n:n+n_new], types[n:n+n_new])
+		subresults, err := client.readList(tags[n : n+n_new])
 		n += n_new
 		if err != nil {
 			return nil, err
@@ -43,7 +49,7 @@ func (client *Client) ReadList(tags []string, types []CIPType) ([]any, error) {
 	return results, nil
 }
 
-func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, error) {
+func (client *Client) countIOIsThatFit(tags []TagDescr) (int, error) {
 	// first generate IOIs for each tag
 	qty := len(tags)
 
@@ -70,7 +76,7 @@ func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, err
 	response_size := 0
 
 	for i, tag := range tags {
-		ioi, err := client.NewIOI(tag, types[i])
+		ioi, err := client.NewIOI(tag.TagName, tag.TagType)
 		if err != nil {
 			return 0, err
 		}
@@ -91,7 +97,7 @@ func (client *Client) countIOIsThatFit(tags []string, types []CIPType) (int, err
 		newSize += b.Len()                                     // everything we have so far
 		newSize += ioihdr_size + len(ioi.Buffer) + ioiftr_size // the new ioi data
 
-		response_size += types[i].Size()
+		response_size += tags[i].TagType.Size()
 		if newSize > client.ConnectionSize || response_size > client.ConnectionSize {
 			// break before adding this ioi to the list since it will push us over.
 			// we'll continue with n iois (n only increments after an IOI is added)
