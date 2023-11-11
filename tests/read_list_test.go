@@ -23,6 +23,7 @@ func TestReadListWithString(t *testing.T) {
 
 	tags := make([]string, 5)
 	types := make([]gologix.CIPType, 5)
+	elements := make([]int, 5)
 
 	tags[0] = "program:gologix_tests.ReadBool"     // false
 	tags[1] = "program:gologix_tests.ReadDint"     // 36
@@ -36,7 +37,13 @@ func TestReadListWithString(t *testing.T) {
 	types[3] = gologix.CIPTypeREAL
 	types[4] = gologix.CIPTypeDINT
 
-	vals, err := client.ReadList(tags, types)
+	elements[0] = 1
+	elements[1] = 1
+	elements[2] = 1
+	elements[3] = 1
+	elements[4] = 1
+
+	vals, err := client.ReadList(tags, types, elements)
 	if err != nil {
 		t.Errorf("shouldn't have failed but did. %v", err)
 		return

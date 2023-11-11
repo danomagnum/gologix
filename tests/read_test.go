@@ -305,15 +305,17 @@ func TestReadTooManyTags(t *testing.T) {
 
 	tags := make([]string, 0)
 	types := make([]gologix.CIPType, 0)
+	elements := make([]int, 0)
 
 	tagcount := 100
 
 	for i := 0; i < tagcount; i++ {
 		tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
 		types = append(types, gologix.CIPTypeDINT)
+		elements = append(elements, 1)
 	}
 
-	vals, err := client.ReadList(tags, types)
+	vals, err := client.ReadList(tags, types, elements)
 	if err != nil {
 		t.Errorf("shouldn't have failed but did. %v", err)
 		return

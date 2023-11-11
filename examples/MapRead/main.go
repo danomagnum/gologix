@@ -37,6 +37,7 @@ func main() {
 	m := make(map[string]any)
 	m["TestInt"] = int16(0)
 	m["TestDint"] = int32(0)
+	m["TestDintArr[2]"] = make([]int32, 5)
 
 	// call the read multi function with the structure passed in as a pointer.
 	err = client.ReadMulti(m)

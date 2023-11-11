@@ -508,14 +508,16 @@ func (client *Client) ReadMulti(tag_str any) error {
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
 	types := make([]CIPType, 0)
+	elements := make([]int, 0)
 	tag_map := make(map[string]int)
 	val := reflect.ValueOf(tag_str).Elem()
 	for i := range vf {
 		field := vf[i]
 		tagpath, ok := field.Tag.Lookup("gologix")
 		v := val.Field(i).Interface()
-		ct, _ := GoVarToCIPType(v)
+		ct, elem := GoVarToCIPType(v)
 		types = append(types, ct)
+		elements = append(elements, elem)
 		if !ok {
 			continue
 		}
@@ -523,8 +525,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		tag_map[tagpath] = i
 	}
 
-	// first generate IOIs for each tag
-	result_values, err := client.ReadList(tags, types)
+	result_values, err := client.ReadList(tags, types, elements)
 	if err != nil {
 		return fmt.Errorf("problem in read list: %w", err)
 	}
@@ -537,7 +538,15 @@ func (client *Client) ReadMulti(tag_str any) error {
 		v := reflect.ValueOf(&tag_str).Elem().Elem().Elem()
 
 		fieldVal := v.Field(fieldno)
-		fieldVal.Set(reflect.ValueOf(val))
+
+		if fieldVal.Type().Kind() != reflect.Slice {
+			fieldVal.Set(reflect.ValueOf(val))
+		} else {
+			l := fieldVal.Len()
+			for j := 0; j < l; j++ {
+				fieldVal.Index(j).Set(reflect.ValueOf(val).Index(j).Elem())
+			}
+		}
 
 		if err != nil {
 			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
@@ -548,14 +557,20 @@ func (client *Client) ReadMulti(tag_str any) error {
 	return nil
 }
 
-func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
+type TagDescr struct {
+	TagName  string
+	TagType  CIPType
+	Elements int
+}
+
+func (client *Client) readList(tags []TagDescr) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.NewIOI(tag, types[i])
+		iois[i], err = client.NewIOI(tag.TagName, tag.TagType)
 		if err != nil {
 			return nil, err
 		}
@@ -585,7 +600,7 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 			Size:    byte(len(ioi.Buffer) / 2),
 		}
 		f := msgCIPIOIFooter{
-			Elements: 1,
+			Elements: uint16(tags[i].Elements),
 		}
 		err := binary.Write(&b, binary.LittleEndian, h)
 		if err != nil {
@@ -661,39 +676,52 @@ func (client *Client) readList(tags []string, types []CIPType) ([]any, error) {
 		if rhdr.Status != 0 {
 			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
 		}
-		if types[i] == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
-			// we have requested a bool from some other type.  Maybe a bit access?
-			value, err := readValue(rhdr.Type, mybytes)
-			if err != nil {
-				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
+		if tags[i].Elements == 1 {
+			if tags[i].TagType == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
+				// we have requested a bool from some other type.  Maybe a bit access?
+				value, err := readValue(rhdr.Type, mybytes)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
+				}
+				val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
+				if err != nil {
+					log.Printf("problem reading value for this guy")
+					continue
+				}
+				result_values[i] = val
+			} else if tags[i].TagType == CIPTypeSTRING {
+				str_hdr := CIPStringHeader{}
+				err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
+				}
+				str := make([]byte, str_hdr.Length)
+				err = binary.Read(mybytes, binary.LittleEndian, str)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+				}
+				result_values[i] = string(str)
+			} else {
+				result_values[i], err = rhdr.Type.readValue(mybytes)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
+				}
 			}
-			val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
-			if err != nil {
-				log.Printf("problem reading value for this guy")
-				continue
+
+			if verbose {
+				log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+			}
+		} else {
+			// multi-element type.
+			val := make([]any, tags[i].Elements)
+			for respIndex := 0; respIndex < tags[i].Elements; respIndex++ {
+				value, err := readValue(rhdr.Type, mybytes)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
+				}
+				val[respIndex] = value
 			}
 			result_values[i] = val
-		} else if types[i] == CIPTypeSTRING {
-			str_hdr := CIPStringHeader{}
-			err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
-			if err != nil {
-				return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
-			}
-			str := make([]byte, str_hdr.Length)
-			err = binary.Read(mybytes, binary.LittleEndian, str)
-			if err != nil {
-				return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
-			}
-			result_values[i] = string(str)
-		} else {
-			result_values[i], err = rhdr.Type.readValue(mybytes)
-			if err != nil {
-				return nil, fmt.Errorf("problem reading tag %s: %w", tags[i], err)
-			}
-		}
-
-		if verbose {
-			log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
 		}
 	}
 
@@ -750,26 +778,26 @@ func (client *Client) ReadMap(m map[string]any) error {
 	}
 
 	size := len(m)
-	tags := make([]string, 0, size)
-	types := make([]CIPType, 0, size)
+	tags := make([]TagDescr, size)
+	indexes := make([]string, size)
 	i := 0
 	for k := range m {
 		v := m[k]
-		ct, _ := GoVarToCIPType(v)
-		types = append(types, ct)
-		tags = append(tags, k)
+		ct, elem := GoVarToCIPType(v)
+		tags[i] = TagDescr{TagName: k, TagType: ct, Elements: elem}
+		indexes[i] = k
 		i++
 	}
 
 	// first generate IOIs for each tag
-	result_values, err := client.ReadList(tags, types)
+	result_values, err := client.readList(tags)
 	if err != nil {
 		return fmt.Errorf("problem in read list: %w", err)
 	}
 
 	// now unpack the result values back into the given structure
 	for i := range result_values {
-		m[tags[i]] = result_values[i]
+		m[indexes[i]] = result_values[i]
 	}
 
 	return nil
