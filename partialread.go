@@ -97,7 +97,7 @@ func (client *Client) countIOIsThatFit(tags []TagDescr) (int, error) {
 		newSize += b.Len()                                     // everything we have so far
 		newSize += ioihdr_size + len(ioi.Buffer) + ioiftr_size // the new ioi data
 
-		response_size += tags[i].TagType.Size()
+		response_size += tags[i].TagType.Size() * tags[i].Elements
 		if newSize > client.ConnectionSize || response_size > client.ConnectionSize {
 			// break before adding this ioi to the list since it will push us over.
 			// we'll continue with n iois (n only increments after an IOI is added)
