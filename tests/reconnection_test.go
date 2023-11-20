@@ -98,7 +98,7 @@ func TestNoReconnection(t *testing.T) {
 		return
 	}
 
-	// now read should work again because AutoConnect = true on the client.
+	// now read should not work again because AutoConnect = false on the client.
 	err = client.Read(tag, have)
 	if err == nil {
 		t.Errorf("read should have failed again but didn't.")
