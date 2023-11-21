@@ -777,9 +777,9 @@ func (client *Client) ReadMap(m map[string]any) error {
 		return fmt.Errorf("could not start multi read: %w", err)
 	}
 
-	size := len(m)
-	tags := make([]TagDescr, size)
-	indexes := make([]string, size)
+	total := len(m)
+	tags := make([]TagDescr, total)
+	indexes := make([]string, total)
 	i := 0
 	for k := range m {
 		v := m[k]
@@ -788,11 +788,24 @@ func (client *Client) ReadMap(m map[string]any) error {
 		indexes[i] = k
 		i++
 	}
+	result_values := make([]any, 0, total)
 
-	// first generate IOIs for each tag
-	result_values, err := client.readList(tags)
-	if err != nil {
-		return fmt.Errorf("problem in read list: %w", err)
+	n := 0
+	msgs := 0
+	n_new := 0
+	for n < total {
+		msgs += 1
+		n_new, err = client.countIOIsThatFit(tags[n:])
+		if err != nil {
+			return err
+		}
+		subresults, err := client.readList(tags[n : n+n_new])
+		n += n_new
+		if err != nil {
+			return err
+		}
+		result_values = append(result_values, subresults...)
+
 	}
 
 	// now unpack the result values back into the given structure
