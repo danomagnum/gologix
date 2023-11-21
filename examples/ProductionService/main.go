@@ -2,6 +2,9 @@
 // reconnect logic, etc...
 //
 // Obviously this won't work for every scenario but it is a pretty solid foundation for simple things.
+//
+// The basic gist is that we create a channel and kick a goroutine off to pump data into that channel at a specified rate
+// as the PLC is polled.  Then the main program can just receive on that channel to get fresh PLC data.
 package main
 
 import (
