@@ -82,7 +82,8 @@ func PollPLC(c chan PLCPollData) {
 			return
 		}
 
-		// send it back to the main program.
+		// send it back to the main program.  One change that is sometimes helpful is to only send the data on the channel
+		// if it has changed since the last poll.  (You'd have to do the watchdog in the main thread differently).
 		c <- m
 
 		// wait to do the read again until the next poll time
