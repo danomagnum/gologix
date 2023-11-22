@@ -1,6 +1,8 @@
 package gologix
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 )
@@ -178,13 +180,29 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 			if err != nil {
 				return fmt.Errorf("problem serializing header for %s: %w", tagname, err)
 			}
-			b_dat, err := Serialize(result)
-			if err != nil {
-				return fmt.Errorf("problem serializing data for %s: %w", tagname, err)
-			}
-			_, err = b_dat.WriteTo(b)
-			if err != nil {
-				return fmt.Errorf("problem combining header and data for %s: %w", tagname, err)
+			if typ == CIPTypeSTRING {
+				res_str, ok := result.(string)
+				if !ok {
+					return errors.New("expected a string but didn't get one")
+				}
+				b_dat, err := Serialize(cipStringPacker(res_str))
+				if err != nil {
+					return fmt.Errorf("problem serializing data for %s: %w", tagname, err)
+				}
+				b.Truncate(4)
+				_, err = b_dat.WriteTo(b)
+				if err != nil {
+					return fmt.Errorf("problem combining header and data for %s: %w", tagname, err)
+				}
+			} else {
+				b_dat, err := Serialize(result)
+				if err != nil {
+					return fmt.Errorf("problem serializing data for %s: %w", tagname, err)
+				}
+				_, err = b_dat.WriteTo(b)
+				if err != nil {
+					return fmt.Errorf("problem combining header and data for %s: %w", tagname, err)
+				}
 			}
 
 			results[i] = b.Bytes()
@@ -307,8 +325,32 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	typ, _ := GoVarToCIPType(result)
 	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
-	return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+	if typ == CIPTypeSTRING {
+		res_str, ok := result.(string)
+		if !ok {
+			return errors.New("was expecting a string but didn't get one")
+		}
+		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, cipStringPacker(res_str))
+	} else {
+		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+	}
+}
 
+type cipStringPacker string
+
+func (c cipStringPacker) Len() int {
+	return 8 + len(c)
+}
+func (c cipStringPacker) Bytes() []byte {
+	l := len(c)
+	b := make([]byte, 8+l)
+	b[0] = 0xA0
+	b[1] = 0x02
+	b[2] = 0xCE
+	b[3] = 0x0F
+	binary.LittleEndian.PutUint32(b[4:], uint32(l))
+	copy(b[8:], c)
+	return b
 }
 
 func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
