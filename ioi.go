@@ -114,7 +114,8 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	tagpath = strings.ToLower(tagpath)
 	tag_info, ok := client.KnownTags[tagpath]
 	if ok {
-		if tag_info.Info.Type != datatype && datatype != CIPTypeUnknown {
+		// we'll assume the user knows what they're doing if they're dumping data into a struct.
+		if tag_info.Info.Type != datatype && (datatype != CIPTypeUnknown && datatype != CIPTypeStruct) {
 			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
 			return
 		}

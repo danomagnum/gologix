@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -12,7 +13,9 @@ import (
 //
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
-func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]KnownTag, error) {
+func (client *Client) ListSubTags(roottag string, start_instance uint32, rootInstance *KnownTag) ([]KnownTag, error) {
+
+	return []KnownTag{}, nil // this function is currently broken!
 	new_kts := make([]KnownTag, 0, 100)
 	if verbose {
 		client.Logger.Printf("readall for %v", start_instance)
@@ -114,10 +117,15 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 			return nil, fmt.Errorf("problem reading tag footer. %w", err)
 		}
 
+		if strings.ToLower(newtag_name) == "program:gologix_tests.testtimer" {
+			log.Printf("found it.")
+		}
+
 		kt := KnownTag{
 			Name:     newtag_name,
 			Info:     *tag_ftr,
 			Instance: CIPInstance(tag_hdr.InstanceID),
+			Parent:   rootInstance,
 		}
 		if tag_ftr.Dimension3 != 0 {
 			kt.Array_Order = make([]int, 3)
@@ -159,7 +167,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {
-		_, err = client.ListSubTags(roottag, start_instance)
+		_, err = client.ListSubTags(roottag, start_instance, rootInstance)
 		if err != nil {
 			return new_kts, fmt.Errorf("problem listing subtags. %w", err)
 		}

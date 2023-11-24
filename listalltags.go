@@ -195,7 +195,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		if len(tag_string) > 8 {
 			if strings.HasPrefix(tag_string, "Program:") {
-				_, err = client.ListSubTags(tag_string, 1)
+				_, err = client.ListSubTags(tag_string, 1, &kt)
 				if err != nil {
 					return err
 				}

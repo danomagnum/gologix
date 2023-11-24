@@ -68,6 +68,7 @@ func (client *Client) keepalive() {
 	if client.SocketTimeout == 0 {
 		return
 	}
+
 	og_props, err := client.GetControllerPropList()
 	if err != nil {
 		client.Logger.Printf("keepalive prop list failed. %v", err)

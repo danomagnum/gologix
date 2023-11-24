@@ -27,6 +27,11 @@ func TestTimerRead(t *testing.T) {
 		}
 	}()
 
+	err = client.Write("Program:gologix_tests.trigger_Timer", false)
+	if err != nil {
+		t.Errorf("failed to turn off the timer before starting: %v", err)
+		return
+	}
 	//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
 	err = client.Read("Program:gologix_tests.TestTimer", &tmr)
 	log.Printf("timer 1: %+v", tmr)

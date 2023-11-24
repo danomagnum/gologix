@@ -66,4 +66,10 @@ func TestList(t *testing.T) {
 		})
 	}
 
+	for k := range client.KnownTags {
+		if client.KnownTags[k].Instance == 0x21 {
+			log.Printf("found %+v", client.KnownTags[k])
+		}
+	}
+
 }
