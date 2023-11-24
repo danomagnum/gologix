@@ -61,7 +61,8 @@ type Client struct {
 	SocketTimeout time.Duration
 
 	// Set to true to allow auto-connects on reads and writes without having to call Connect() yourself.
-	AutoConnect bool
+	AutoConnect   bool
+	AutoKeepalive bool
 
 	RPI time.Duration
 
@@ -105,6 +106,7 @@ func NewClient(ip string) *Client {
 		Port:           ":44818",
 		VendorID:       0x1776,
 		AutoConnect:    true,
+		AutoKeepalive:  false,
 		RPI:            time.Millisecond * 2500,
 		SocketTimeout:  time.Second * 10,
 		ioi_cache:      make(map[string]*tagIOI),

@@ -50,7 +50,11 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
-		client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
+		if client.SocketTimeout != 0 {
+			client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
+		} else {
+			client.conn.SetWriteDeadline(time.Now().Add(time.Second))
+		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
 			err2 := client.disconnect()
@@ -79,13 +83,21 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 
 	hdr := EIPHeader{}
 	var err error
-	client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+	if client.SocketTimeout != 0 {
+		client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+	} else {
+		client.conn.SetReadDeadline(time.Now().Add(time.Second))
+	}
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		err2 := client.disconnect()
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
 	}
-	client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+	if client.SocketTimeout != 0 {
+		client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+	} else {
+		client.conn.SetReadDeadline(time.Now().Add(time.Second))
+	}
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {

@@ -65,7 +65,7 @@ func (client *Client) register_session() error {
 }
 
 func (client *Client) keepalive() {
-	if client.SocketTimeout == 0 {
+	if !client.AutoKeepalive || client.SocketTimeout == 0 {
 		return
 	}
 
