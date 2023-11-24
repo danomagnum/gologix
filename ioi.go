@@ -112,6 +112,7 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
+
 	/*
 		tag_info, ok := client.KnownTags[tagpath]
 		if ok {
@@ -124,7 +125,6 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 				ioi.Buffer = tag_info.Bytes()
 				return
 			}
-		}
 	*/
 	extant, exists := client.ioi_cache[tagpath]
 	if exists {
