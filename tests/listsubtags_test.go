@@ -22,7 +22,7 @@ func TestSubList(t *testing.T) {
 		}
 	}()
 
-	_, err = client.ListSubTags("Program:gologix_tests", 1)
+	_, err = client.ListSubTags("Program:gologix_tests", 1, nil)
 	if err != nil {
 		t.Error(err)
 		return

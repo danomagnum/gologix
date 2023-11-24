@@ -106,6 +106,7 @@ func NewClient(ip string) *Client {
 		VendorID:       0x1776,
 		AutoConnect:    true,
 		RPI:            time.Millisecond * 2500,
+		SocketTimeout:  time.Second * 10,
 		ioi_cache:      make(map[string]*tagIOI),
 		Logger:         log.Default(),
 	}
@@ -118,14 +119,24 @@ type KnownTag struct {
 	Instance    CIPInstance
 	Array_Order []int
 	UDT         *UDTDescriptor
+	Parent      *KnownTag
 }
 
 func (t KnownTag) Bytes() []byte {
-	ins := CIPInstance(t.Instance)
-	b := bytes.Buffer{}
-	b.Write(CipObject_Symbol.Bytes()) // 0x20 0x6B
-	b.Write(ins.Bytes())
-	return b.Bytes()
+	if t.Parent == nil {
+		ins := CIPInstance(t.Instance)
+		b := bytes.Buffer{}
+		b.Write(CipObject_Symbol.Bytes()) // 0x20 0x6B
+		b.Write(ins.Bytes())
+		return b.Bytes()
+	} else {
+		ins := CIPInstance(t.Instance)
+		b := bytes.NewBuffer(t.Parent.Bytes())
+		b.Write(CipObject_Symbol.Bytes()) // 0x20 0x6B
+		b.Write(ins.Bytes())
+		return b.Bytes()
+
+	}
 }
 
 func (t KnownTag) Len() int {

@@ -112,17 +112,20 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	// CIP doesn't care about case.  But we'll make it lowercase to match
 	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
-	tag_info, ok := client.KnownTags[tagpath]
-	if ok {
-		if tag_info.Info.Type != datatype && datatype != CIPTypeUnknown {
-			err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
-			return
+	/*
+		tag_info, ok := client.KnownTags[tagpath]
+		if ok {
+			// we'll assume the user knows what they're doing if they're dumping data into a struct.
+			if tag_info.Info.Type != datatype && (datatype != CIPTypeUnknown && datatype != CIPTypeStruct) {
+				err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
+				return
+			}
+			if tag_info.Info.TypeInfo != 0 {
+				ioi.Buffer = tag_info.Bytes()
+				return
+			}
 		}
-		if tag_info.Info.TypeInfo != 0 {
-			ioi.Buffer = tag_info.Bytes()
-			return
-		}
-	}
+	*/
 	extant, exists := client.ioi_cache[tagpath]
 	if exists {
 		ioi = extant
