@@ -118,7 +118,7 @@ func (client *Client) connect() error {
 	}
 	client.KnownTags = make(map[string]KnownTag)
 	var err error
-	client.conn, err = net.Dial("tcp", client.IPAddress+client.Port)
+	client.conn, err = net.DialTimeout("tcp", client.IPAddress+client.Port, client.SocketTimeout)
 	if err != nil {
 		return err
 	}
