@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 type EIPHeader struct {
@@ -49,6 +50,7 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
+		client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
 			err2 := client.disconnect()
@@ -77,14 +79,17 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 
 	hdr := EIPHeader{}
 	var err error
+	client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		err2 := client.disconnect()
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
 	}
+	client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {
+
 		err = binary.Read(client.conn, binary.LittleEndian, &data)
 		if err != nil {
 			err2 := client.disconnect()
