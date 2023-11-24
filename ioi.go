@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,12 +71,8 @@ func (tag *tagPartDescriptor) Parse(tagpath string) error {
 }
 
 // parse the tag name into its base tag (remove array index or bit) and get the array index if it exists
-func parse_tag_name(tagpath string) (tag tagPartDescriptor) {
-	err := tag.Parse(tagpath)
-	if err != nil {
-		log.Printf("problem parsing path. %v", err)
-		return
-	}
+func parse_tag_name(tagpath string) (tag tagPartDescriptor, err error) {
+	err = tag.Parse(tagpath)
 	return
 
 }
@@ -144,14 +139,20 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 		if strings.HasSuffix(tag_part, "]") {
 			// part of an array
 			start_index := strings.Index(tag_part, "[")
-			ioi_part := marshalIOIPart(tag_part[0:start_index])
+			ioi_part, err := marshalIOIPart(tag_part[0:start_index])
+			if err != nil {
+				return nil, err
+			}
 			_, err = ioi.Write(ioi_part)
 			if err != nil {
 				return ioi, fmt.Errorf("problem writing ioi part %w", err)
 
 			}
 
-			t := parse_tag_name(tag_part)
+			t, err := parse_tag_name(tag_part)
+			if err != nil {
+				client.Logger.Printf("problem parsing path: %v", err)
+			}
 
 			for _, order_size := range t.Array_Order {
 				if order_size < 256 {
@@ -194,7 +195,10 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 				ioi.BitPosition = bit_access
 				continue
 			}
-			ioi_part := marshalIOIPart(tag_part)
+			ioi_part, err := marshalIOIPart(tag_part)
+			if err != nil {
+				return nil, err
+			}
 			_, err = ioi.Write(ioi_part)
 			if err != nil {
 				return nil, err
@@ -208,8 +212,11 @@ func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	return
 }
 
-func marshalIOIPart(tagpath string) []byte {
-	t := parse_tag_name(tagpath)
+func marshalIOIPart(tagpath string) ([]byte, error) {
+	t, err := parse_tag_name(tagpath)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse tag path: %w", err)
+	}
 	tag_size := len(t.BasePath)
 	need_extend := false
 	if tag_size%2 == 1 {
@@ -223,7 +230,7 @@ func marshalIOIPart(tagpath string) []byte {
 	if need_extend {
 		tag_name_msg = append(tag_name_msg, []byte{0x00}...)
 	}
-	return tag_name_msg
+	return tag_name_msg, nil
 }
 
 // these next functions are for reversing the bytes back to a tag string

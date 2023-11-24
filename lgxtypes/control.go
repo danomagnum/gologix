@@ -18,7 +18,7 @@ type CONTROL struct {
 	FD  bool // bit 24
 }
 
-func (t CONTROL) Pack(w io.Writer) int {
+func (t CONTROL) Pack(w io.Writer) (int, error) {
 
 	var CtrlWord uint32
 	if t.EN {
@@ -48,19 +48,19 @@ func (t CONTROL) Pack(w io.Writer) int {
 
 	err := binary.Write(w, binary.LittleEndian, CtrlWord)
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
 	err = binary.Write(w, binary.LittleEndian, t.LEN)
 	if err != nil {
-		return 4
+		return 4, err
 	}
 	err = binary.Write(w, binary.LittleEndian, t.POS)
 	if err != nil {
-		return 8
+		return 8, err
 	}
 
-	return 12
+	return 12, nil
 }
 
 func (t *CONTROL) Unpack(r io.Reader) (int, error) {

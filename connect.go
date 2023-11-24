@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"time"
@@ -59,7 +58,7 @@ func (client *Client) register_session() error {
 		return fmt.Errorf("couldn't get connect response %w", err)
 	}
 	client.SessionHandle = resp_hdr.SessionHandle
-	log.Printf("Session Handle %v", client.SessionHandle)
+	client.Logger.Printf("Session Handle %v", client.SessionHandle)
 	_ = resp_data
 	return nil
 
@@ -71,12 +70,12 @@ func (client *Client) keepalive() {
 	}
 	og_props, err := client.GetControllerPropList()
 	if err != nil {
-		log.Printf("keepalive prop list failed. %v", err)
+		client.Logger.Printf("keepalive prop list failed. %v", err)
 		return
 	}
 	err = client.ListAllTags(0)
 	if err != nil {
-		log.Printf("keepalive list tags failed. %v", err)
+		client.Logger.Printf("keepalive list tags failed. %v", err)
 		return
 	}
 	t := time.NewTicker(client.SocketTimeout / 4)
@@ -86,15 +85,15 @@ func (client *Client) keepalive() {
 			if client.Connected {
 				new_props, err := client.GetControllerPropList()
 				if err != nil {
-					log.Printf("keepalive failed. %v", err)
+					client.Logger.Printf("keepalive failed. %v", err)
 					client.Disconnect()
 					return
 				}
 				if !new_props.Match(og_props) {
-					log.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", og_props, new_props)
+					client.Logger.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", og_props, new_props)
 					err := client.ListAllTags(0)
 					if err != nil {
-						log.Printf("keepalive list tags failed. %v", err)
+						client.Logger.Printf("keepalive list tags failed. %v", err)
 						return
 					}
 					og_props = new_props
@@ -142,7 +141,12 @@ func (client *Client) connect() error {
 	items0 := make([]CIPItem, 2)
 	items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
-	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
+
+	itemdata, err := SerializeItems(items0)
+	if err != nil {
+		return err
+	}
+	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, itemdata)
 	if err != nil {
 		return err
 	}
@@ -176,7 +180,7 @@ func (client *Client) connect() error {
 	}
 
 	if fwopenresphdr.Status != 0x00 {
-		log.Printf("bad status on large forward open header. got %x. Falling back to small forard open", fwopenresphdr.Status)
+		client.Logger.Printf("bad status on large forward open header. got %x. Falling back to small forard open", fwopenresphdr.Status)
 		client.ConnectionSize = 502
 
 		// we have to do something different for small connection sizes.
@@ -189,7 +193,11 @@ func (client *Client) connect() error {
 		items0 := make([]CIPItem, 2)
 		items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 		items0[1] = fwd_open
-		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, SerializeItems(items0))
+		itemdata, err := SerializeItems(items0)
+		if err != nil {
+			return err
+		}
+		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, itemdata)
 		if err != nil {
 			return err
 		}
@@ -234,7 +242,7 @@ func (client *Client) connect() error {
 		return fmt.Errorf("error unmarshaling forward open response. %w", err)
 	}
 	client.OTNetworkConnectionID = forwardopenresp.OTConnectionID
-	log.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
+	client.Logger.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
 
 	client.Connected = true
 
@@ -383,7 +391,7 @@ func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
 	item.Serialize(msg)
 	item.Serialize(p.Bytes())
 
-	log.Printf("Attempted Connection ID: OT=%d, TO=%d", msg.OTConnectionID, msg.TOConnectionID)
+	client.Logger.Printf("Attempted Connection ID: OT=%d, TO=%d", msg.OTConnectionID, msg.TOConnectionID)
 	return item, nil
 }
 

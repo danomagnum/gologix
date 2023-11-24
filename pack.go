@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 )
 
@@ -18,7 +17,7 @@ type CIPPack struct {
 }
 
 type Packable interface {
-	Pack(w io.Writer) int
+	Pack(w io.Writer) (int, error)
 }
 
 type Unpackable interface {
@@ -66,7 +65,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 			strlen := uint32(len(serializable_str))
 			err := binary.Write(b, binary.LittleEndian, strlen)
 			if err != nil {
-				log.Printf("Problem writing string header: %v", err)
+				return nil, fmt.Errorf("Problem writing string header: %v", err)
 			}
 			if strlen%2 == 1 {
 				strlen++
@@ -75,7 +74,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 			copy(b2, serializable_str)
 			err = binary.Write(b, binary.LittleEndian, b2)
 			if err != nil {
-				log.Printf("Problem writing string payload: %v", err)
+				return nil, fmt.Errorf("Problem writing string payload: %v", err)
 			}
 		case Serializable:
 			// if the struct is serializable, we should use its Bytes() function to get its
@@ -95,7 +94,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 	return b, nil
 }
 
-func Pack(w io.Writer, p Packing, data any) int {
+func Pack(w io.Writer, p Packing, data any) (int, error) {
 
 	switch d := data.(type) {
 	case Packable:
@@ -103,9 +102,9 @@ func Pack(w io.Writer, p Packing, data any) int {
 	case Serializable:
 		n, err := w.Write(d.Bytes())
 		if err != nil {
-			return 0
+			return 0, nil
 		}
-		return n
+		return n, nil
 	}
 
 	// keep track of how many bytes we've written.  This is so we can correct field alignment with padding bytes if needed
@@ -149,7 +148,7 @@ func Pack(w io.Writer, p Packing, data any) int {
 							_, err := w.Write([]byte{bitpack})
 							if err != nil {
 								//TODO: make this function return error?
-								log.Printf("problem writing bitpack to buffer. %v", err)
+								return pos, fmt.Errorf("problem writing bitpack to buffer. %v", err)
 							}
 							bitpos = 0
 							bitpack = 0
@@ -172,7 +171,7 @@ func Pack(w io.Writer, p Packing, data any) int {
 				if bitpos >= 8 {
 					_, err := w.Write([]byte{bitpack})
 					if err != nil {
-						log.Printf("problem writing bitpacked byte. %v", err)
+						return pos, fmt.Errorf("problem writing bitpacked byte. %v", err)
 					}
 					bitpos = 0
 					bitpack = 0
@@ -189,7 +188,7 @@ func Pack(w io.Writer, p Packing, data any) int {
 			// we have at least one bit that needs flushed.
 			_, err := w.Write([]byte{bitpack})
 			if err != nil {
-				log.Printf("problem writing bitpacked byte. %v", err)
+				return pos, fmt.Errorf("problem writing bitpacked byte. %v", err)
 			}
 			bitpos = 0
 			bitpack = 0
@@ -203,7 +202,7 @@ func Pack(w io.Writer, p Packing, data any) int {
 			pad := make([]byte, rem)
 			_, err := w.Write(pad)
 			if err != nil {
-				log.Printf("problem writing pad to buffer. %v", err)
+				return pos, fmt.Errorf("problem writing pad to buffer. %v", err)
 			}
 			pos += rem
 		}
@@ -212,11 +211,15 @@ func Pack(w io.Writer, p Packing, data any) int {
 		if k != reflect.Struct {
 			err := binary.Write(w, p.Order(), refVal.Field(i).Interface())
 			if err != nil {
-				log.Printf("problem reading sub-structure. %v", err)
+				return pos, fmt.Errorf("problem reading sub-structure. %v", err)
 			}
 
 		} else {
-			s = Pack(w, p, refVal.Field(i).Interface())
+			var err error
+			s, err = Pack(w, p, refVal.Field(i).Interface())
+			if err != nil {
+				return pos, fmt.Errorf("problem packing interface: %w", err)
+			}
 		}
 		pos += s
 	}
@@ -225,12 +228,12 @@ func Pack(w io.Writer, p Packing, data any) int {
 		// we have at least one bit that needs flushed.
 		_, err := w.Write([]byte{bitpack})
 		if err != nil {
-			log.Printf("problem flushing bitpack, %v", err)
+			return pos, fmt.Errorf("problem flushing bitpack, %v", err)
 		}
 		pos += 1
 	}
 
-	return pos
+	return pos, nil
 }
 
 func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
@@ -356,10 +359,13 @@ func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 func ReadPacked[T any](client *Client, tag string) (T, error) {
 	var data T
 	buf := new(bytes.Buffer)
-	size := Pack(buf, CIPPack{}, data)
+	size, err := Pack(buf, CIPPack{}, data)
+	if err != nil {
+		return data, err
+	}
 
 	b := make([]byte, size)
-	err := client.Read(tag, &b)
+	err = client.Read(tag, &b)
 	if err != nil {
 		return data, fmt.Errorf("couldn't read %s as bytes. %w", tag, err)
 	}

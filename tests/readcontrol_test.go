@@ -12,7 +12,8 @@ import (
 func TestControl(t *testing.T) {
 	var ctrl lgxtypes.CONTROL
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -47,7 +48,10 @@ func TestControl(t *testing.T) {
 		compareControl(fmt.Sprintf("test %d", i), wants[i], ctrl, t)
 
 		b := bytes.Buffer{}
-		_ = gologix.Pack(&b, gologix.CIPPack{}, ctrl)
+		_, err = gologix.Pack(&b, gologix.CIPPack{}, ctrl)
+		if err != nil {
+			t.Errorf("problem packing data: %v", err)
+		}
 		var ctrl2 lgxtypes.CONTROL
 		_, err = gologix.Unpack(&b, gologix.CIPPack{}, &ctrl2)
 		if err != nil {

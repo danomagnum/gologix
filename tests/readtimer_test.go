@@ -13,7 +13,8 @@ import (
 func TestTimerRead(t *testing.T) {
 	var tmr lgxtypes.TIMER
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -124,7 +125,10 @@ func TestTimerRead(t *testing.T) {
 
 	// make sure we can go the other way and recover it.
 	b := bytes.Buffer{}
-	_ = gologix.Pack(&b, gologix.CIPPack{}, tmr)
+	_, err = gologix.Pack(&b, gologix.CIPPack{}, tmr)
+	if err != nil {
+		t.Errorf("problem packing data: %v", err)
+	}
 	var tmr2 lgxtypes.TIMER
 	_, err = gologix.Unpack(&b, gologix.CIPPack{}, &tmr2)
 	if err != nil {
@@ -155,7 +159,8 @@ func TestTimerRead(t *testing.T) {
 
 func TestTimerStructRead(t *testing.T) {
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

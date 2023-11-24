@@ -11,7 +11,8 @@ import (
 // This test uses the GenericCIPMessage function to read attributes from a controller.  In this case it is reading
 // the time object's usec since the unix epoch.
 func TestGenericCIPMessage1(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

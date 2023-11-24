@@ -28,7 +28,10 @@ func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
 	p.InMutex.Lock()
 	defer p.InMutex.Unlock()
 	b := bytes.Buffer{}
-	_ = Pack(&b, CIPPack{}, *(p.In))
+	_, err := Pack(&b, CIPPack{}, *(p.In))
+	if err != nil {
+		return nil, err
+	}
 	dat := b.Bytes()
 	return dat, nil
 }

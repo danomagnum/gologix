@@ -10,7 +10,8 @@ import (
 )
 
 func TestReadArrNew(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -39,7 +40,8 @@ func TestReadArrNew(t *testing.T) {
 }
 
 func TestReadNewUDT(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -63,7 +65,8 @@ func TestReadNewUDT(t *testing.T) {
 	}
 }
 func TestReadNewUDTArr(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -99,7 +102,8 @@ func TestReadNewUDTArr(t *testing.T) {
 }
 
 func TestReadBoolPack(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -138,7 +142,8 @@ func TestReadBoolPack(t *testing.T) {
 }
 
 func TestReadNew(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -232,7 +237,8 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -258,7 +264,8 @@ func TestReadMulti(t *testing.T) {
 func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	client.SocketTimeout = time.Minute
 	err := client.Connect()
 	if err != nil {
@@ -289,7 +296,8 @@ func TestReadTimeout(t *testing.T) {
 // this tests reading more tags than one single EIP message can hold.  It can hold about 90 of the tags in one message
 // so we check around that value for magic numbers in the array.
 func TestReadTooManyTags(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

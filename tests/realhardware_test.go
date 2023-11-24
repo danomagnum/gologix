@@ -10,7 +10,8 @@ import (
 
 func TestRealHardware(t *testing.T) {
 	flag.Parse()
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -121,7 +122,8 @@ type TestUDT struct {
 
 func TestReadKnown(t *testing.T) {
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

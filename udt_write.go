@@ -163,7 +163,11 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(b.Bytes())
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}

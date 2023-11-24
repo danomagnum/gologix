@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -29,7 +28,10 @@ func (p *IOChannelProvider[Tin, Tout]) IORead() ([]byte, error) {
 	p.inMutex.Lock()
 	defer p.inMutex.Unlock()
 	b := bytes.Buffer{}
-	_ = Pack(&b, CIPPack{}, p.in)
+	_, err := Pack(&b, CIPPack{}, p.in)
+	if err != nil {
+		return nil, err
+	}
 	dat := b.Bytes()
 	return dat, nil
 }
@@ -72,7 +74,7 @@ func (p *IOChannelProvider[Tin, Tout]) IOWrite(items []CIPItem) error {
 		select {
 		case p.outChannels[i] <- out:
 		default:
-			log.Printf("problem sending. channel full?")
+			return errors.New("problem sending IOWrite data. channel full?")
 		}
 	}
 

@@ -3,7 +3,6 @@ package gologix
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"reflect"
 )
 
@@ -78,7 +77,11 @@ func (client *Client) write_single(tag string, value any) error {
 	reqitems[1].Serialize(ioi_footer)
 	reqitems[1].Serialize(value)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}
@@ -88,7 +91,7 @@ func (client *Client) write_single(tag string, value any) error {
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
 	items, err := ReadItems(data)
 	if err != nil {

@@ -15,7 +15,7 @@ type COUNTER struct {
 	UN  bool // bit 27 - set if we wrap over -2,147,483,648 to 2,147,483,648
 }
 
-func (t COUNTER) Pack(w io.Writer) int {
+func (t COUNTER) Pack(w io.Writer) (int, error) {
 
 	var CtrlWord uint32
 	if t.CU {
@@ -36,19 +36,19 @@ func (t COUNTER) Pack(w io.Writer) int {
 
 	err := binary.Write(w, binary.LittleEndian, CtrlWord)
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
 	err = binary.Write(w, binary.LittleEndian, t.PRE)
 	if err != nil {
-		return 4
+		return 4, err
 	}
 	err = binary.Write(w, binary.LittleEndian, t.ACC)
 	if err != nil {
-		return 8
+		return 8, err
 	}
 
-	return 12
+	return 12, nil
 }
 
 func (t *COUNTER) Unpack(r io.Reader) (int, error) {

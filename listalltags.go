@@ -28,8 +28,6 @@ func (f TagInfo) PreDefined() bool {
 	var mask2 uint16 = 0x0FFF
 	_ = mask2
 	val2 := val & mask
-	//log.Print(val, mask, mask2, val2)
-	//return !((val > 0x0100) && (val < 0x0EFF))
 	return val2 <= 0x0100
 }
 
@@ -111,7 +109,11 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		reqitems[1].Serialize(uint16(1))
 	}
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return fmt.Errorf("problem serializing items: %w", err)
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}
@@ -202,27 +204,27 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		}
 
 		if tag_ftr.Template_ID() != 0 {
-			log.Printf("found UDT of some sort %s", kt.Name)
+			client.Logger.Printf("found UDT of some sort %s", kt.Name)
 		}
 
 		if tag_ftr.Template_ID() != 0 && !tag_ftr.PreDefined() {
 			if verbose {
-				log.Printf("Looking up template for Tag: '%s' ", tag_string)
+				client.Logger.Printf("Looking up template for Tag: '%s' ", tag_string)
 			}
 			u, err := client.ListMembers(uint32(tag_ftr.Template_ID()))
 			if err != nil {
-				log.Printf("problem reading member list for %v, %+v, %+v, %v, %v", tag_string, tag_hdr, tag_ftr, tag_ftr.Template_ID(), tag_ftr.PreDefined())
+				client.Logger.Printf("problem reading member list for %v, %+v, %+v, %v, %v", tag_string, tag_hdr, tag_ftr, tag_ftr.Template_ID(), tag_ftr.PreDefined())
 				//return err
 			} else {
 				kt.UDT = &u
-				log.Printf("Successful member read for %s", kt.Name)
+				client.Logger.Printf("Successful member read for %s", kt.Name)
 			}
 		}
 
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt
 
 		if verbose {
-			log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
+			client.Logger.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
 				tag_name,
 				tag_hdr.InstanceID,
 				tag_ftr.Type,
@@ -237,7 +239,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	}
 	if verbose {
-		log.Printf("Status: %v", hdr.Status)
+		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {

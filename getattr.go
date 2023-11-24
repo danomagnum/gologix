@@ -3,7 +3,6 @@ package gologix
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 )
 
 type cipAttributeResponseHdr struct {
@@ -35,7 +34,11 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	reqitems[1].Serialize(instance)
 	reqitems[1].Serialize(attr)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return nil, err
 	}
@@ -44,11 +47,11 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
 	items, err := ReadItems(data)
 	if err != nil {
-		log.Printf("Problem reading items. %v", err)
+		client.Logger.Printf("Problem reading items. %v", err)
 		return nil, err
 	}
 
@@ -118,7 +121,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 		return msgGetControllerPropList{}, fmt.Errorf("couldn't read data. %w", err)
 	}
 	if verbose {
-		log.Printf("Result: %+v", result)
+		client.Logger.Printf("Result: %+v", result)
 	}
 
 	return result, nil
@@ -171,7 +174,11 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 
 	if err != nil {
 		return nil, err
@@ -181,11 +188,11 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
 	items, err := ReadItems(data)
 	if err != nil {
-		log.Printf("Problem reading items. %v", err)
+		client.Logger.Printf("Problem reading items. %v", err)
 		return nil, err
 	}
 
@@ -234,7 +241,11 @@ func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, inst
 	reqitems[1].Serialize(p.Bytes())
 	reqitems[1].Serialize(msg_data)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 
 	if err != nil {
 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -44,7 +43,7 @@ type msgGetTemplateAttrListResponse struct {
 
 func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTemplateAttrListResponse, error) {
 	if verbose {
-		log.Printf("list members for %v", str_instance)
+		client.Logger.Printf("list members for %v", str_instance)
 	}
 
 	// have to start at 1.
@@ -88,7 +87,11 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing item data: %w", err)
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -118,7 +121,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		return result, fmt.Errorf("problem reading result. %w", err)
 	}
 	if verbose {
-		log.Printf("Result: %+v\n\n", result)
+		client.Logger.Printf("Result: %+v\n\n", result)
 	}
 
 	return result, nil
@@ -142,7 +145,7 @@ func (m msgMemberInfo) CIPType() CIPType {
 
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	if verbose {
-		log.Printf("list members for %v", str_instance)
+		client.Logger.Printf("list members for %v", str_instance)
 	}
 
 	template_info, err := client.GetTemplateInstanceAttr(str_instance)
@@ -179,7 +182,11 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("problem serializing item data: %w", err)
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return UDTDescriptor{}, err
 	}
@@ -215,7 +222,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read memberinfos. %w", err)
 	}
 	if verbose {
-		log.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
+		client.Logger.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
 	}
 
 	descriptor := UDTDescriptor{}

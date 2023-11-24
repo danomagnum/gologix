@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 )
 
@@ -319,7 +318,11 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	// add service specific data
 	reqitems[1].Serialize(elements)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return nil, err
 	}
@@ -328,11 +331,11 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
 	items, err := ReadItems(data)
 	if err != nil {
-		log.Printf("Problem reading items. %v", err)
+		client.Logger.Printf("Problem reading items. %v", err)
 		return 0, err
 	}
 	if len(items) != 2 {
@@ -628,7 +631,11 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(&b)
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, err
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +644,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		log.Printf("Problem reading read result header. %v", err)
+		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
 	items, err := ReadItems(data)
 	if err != nil {
@@ -657,7 +664,10 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("problem reading offset table. %w", err)
 	}
-	rb := ritem.Bytes()
+	rb, err := ritem.Bytes()
+	if err != nil {
+		return nil, err
+	}
 	result_values := make([]interface{}, reply_hdr.Reply_Count)
 	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
 		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
@@ -685,7 +695,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 				}
 				val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
 				if err != nil {
-					log.Printf("problem reading value for this guy")
+					client.Logger.Printf("problem reading value for this guy")
 					continue
 				}
 				result_values[i] = val
@@ -709,7 +719,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 			}
 
 			if verbose {
-				log.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+				client.Logger.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
 			}
 		} else {
 			// multi-element type.

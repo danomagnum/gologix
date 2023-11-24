@@ -1,0 +1,4 @@
+{
+    "README": "rename this file to 'test_config.json' and set up the parameters to match your setup.",
+    "PLC_Address": "192.168.2.241"
+}

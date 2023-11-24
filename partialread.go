@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 )
 
 // Read a list of tags of specified types.
@@ -45,7 +44,7 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 
 	}
 
-	log.Printf("Took %d messages to read %d tags", msgs, n)
+	client.Logger.Printf("Took %d messages to read %d tags", msgs, n)
 	return results, nil
 }
 
@@ -117,7 +116,7 @@ func (client *Client) countIOIsThatFit(tags []TagDescr) (int, error) {
 		n = i + 1
 	}
 
-	log.Printf("Fit %d tags into %d bytes.  ", n, client.ConnectionSize)
+	client.Logger.Printf("Fit %d tags into %d bytes.  ", n, client.ConnectionSize)
 
 	return n, nil
 

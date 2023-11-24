@@ -3,7 +3,6 @@ package gologix
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -90,7 +89,6 @@ func (p *MapTagProvider) IOWrite(items []CIPItem) error {
 
 // this is a thread-safe way to get the value for a tag.
 func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
-	log.Printf("Trying to read %v from MapTagProvider", tag)
 	tag = strings.ToLower(tag)
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
@@ -112,8 +110,6 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 			return v.Interface(), nil
 		}
 		return nil, fmt.Errorf("too many elements requested %v > %v", qty, t.Len())
-	} else {
-		log.Printf("not a slice")
 	}
 
 	return val, nil
@@ -121,7 +117,6 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 
 // this is a thread-safe way to write a value to a tag.
 func (p *MapTagProvider) TagWrite(tag string, value any) error {
-	log.Printf("Trying to set %v=%v from MapTagProvider", tag, value)
 
 	tag = strings.ToLower(tag)
 	p.Mutex.Lock()

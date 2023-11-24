@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 )
 
 type CIPItemID uint16
@@ -205,13 +204,13 @@ func (item *CIPItem) Float64() (float64, error) {
 // end of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
-func (item *CIPItem) Serialize(str any) {
+func (item *CIPItem) Serialize(str any) error {
 	switch x := str.(type) {
 	case string:
 		strlen := uint32(len(x))
 		err := binary.Write(item, binary.LittleEndian, strlen)
 		if err != nil {
-			log.Printf("Problem writing string header: %v", err)
+			return fmt.Errorf("problem writing string header: %v", err)
 		}
 		if strlen%2 == 1 {
 			strlen++
@@ -221,20 +220,21 @@ func (item *CIPItem) Serialize(str any) {
 		copy(b, x)
 		err = binary.Write(item, binary.LittleEndian, b)
 		if err != nil {
-			log.Printf("Problem writing string payload: %v", err)
+			return fmt.Errorf("problem writing string payload: %v", err)
 		}
 
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
 		if err != nil {
-			log.Printf("Problem writing serializable item: %v", err)
+			return fmt.Errorf("Problem writing serializable item: %v", err)
 		}
 	default:
 		err := binary.Write(item, binary.LittleEndian, str)
 		if err != nil {
-			log.Printf("Problem writing default item: %v", err)
+			return fmt.Errorf("Problem writing default item: %v", err)
 		}
 	}
+	return nil
 }
 
 // DeSerialize an item's data into the given sturcture.
@@ -245,19 +245,17 @@ func (item *CIPItem) DeSerialize(str any) error {
 	return binary.Read(item, binary.LittleEndian, str)
 }
 
-func (item *CIPItem) Bytes() []byte {
+func (item *CIPItem) Bytes() ([]byte, error) {
 	b := bytes.Buffer{}
 	err := binary.Write(&b, binary.LittleEndian, item.Header)
 	if err != nil {
-		log.Printf("problem writing data. %v", err)
-		return b.Bytes()
+		return b.Bytes(), fmt.Errorf("problem writing data. %v", err)
 	}
 	_, err = b.Write(item.Data)
 	if err != nil {
-		log.Printf("problem writing item data. %v", err)
-		return b.Bytes()
+		return b.Bytes(), fmt.Errorf("problem writing item data. %v", err)
 	}
-	return b.Bytes()
+	return b.Bytes(), nil
 }
 
 // Sets the items data position back to zero without removing the data.
@@ -304,7 +302,7 @@ type cipItemsHeader struct {
 // 14+N0
 // 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
-func SerializeItems(items []CIPItem) *[]byte {
+func SerializeItems(items []CIPItem) (*[]byte, error) {
 
 	b := new(bytes.Buffer)
 
@@ -315,14 +313,18 @@ func SerializeItems(items []CIPItem) *[]byte {
 	}
 	err := binary.Write(b, binary.LittleEndian, item_hdr)
 	if err != nil {
-		log.Printf("problem serializing item header into b. %v", err)
+		return nil, fmt.Errorf("problem serializing item header into b. %v", err)
 	}
 
-	for _, item := range items {
-		b.Write(item.Bytes())
+	for i, item := range items {
+		b2, err := item.Bytes()
+		if err != nil {
+			return nil, fmt.Errorf("problem byteing item %d: %w", i, err)
+		}
+		b.Write(b2)
 	}
 
 	out := b.Bytes()
 
-	return &out
+	return &out, nil
 }

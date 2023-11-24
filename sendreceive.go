@@ -56,7 +56,6 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 		}
 		written += n
 	}
-	//log.Printf("Sent: %v", b)
 	return nil
 
 }
@@ -83,8 +82,6 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 		err2 := client.disconnect()
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
 	}
-	//log.Printf("Header: %v", hdr)
-	//data_size := hdr.Length * 2
 	data_size := hdr.Length
 	data := make([]byte, data_size)
 	if data_size > 0 {
@@ -94,7 +91,6 @@ func (client *Client) recv_data() (EIPHeader, *bytes.Buffer, error) {
 			return hdr, nil, fmt.Errorf("problem reading socket payload: %w: %v", err, err2)
 		}
 	}
-	//log.Printf("Buffer: %v", data)
 	buf := bytes.NewBuffer(data)
 	return hdr, buf, err
 

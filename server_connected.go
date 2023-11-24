@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 )
 
 func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
@@ -37,14 +36,14 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 	}
 
 	results := make([]any, qty)
-	log.Printf("tag: %s", tag)
+	h.server.Logger.Printf("tag: %s", tag)
 	for i := 0; i < int(qty); i++ {
 		results[i], err = typ.readValue(&item)
 		if err != nil {
 			return fmt.Errorf("problem reading element %d: %w", i, err)
 		}
 	}
-	log.Printf("value: %v", results)
+	h.server.Logger.Printf("value: %v", results)
 
 	if items[0].Header.ID != cipItem_ConnectionAddress {
 		return fmt.Errorf("expected a connection address item in item 0. got %v", items[0].Header.ID)
@@ -93,7 +92,7 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	log.Printf("got connection id %v = %+v", connID, connection)
+	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	path := connection.Path
 
@@ -231,14 +230,14 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 			}
 
 			writeTags := make([]any, qty)
-			log.Printf("write tag: %s", tag)
+			h.server.Logger.Printf("write tag: %s", tag)
 			for i := 0; i < int(qty); i++ {
 				writeTags[i], err = typ.readValue(&item)
 				if err != nil {
 					return fmt.Errorf("problem getting write element %d: %w", i, err)
 				}
 			}
-			log.Printf("value: %v", writeTags)
+			h.server.Logger.Printf("value: %v", writeTags)
 
 			if qty > 1 {
 				err = p.TagWrite(tag, writeTags)
@@ -286,7 +285,7 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	log.Printf("got connection id %v = %+v", connID, connection)
+	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	items[1].Reset()
 	item := items[1]
@@ -323,7 +322,7 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
 	typ, _ := GoVarToCIPType(result)
-	log.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
+	h.server.Logger.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
@@ -364,7 +363,11 @@ func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID u
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendUnitData, SerializeItems(items))
+	itemdata, err := SerializeItems(items)
+	if err != nil {
+		return fmt.Errorf("could not serialize items: %w", err)
+	}
+	return h.send(cipCommandSendUnitData, itemdata)
 }
 
 func (h *serverTCPHandler) connectedGetAttr(items []CIPItem) error {
@@ -378,7 +381,7 @@ func (h *serverTCPHandler) connectedGetAttr(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	log.Printf("got connection id %v = %+v", connID, connection)
+	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	items[1].Reset()
 	return h.getAttrSingle(connection, items[1])

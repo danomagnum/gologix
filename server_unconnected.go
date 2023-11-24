@@ -2,7 +2,6 @@ package gologix
 
 import (
 	"fmt"
-	"log"
 )
 
 func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
@@ -104,7 +103,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	}
 	// TODO: read structs gracefully.
 	if typ == CIPTypeStruct {
-		log.Printf("read %s as %s * %v = %v", tag, typ, qty, item.Data[item.Pos:])
+		h.server.Logger.Printf("read %s as %s * %v = %v", tag, typ, qty, item.Data[item.Pos:])
 		return h.sendUnconnectedRRDataReply(CIPService_Write)
 	}
 	results := make([]any, qty)
@@ -124,7 +123,7 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
-	log.Printf("Got Unconn Write from %v. Tag: %s Path:%v Type:%s Qty:%v Value:%v", h.conn.RemoteAddr(), tag, path, typ, qty, results)
+	h.server.Logger.Printf("Got Unconn Write from %v. Tag: %s Path:%v Type:%s Qty:%v Value:%v", h.conn.RemoteAddr(), tag, path, typ, qty, results)
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
@@ -215,8 +214,8 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
-	log.Printf("Path read: %v\n", path)
-	log.Printf("read %s to %v elements: %v", tag, path, qty)
+	h.server.Logger.Printf("Path read: %v\n", path)
+	h.server.Logger.Printf("read %s to %v elements: %v", tag, path, qty)
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
@@ -227,7 +226,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
-	log.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
+	h.server.Logger.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
 	typ, _ := GoVarToCIPType(result)
 
 	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
@@ -245,7 +244,11 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	return h.send(cipCommandSendRRData, SerializeItems(items))
+	itemdata, err := SerializeItems(items)
+	if err != nil {
+		return err
+	}
+	return h.send(cipCommandSendRRData, itemdata)
 }
 
 func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
@@ -257,5 +260,9 @@ func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	return h.send(cipCommandSendUnitData, SerializeItems(items))
+	itemdata, err := SerializeItems(items)
+	if err != nil {
+		return err
+	}
+	return h.send(cipCommandSendUnitData, itemdata)
 }

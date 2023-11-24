@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 )
 
 type CIPType byte
@@ -296,9 +295,8 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 
 	}
 	if err != nil {
-		log.Printf("Problem reading %s as one unit of %T. %v", t, value, err)
+		return nil, fmt.Errorf("Problem reading %s as one unit of %T. %w", t, value, err)
 	}
-	//log.Printf("type %v. value %v", t, value)
 	return value, nil
 }
 
@@ -444,7 +442,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 
 	}
 	if err != nil {
-		log.Printf("%v", err)
+		return false, err
 	}
 	return false, err
 }

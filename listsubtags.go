@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -16,7 +15,7 @@ import (
 func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]KnownTag, error) {
 	new_kts := make([]KnownTag, 0, 100)
 	if verbose {
-		log.Printf("readall for %v", start_instance)
+		client.Logger.Printf("readall for %v", start_instance)
 	}
 
 	// have to start at 1.
@@ -58,7 +57,11 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, SerializeItems(reqitems))
+	itemdata, err := SerializeItems(reqitems)
+	if err != nil {
+		return nil, fmt.Errorf("problem serializing items: %w", err)
+	}
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return new_kts, err
 	}
@@ -138,7 +141,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 		new_kts = append(new_kts, kt)
 
 		if verbose {
-			log.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
+			client.Logger.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
 				newtag_name,
 				tag_hdr.InstanceID,
 				tag_ftr.Type,
@@ -152,7 +155,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32) ([]Know
 
 	}
 	if verbose {
-		log.Printf("Status: %v", hdr.Status)
+		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
 	if data_hdr.Status == 6 && start_instance < 200 {

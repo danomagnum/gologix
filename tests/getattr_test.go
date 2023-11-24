@@ -9,7 +9,8 @@ import (
 
 func TestGetAttrSingle(t *testing.T) {
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -133,7 +134,8 @@ func TestGetAttrSingle(t *testing.T) {
 }
 
 func TestGetCtrlProps(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -155,7 +157,8 @@ func TestGetCtrlProps(t *testing.T) {
 
 func TestGetAttrList(t *testing.T) {
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

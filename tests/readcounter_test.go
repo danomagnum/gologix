@@ -11,7 +11,8 @@ import (
 func TestCounterRead(t *testing.T) {
 	var cnt lgxtypes.COUNTER
 
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -54,7 +55,10 @@ func TestCounterRead(t *testing.T) {
 
 	// make sure we can go the other way and recover it.
 	b := bytes.Buffer{}
-	_ = gologix.Pack(&b, gologix.CIPPack{}, cnt)
+	_, err = gologix.Pack(&b, gologix.CIPPack{}, cnt)
+	if err != nil {
+		t.Errorf("problem packing data: %v", err)
+	}
 	var cnt2 lgxtypes.COUNTER
 	_, err = gologix.Unpack(&b, gologix.CIPPack{}, &cnt2)
 	if err != nil {

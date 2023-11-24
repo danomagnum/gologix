@@ -8,7 +8,8 @@ import (
 )
 
 func TestWrite(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -59,7 +60,8 @@ func write_and_check[T gologix.GoLogixTypes](t *testing.T, client *gologix.Clien
 }
 
 func TestMultiWrite(t *testing.T) {
-	client := gologix.NewClient("192.168.2.241")
+	tc := getTestConfig()
+	client := gologix.NewClient(tc.PLC_Address)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
