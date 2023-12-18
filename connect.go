@@ -181,7 +181,7 @@ func (client *Client) connect() error {
 	}
 
 	if fwopenresphdr.Status != 0x00 {
-		client.Logger.Printf("bad status on large forward open header. got %x. Falling back to small forard open", fwopenresphdr.Status)
+		client.Logger.Printf("bad status on large forward open header. got %x. Falling back to small forward open", fwopenresphdr.Status)
 		client.ConnectionSize = 502
 
 		// we have to do something different for small connection sizes.
