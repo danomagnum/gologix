@@ -517,13 +517,13 @@ func (client *Client) ReadMulti(tag_str any) error {
 	for i := range vf {
 		field := vf[i]
 		tagpath, ok := field.Tag.Lookup("gologix")
+		if !ok {
+			continue
+		}
 		v := val.Field(i).Interface()
 		ct, elem := GoVarToCIPType(v)
 		types = append(types, ct)
 		elements = append(elements, elem)
-		if !ok {
-			continue
-		}
 		tags = append(tags, tagpath)
 		tag_map[tagpath] = i
 	}
