@@ -17,3 +17,4 @@
 - https://assets.omron.eu/downloads/manual/en/v2/w506_nx_nj-series_cpu_unit_built-in_ethernet_ip_port_users_manual_en.pdf
 - https://github.com/JeremyMedders/LogixLibraries
 - https://github.com/mikeav-soft/LogixTool/tree/master
+- https://www.automation-pros.com/enip1/UserManual.pdf
