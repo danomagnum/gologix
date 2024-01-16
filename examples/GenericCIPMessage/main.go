@@ -29,10 +29,17 @@ func main() {
 	// if that happens (about a minute)
 	defer client.Disconnect()
 
+	// for generic messages we need to create the cip path ourselves.  The serialize function can be used to do this.
+	path, err := gologix.Serialize(gologix.CipObject_RunMode, gologix.CIPInstance(1))
+	if err != nil {
+		log.Printf("could not serialize path: %v", err)
+		return
+	}
+
 	// This generic message would probably stop the controller, but you'd have to figure out how to elevate
 	// the privileges associated with your connection first.  As it stands, you will probably get an 0x0F status code
 	// and it won't do anything.
-	resp, err := client.GenericCIPMessage(gologix.CIPService_Stop, gologix.CipObject_RunMode, 1, []byte{})
+	resp, err := client.GenericCIPMessage(gologix.CIPService_Stop, path.Bytes(), []byte{})
 	if err != nil {
 		log.Printf("problem stopping PLC: %v", err)
 		return

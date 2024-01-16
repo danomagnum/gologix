@@ -61,9 +61,9 @@ func (p *CIPAttribute) Read(r io.Reader) error {
 }
 func (p CIPAttribute) Len() int {
 	if p < 256 {
-		return 1
+		return 2
 	}
-	return 2
+	return 4
 }
 
 // currently unused

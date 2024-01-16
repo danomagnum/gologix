@@ -21,11 +21,13 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	pl := class.Len() + instance.Len() + attr.Len()
+	pl = pl / 2
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
 		Service:       CIPService_GetAttributeSingle,
-		PathLength:    3,
+		PathLength:    byte(pl),
 	}
 	// setup item
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
@@ -218,27 +220,20 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 //
 // If there are no variable-length fields in the response data you are expecting, the best way may be to create the equivalent
 // struct with the proper types and do an item.Serialize(&InstanceOfMyType)
-func (client *Client) GenericCIPMessage(service CIPService, class CIPClass, instance CIPInstance, msg_data []byte) (*CIPItem, error) {
+func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byte) (*CIPItem, error) {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	p, err := Serialize(
-		class, instance,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't build path. %w", err)
-	}
-
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
 		Service:       service,
-		PathLength:    byte(p.Len() / 2),
+		PathLength:    byte(len(path) / 2),
 	}
 
 	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Serialize(p.Bytes())
+	reqitems[1].Serialize(path)
 	reqitems[1].Serialize(msg_data)
 
 	itemdata, err := SerializeItems(reqitems)

@@ -131,6 +131,12 @@ func TestGetAttrSingle(t *testing.T) {
 		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", wantName, name)
 	}
 
+	// test multi-byte instance
+	_, err = client.GetAttrSingle(gologix.CipObject_Assembly, 0x303, 0x03)
+	if err != nil {
+		t.Errorf("problem reading items: %v", err)
+	}
+
 }
 
 func TestGetCtrlProps(t *testing.T) {
