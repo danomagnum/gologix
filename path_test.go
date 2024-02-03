@@ -57,7 +57,7 @@ func TestPathBuild(t *testing.T) {
 	client := Client{}
 	client.SocketTimeout = 0
 
-	pmp_ioi, err := client.NewIOI("Program:MainProgram", 16)
+	pmp_ioi, err := client.newIOI("Program:MainProgram", 16)
 	if err != nil {
 		t.Errorf("problem creating pmp ioi. %v", err)
 	}
@@ -74,7 +74,7 @@ func TestPathBuild(t *testing.T) {
 		},
 		{
 			name: "backplane to slot 0",
-			path: []any{CIPPort{PortNo: 1}, CIPAddress(0)},
+			path: []any{CIPPort{PortNo: 1}, cipAddress(0)},
 			want: []byte{0x01, 0x00},
 		},
 		{

@@ -97,7 +97,7 @@ func (srv *Server) Serve() error {
 	// we will wait forever for one of the serve goroutines to let us know they crased.
 	// then we'll close them both and check for errors, combining them all toghether and returning it.
 	err = <-errch
-	final_err := NewMultiError(err)
+	final_err := newMultiError(err)
 
 	err = srv.TCPListener.Close()
 	if err != nil {
@@ -160,7 +160,7 @@ func (srv *Server) serveUDP() error {
 		_ = addr // don't need this yet.
 		// we've read a packet on udp so we need to parse the eip data
 
-		items, err := ReadItems(buf)
+		items, err := readItems(buf)
 		if err != nil {
 			srv.Logger.Printf("problem reading udp items. %v", err)
 			continue
@@ -207,7 +207,7 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 	}()
 
 	for {
-		var eiphdr EIPHeader
+		var eiphdr eipHeader
 		err := binary.Read(h.conn, binary.LittleEndian, &eiphdr)
 		if err != nil {
 			return fmt.Errorf("problem reading eip header. %w", err)
@@ -239,7 +239,7 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 
 }
 
-func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
+func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 	var interface_handle uint32
 	var timeout uint16
 	err := binary.Read(h.conn, binary.LittleEndian, &interface_handle)
@@ -251,7 +251,7 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
 	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
-	items, err := ReadItems(h.conn)
+	items, err := readItems(h.conn)
 	if err != nil {
 		return fmt.Errorf("problem reading items for rrdata %w", err)
 	}
@@ -312,21 +312,21 @@ func (h *serverTCPHandler) sendUnitData(hdr EIPHeader) error {
 
 func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 	items := make([]CIPItem, 2)
-	items[0] = NewItem(cipItem_ConnectionAddress, h.TOConnectionID)
-	items[1] = NewItem(cipItem_ConnectedData, nil)
+	items[0] = newItem(cipItem_ConnectionAddress, h.TOConnectionID)
+	items[1] = newItem(cipItem_ConnectedData, nil)
 	resp := msgWriteResultHeader{
 		SequenceCount: h.UnitDataSequencer,
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
 	return h.send(cipCommandSendUnitData, itemdata)
 }
 
-func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
+func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 	var interface_handle uint32
 	var timeout uint16
 	err := binary.Read(h.conn, binary.LittleEndian, &interface_handle)
@@ -338,7 +338,7 @@ func (h *serverTCPHandler) sendRRData(hdr EIPHeader) error {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
 	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
-	items, err := ReadItems(h.conn)
+	items, err := readItems(h.conn)
 	if err != nil {
 		return fmt.Errorf("problem reading items for rrdata %w", err)
 	}
@@ -402,7 +402,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	items[1] = newItem(cipItem_UnconnectedData, nil)
 
 	if fwd_open.TOConnectionID == 0 {
 		h.TOConnectionID = rand.Uint32()
@@ -429,7 +429,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 
 	items[1].Serialize(fwopenresphdr)
 
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
@@ -474,7 +474,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	items[1] = newItem(cipItem_UnconnectedData, nil)
 
 	if fwd_open.TOConnectionID == 0 {
 		h.TOConnectionID = rand.Uint32()
@@ -501,7 +501,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 
 	items[1].Serialize(fwopenresphdr)
 
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
@@ -570,14 +570,14 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 
 		// every RPI send the message.
 		items := make([]CIPItem, 2)
-		items[0] = NewItem(cipItem_SequenceAddress, nil)
+		items[0] = newItem(cipItem_SequenceAddress, nil)
 		items[0].Serialize(fwd_open.TOConnectionID)
 		items[0].Serialize(seq)
-		items[1] = NewItem(cipItem_ConnectedData, nil)
+		items[1] = newItem(cipItem_ConnectedData, nil)
 		items[1].Serialize(uint16(seq))
 		items[1].Serialize(dat)
 
-		p, err := SerializeItems(items)
+		p, err := serializeItems(items)
 		if err != nil {
 			h.server.Logger.Printf("could not serialzie items: %v", err)
 		}
@@ -591,7 +591,7 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 	}
 }
 
-func (h *serverTCPHandler) registerSession(hdr EIPHeader) error {
+func (h *serverTCPHandler) registerSession(hdr eipHeader) error {
 
 	reg_msg := msgCIPRegister{}
 	err := binary.Read(h.conn, binary.LittleEndian, &reg_msg)
@@ -657,7 +657,7 @@ func (h *serverTCPHandler) send(cmd CIPCommand, msgs ...any) error {
 
 }
 
-func (h *serverTCPHandler) newEIPHeader(cmd CIPCommand, size int) (hdr EIPHeader) {
+func (h *serverTCPHandler) newEIPHeader(cmd CIPCommand, size int) (hdr eipHeader) {
 
 	hdr.Command = cmd
 	//hdr.Command = 0x0070

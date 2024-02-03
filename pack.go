@@ -8,12 +8,7 @@ import (
 	"reflect"
 )
 
-type Packing interface {
-	Align(t reflect.Type) int
-	Order() binary.ByteOrder
-}
-
-type CIPPack struct {
+type cipPack struct {
 }
 
 type Packable interface {
@@ -24,7 +19,7 @@ type Unpackable interface {
 	Unpack(r io.Reader) (n int, err error)
 }
 
-func (p CIPPack) Align(t reflect.Type) int {
+func (p cipPack) Align(t reflect.Type) int {
 	// If a type is a struct we need to check the alignment of every field.
 	// If any of the fields have an alignment of 8 (LINT, LREAL, etc...)
 	// then the struct also has an alignment of 8.
@@ -46,7 +41,7 @@ func (p CIPPack) Align(t reflect.Type) int {
 	return a
 }
 
-func (p CIPPack) Order() binary.ByteOrder {
+func (p cipPack) Order() binary.ByteOrder {
 	return binary.LittleEndian
 }
 
@@ -65,7 +60,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 			strlen := uint32(len(serializable_str))
 			err := binary.Write(b, binary.LittleEndian, strlen)
 			if err != nil {
-				return nil, fmt.Errorf("Problem writing string header: %v", err)
+				return nil, fmt.Errorf("problem writing string header: %w", err)
 			}
 			if strlen%2 == 1 {
 				strlen++
@@ -74,7 +69,7 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 			copy(b2, serializable_str)
 			err = binary.Write(b, binary.LittleEndian, b2)
 			if err != nil {
-				return nil, fmt.Errorf("Problem writing string payload: %v", err)
+				return nil, fmt.Errorf("problem writing string payload: %w", err)
 			}
 		case Serializable:
 			// if the struct is serializable, we should use its Bytes() function to get its
@@ -94,7 +89,10 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 	return b, nil
 }
 
-func Pack(w io.Writer, p Packing, data any) (int, error) {
+// serialize data into w appropriately for CIP messaging
+// obeys alignment and padding rules
+func Pack(w io.Writer, data any) (int, error) {
+	p := cipPack{}
 
 	switch d := data.(type) {
 	case Packable:
@@ -216,7 +214,7 @@ func Pack(w io.Writer, p Packing, data any) (int, error) {
 
 		} else {
 			var err error
-			s, err = Pack(w, p, refVal.Field(i).Interface())
+			s, err = Pack(w, refVal.Field(i).Interface())
 			if err != nil {
 				return pos, fmt.Errorf("problem packing interface: %w", err)
 			}
@@ -236,7 +234,10 @@ func Pack(w io.Writer, p Packing, data any) (int, error) {
 	return pos, nil
 }
 
-func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
+// deserialize data from r appropriately for CIP messaging
+// obeys alignment and padding rules
+func Unpack(r io.Reader, data any) (n int, err error) {
+	p := cipPack{}
 
 	switch d := data.(type) {
 	case Unpackable:
@@ -345,7 +346,7 @@ func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 			}
 		} else {
 			val := refVal.Field(i).Addr().Interface()
-			s, err = Unpack(r, p, val)
+			s, err = Unpack(r, val)
 			if err != nil {
 				return
 			}
@@ -359,7 +360,7 @@ func Unpack(r io.Reader, p Packing, data any) (n int, err error) {
 func ReadPacked[T any](client *Client, tag string) (T, error) {
 	var data T
 	buf := new(bytes.Buffer)
-	size, err := Pack(buf, CIPPack{}, data)
+	size, err := Pack(buf, data)
 	if err != nil {
 		return data, err
 	}
@@ -369,7 +370,7 @@ func ReadPacked[T any](client *Client, tag string) (T, error) {
 	if err != nil {
 		return data, fmt.Errorf("couldn't read %s as bytes. %w", tag, err)
 	}
-	_, err = Unpack(bytes.NewBuffer(b), CIPPack{}, &data)
+	_, err = Unpack(bytes.NewBuffer(b), &data)
 	if err != nil {
 		return data, fmt.Errorf("problem unpacking from buffer. %w", err)
 	}

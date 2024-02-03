@@ -235,8 +235,8 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 
 func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
 	items := make([]CIPItem, 2)
-	items[0] = NewItem(cipItem_Null, nil)
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	items[0] = newItem(cipItem_Null, nil)
+	items[1] = newItem(cipItem_UnconnectedData, nil)
 	resp := msgUnconnWriteResultHeader{
 		Service: s.AsResponse(),
 	}
@@ -244,7 +244,7 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return err
 	}
@@ -253,14 +253,14 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 
 func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 	items := make([]CIPItem, 2)
-	items[0] = NewItem(cipItem_Null, nil)
-	items[1] = NewItem(cipItem_UnconnectedData, nil)
+	items[0] = newItem(cipItem_Null, nil)
+	items[1] = newItem(cipItem_UnconnectedData, nil)
 	resp := msgWriteResultHeader{
 		SequenceCount: h.UnitDataSequencer,
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return err
 	}

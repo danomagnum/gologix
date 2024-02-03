@@ -12,6 +12,9 @@ type cipAttributeResponseHdr struct {
 	Status          uint16
 }
 
+// This function can be used to do a GetAttrSingle on the specified class/instance/attribute.  The returned
+// CIPItem can then be used to parse the data out into whatever type you expect.  Note that you have to know what type
+// you expect to receive for the request ahead of time.
 func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr CIPAttribute) (*CIPItem, error) {
 
 	err := client.checkConnection()
@@ -20,7 +23,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 	pl := class.Len() + instance.Len() + attr.Len()
 	pl = pl / 2
 
@@ -30,13 +33,13 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 		PathLength:    byte(pl),
 	}
 	// setup item
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	// add path
 	reqitems[1].Serialize(class)
 	reqitems[1].Serialize(instance)
 	reqitems[1].Serialize(attr)
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +54,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		client.Logger.Printf("Problem reading items. %v", err)
 		return nil, err
@@ -151,7 +154,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		class, instance,
@@ -166,7 +169,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
 	reqitems[1].Serialize(uint16(len(attrs)))
 	for i := range attrs {
@@ -176,7 +179,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +195,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		client.Logger.Printf("Problem reading items. %v", err)
 		return nil, err
@@ -216,6 +219,11 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 // Generic CIP Message
 //
+// This is for advanced use.  You'll need to provide the object/instance/attribute/member that the message is directed towards in the
+// proper serialized format.
+// You can do this with the Serialize(gologix.CIPObject(1), gologix.CIPInstance(2), gologix.CIPAttribute(3)) function where 1,2,3
+// are the actual class/instance/attribute you are targeting
+//
 // CIP expects you to know the data type for each of the values so you'll have to parse the resulting CIPItem yourself.
 //
 // If there are no variable-length fields in the response data you are expecting, the best way may be to create the equivalent
@@ -224,7 +232,7 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
@@ -232,11 +240,11 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 		PathLength:    byte(len(path) / 2),
 	}
 
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(path)
 	reqitems[1].Serialize(msg_data)
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +260,7 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 	if err != nil {
 		return nil, fmt.Errorf("problpm reading read result header: %w", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		return nil, fmt.Errorf("problem reading items: %w", err)
 	}

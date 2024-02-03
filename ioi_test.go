@@ -90,7 +90,7 @@ func TestIOI(t *testing.T) {
 
 		testname := fmt.Sprintf("tag: %s", tt.path)
 		t.Run(testname, func(t *testing.T) {
-			res, err := client.NewIOI(tt.path, tt.t)
+			res, err := client.newIOI(tt.path, tt.t)
 			if err != nil {
 				t.Errorf("IOI Generation error. %v", err)
 			}
@@ -130,11 +130,11 @@ func TestIOIToBytesAndBackAgain(t *testing.T) {
 
 		testname := fmt.Sprintf("tag: %s", tt.Tag)
 		t.Run(testname, func(t *testing.T) {
-			res, err := client.NewIOI(tt.Tag, tt.Type)
+			res, err := client.newIOI(tt.Tag, tt.Type)
 			if err != nil {
 				t.Errorf("IOI Generation error. %v", err)
 			}
-			item := NewItem(cipItem_Null, res)
+			item := newItem(cipItem_Null, res)
 			path, err := getTagFromPath(&item)
 			if err != nil {
 				t.Errorf("problem parsing path from byte item")

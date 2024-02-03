@@ -27,12 +27,16 @@ import (
 //msg.Path = [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}
 
 // bits 5,6,7 (counting from 0) are the segment type
-type SegmentType byte
+type segmentType byte
 
 const (
-	SegmentTypeExtendedSymbolic SegmentType = 0x91
+	segmentTypeExtendedSymbolic segmentType = 0x91
 )
 
+// represents the port number on a CIP device
+//
+// If you're going to serialize this class to bytes for transimssion be sure to use one of the gologix
+// serialization functions or call Bytes() to get the properly formatted data.
 type CIPPort struct {
 	PortNo       byte
 	ExtensionLen byte
@@ -50,7 +54,9 @@ func (p CIPPort) Bytes() []byte {
 	return []byte{p.PortNo}
 }
 
-// this function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
+// This function takes a CIP path in the format of 0,1,192.168.2.1,0,1 and converts it into the proper equivalent byte slice.
+//
+// The most common use is probably setting up the communication path on a new client.
 func ParsePath(path string) (*bytes.Buffer, error) {
 	if path == "" {
 		return new(bytes.Buffer), nil

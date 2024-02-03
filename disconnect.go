@@ -32,9 +32,9 @@ func (client *Client) Disconnect() error {
 		Path:                   [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}, // TODO: generate paths automatically
 	}
 
-	items[1] = NewItem(cipItem_UnconnectedData, reg_msg)
+	items[1] = newItem(cipItem_UnconnectedData, reg_msg)
 
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (client *Client) disconnect() error {
 type msgCIPMessage_UnRegister struct {
 	Service                CIPService
 	CipPathSize            byte
-	ClassType              CIPClassSize
+	ClassType              cipClassSize
 	Class                  byte
 	InstanceType           cipInstanceSize
 	Instance               byte

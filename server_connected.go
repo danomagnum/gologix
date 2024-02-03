@@ -354,8 +354,8 @@ func (c cipStringPacker) Bytes() []byte {
 
 func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
 	items := make([]CIPItem, 2)
-	items[0] = NewItem(cipItem_ConnectionAddress, connID)
-	items[1] = NewItem(cipItem_ConnectedData, seq)
+	items[0] = newItem(cipItem_ConnectionAddress, connID)
+	items[1] = newItem(cipItem_ConnectedData, seq)
 	resp := msgUnconnWriteResultHeader{
 		Service: s.AsResponse(),
 	}
@@ -363,7 +363,7 @@ func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID u
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
-	itemdata, err := SerializeItems(items)
+	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}

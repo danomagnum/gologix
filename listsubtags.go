@@ -25,14 +25,14 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		start_instance = 1
 	}
 
-	ioi, err := client.NewIOI(roottag, 16)
+	ioi, err := client.newIOI(roottag, 16)
 	if err != nil {
 		return new_kts, fmt.Errorf("bad IOI gen. %w", err)
 	}
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		ioi.Buffer,
@@ -48,7 +48,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
@@ -59,7 +59,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, fmt.Errorf("problem serializing items: %w", err)
 	}
@@ -77,7 +77,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		return nil, fmt.Errorf("problem reading padding. %w", err)
 	}
 
-	resp_items, err := ReadItems(data)
+	resp_items, err := readItems(data)
 	if err != nil {
 		return new_kts, fmt.Errorf("couldn't parse items. %w", err)
 	}

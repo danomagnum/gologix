@@ -21,9 +21,9 @@ const (
 	cipItem_SequenceAddress     CIPItemID = 0x8002
 )
 
-// ReadItems takes an io.Reader positioned at the count of items in the data stream.
+// readItems takes an io.Reader positioned at the count of items in the data stream.
 // It then reads each item from the data stream into an Item structure and returns a slice of all items.
-func ReadItems(r io.Reader) ([]CIPItem, error) {
+func readItems(r io.Reader) ([]CIPItem, error) {
 
 	var count uint16
 
@@ -53,6 +53,12 @@ func ReadItems(r io.Reader) ([]CIPItem, error) {
 //
 // When a response comes back from the controller it is structured in a CIPItem which can then
 // be used to deserialize it with its various methods.
+//
+// There are methods such as Int16(), Uint16(), Int32(), Float32(), etc... that read the type specified off the item and advance
+// the item buffer position.  This can be used to read one-at-a-time the data from the item.  Alternatively, you can use the
+// Serialize() method to dump data into a pre-defined struct if that is more convenient for your application.
+//
+// This class also satisfies the io.reader and io.writer interfaces so you can use it for those kind of operations if needed.
 type CIPItem struct {
 	Header cipItemHeader
 	Data   []byte
@@ -83,7 +89,7 @@ func (item *CIPItem) Write(p []byte) (n int, err error) {
 }
 
 // create an item given an item id and data structure
-func NewItem(id CIPItemID, str any) CIPItem {
+func newItem(id CIPItemID, str any) CIPItem {
 	c := CIPItem{
 		Header: cipItemHeader{
 			ID: id,
@@ -277,7 +283,7 @@ type cipItemsHeader struct {
 	Count           uint16
 }
 
-// SerializeItems takes a slice of items and generates the appropriate byte pattern for the packet
+// serializeItems takes a slice of items and generates the appropriate byte pattern for the packet
 //
 // A lot of the time, item0 ends up being the "null" item with no Data section.
 //
@@ -302,7 +308,7 @@ type cipItemsHeader struct {
 // 14+N0
 // 15+N0	Item1 Data   	Byte 0
 // ...  repeat for all items...
-func SerializeItems(items []CIPItem) (*[]byte, error) {
+func serializeItems(items []CIPItem) (*[]byte, error) {
 
 	b := new(bytes.Buffer)
 

@@ -21,6 +21,7 @@ type TagInfo struct {
 	Dimension3 uint32
 }
 
+// returns whether the type of the tag is a pre-defined type like a DINT, SINT, INT, REAL, etc...
 // see page 42 of 1756-PM020H-EN-P
 func (f TagInfo) PreDefined() bool {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
@@ -31,12 +32,14 @@ func (f TagInfo) PreDefined() bool {
 	return val2 <= 0x0100
 }
 
+// returns whether the type of the tag is an atomic type like a DINT, SINT, INT, REAL, etc...
 // see page 42 of 1756-PM020H-EN-P
 func (f TagInfo) Atomic() bool {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
 	return val&0b1001_0000_0000_0000 == 0
 }
 
+// The template ID is basically the type of the tag.  Probably a udt.
 // see page 42 of 1756-PM020H-EN-P
 func (f TagInfo) Template_ID() uint16 {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
@@ -61,6 +64,9 @@ type msgListInstanceHeader struct {
 	Status        uint16
 }
 
+// Get all the tags on the device starting at start_instance.  Generally you would call this as ListAllTags(0) to get them all.
+// Once the function returns without error, you can access the results of the listing by looking at the client.KnownTags map
+//
 // the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
 // of the instance attribute list of the symbol objects.
 //
@@ -75,7 +81,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		CipObject_Symbol, CIPInstance(start_instance),
@@ -91,7 +97,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	// setup item
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	// add path
 	reqitems[1].Serialize(p.Bytes())
 	// add service specific data
@@ -109,7 +115,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		reqitems[1].Serialize(uint16(1))
 	}
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return fmt.Errorf("problem serializing items: %w", err)
 	}
@@ -129,7 +135,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		return fmt.Errorf("problem getting padding bytes. %w", err)
 	}
 
-	resp_items, err := ReadItems(data)
+	resp_items, err := readItems(data)
 	if err != nil {
 		return fmt.Errorf("couldn't parse items. %w", err)
 	}

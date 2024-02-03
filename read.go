@@ -10,6 +10,10 @@ import (
 
 // Read a single tag into data.  Data should be a pointer to the variable where the data will be deposited.
 //
+// If the data type is not known at read time, use the Read_single function with a CIPType_Unknown type
+//
+// # To efficiently read multiple tags at once, use the ReadMulti, ReadMap, or ReadList functions
+//
 // If the data type does not match what is returned by the controller you will get an error.
 func (client *Client) Read(tag string, data any) error {
 	err := client.checkConnection()
@@ -237,7 +241,7 @@ func (client *Client) Read(tag string, data any) error {
 		}
 		b := bytes.NewBuffer(cast)
 		//err = binary.Read(b, binary.LittleEndian, data)
-		_, err = Unpack(b, CIPPack{}, data)
+		_, err = Unpack(b, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data. %w", err)
 		}
@@ -258,7 +262,7 @@ func (client *Client) Read(tag string, data any) error {
 		b := bytes.NewBuffer(cast)
 
 		//err = binary.Read(b, binary.LittleEndian, data)
-		_, err = Unpack(b, CIPPack{}, data)
+		_, err = Unpack(b, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data. %w", err)
 		}
@@ -289,6 +293,8 @@ func (client *Client) Read(tag string, data any) error {
 
 // Read a single tag with the datatype given by a parameter instead of inferred from a pointer.
 //
+// To read data of an unknown type, use CIPTypeUnknown for the datattype.
+//
 // The data is returned as an interface{} so you'll probably have to type assert it.
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 
@@ -297,14 +303,14 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		return nil, fmt.Errorf("could not start single read: %w", err)
 	}
 
-	ioi, err := client.NewIOI(tag, datatype)
+	ioi, err := client.newIOI(tag, datatype)
 
 	if err != nil {
 		return nil, err
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	readmsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
@@ -312,13 +318,13 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
 	// setup item
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	// add path
 	reqitems[1].Serialize(ioi.Bytes())
 	// add service specific data
 	reqitems[1].Serialize(elements)
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +339,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		client.Logger.Printf("Problem reading items. %v", err)
 		return 0, err
@@ -349,7 +355,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 
 	if hdr2.Type == CIPTypeStruct {
 		if datatype == CIPTypeSTRING {
-			str_hdr := CIPStringHeader{}
+			str_hdr := cipStringHeader{}
 			err = items[1].DeSerialize(&str_hdr)
 			if err != nil {
 				return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
@@ -361,7 +367,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 			}
 			return str, nil
 		}
-		str_hdr := CIPStructHeader{}
+		str_hdr := cipStructHeader{}
 		err = items[1].DeSerialize(&str_hdr)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
@@ -483,18 +489,18 @@ func read[T GoLogixTypes](client *Client, tag string) (T, error) {
 
 }
 
-type CIPStringHeader struct {
+type cipStringHeader struct {
 	Unknown uint16
 	Length  uint32
 }
-type CIPStructHeader struct {
+type cipStructHeader struct {
 	Unknown uint16
 }
 
 // Tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
 // The types of each field need to correspond to the correct CIP type as mapped in types.go
 //
-// To read multiple tags without creating a tagged struct, use the ReadList() function instead.
+// To read multiple tags without creating a tagged struct, use the ReadList() or ReadMap() functions instead.
 func (client *Client) ReadMulti(tag_str any) error {
 	switch x := tag_str.(type) {
 	case map[string]any:
@@ -560,27 +566,27 @@ func (client *Client) ReadMulti(tag_str any) error {
 	return nil
 }
 
-type TagDescr struct {
+type tagDescr struct {
 	TagName  string
 	TagType  CIPType
 	Elements int
 }
 
-func (client *Client) readList(tags []TagDescr) ([]any, error) {
+func (client *Client) readList(tags []tagDescr) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.NewIOI(tag.TagName, tag.TagType)
+		iois[i], err = client.newIOI(tag.TagName, tag.TagType)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
@@ -631,7 +637,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(&b)
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +652,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		return nil, fmt.Errorf("problem reading items. %w", err)
 	}
@@ -700,7 +706,7 @@ func (client *Client) readList(tags []TagDescr) ([]any, error) {
 				}
 				result_values[i] = val
 			} else if tags[i].TagType == CIPTypeSTRING {
-				str_hdr := CIPStringHeader{}
+				str_hdr := cipStringHeader{}
 				err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
@@ -745,7 +751,7 @@ func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 	b := bytes.NewBuffer(dat)
 	for i := 0; i < int(elements); i++ {
 		//err := binary.Read(b, binary.LittleEndian, &t[i])
-		_, err := Unpack(b, CIPPack{}, &t[i])
+		_, err := Unpack(b, &t[i])
 		if err != nil {
 			return t, fmt.Errorf("couldn't parse str data. %w", err)
 		}
@@ -779,7 +785,7 @@ type msgMultiReadResult struct {
 //		m := make(map[string]any) // define the map
 //		m["TestInt"] = int16(0) // the controller has a tag "TestInt" that is an INT
 //		m["TestDint"] = int32(0) // the controller has a tag "TestDint" that is a DINT
-//	 err = client.ReadMulti(&mr) // do the read.
+//	    err = client.ReadMulti(&mr) // do the read.
 func (client *Client) ReadMap(m map[string]any) error {
 
 	err := client.checkConnection()
@@ -788,13 +794,13 @@ func (client *Client) ReadMap(m map[string]any) error {
 	}
 
 	total := len(m)
-	tags := make([]TagDescr, total)
+	tags := make([]tagDescr, total)
 	indexes := make([]string, total)
 	i := 0
 	for k := range m {
 		v := m[k]
 		ct, elem := GoVarToCIPType(v)
-		tags[i] = TagDescr{TagName: k, TagType: ct, Elements: elem}
+		tags[i] = tagDescr{TagName: k, TagType: ct, Elements: elem}
 		indexes[i] = k
 		i++
 	}

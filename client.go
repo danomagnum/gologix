@@ -92,7 +92,13 @@ type Client struct {
 }
 
 // Create a client with reasonable defaults for the given ip address.
-// Default path is backplane, slot 0.
+//
+// Before using the client, you will probably want to call Connect().
+// After connecting be sure to call disconnect() when you are done with the client.  Probably a good place for a defer.
+//
+// Default path is backplane, slot 0.  For devices that aren't in a rack and aren't control or compact logix,
+// such as the micro800 series or io modules, etc...  you probably want to change the path to []byte{}
+// after creating the client with this function.
 func NewClient(ip string) *Client {
 	// default path is backplane -> slot 0
 	p, err := ParsePath("1,0")
@@ -115,6 +121,7 @@ func NewClient(ip string) *Client {
 
 }
 
+// This type documents a tag once it is returned with a list call.
 type KnownTag struct {
 	Name        string
 	Info        TagInfo

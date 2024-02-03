@@ -32,7 +32,7 @@ func (client *Client) Connect() error {
 	// default path is backplane -> slot 0
 	var err error
 	if client.Path == nil {
-		client.Path, err = Serialize(CIPPort{PortNo: 1}, CIPAddress(0))
+		client.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
 		if err != nil {
 			return fmt.Errorf("can't setup default path. %w", err)
 
@@ -133,7 +133,7 @@ func (client *Client) connect() error {
 		client.ConnectionSize = 4002
 	}
 	// we have to do something different for small connection sizes.
-	fwd_open, err := client.NewForwardOpenLarge()
+	fwd_open, err := client.newForwardOpenLarge()
 	if err != nil {
 		return fmt.Errorf("couldn't create forward open. %w", err)
 	}
@@ -143,7 +143,7 @@ func (client *Client) connect() error {
 	items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items0[1] = fwd_open
 
-	itemdata, err := SerializeItems(items0)
+	itemdata, err := serializeItems(items0)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (client *Client) connect() error {
 		return fmt.Errorf("problem reading items header from forward open req. %w", err)
 	}
 
-	items, err := ReadItems(dat)
+	items, err := readItems(dat)
 	if err != nil {
 		return fmt.Errorf("problem reading items from forward open req. %w", err)
 	}
@@ -185,7 +185,7 @@ func (client *Client) connect() error {
 		client.ConnectionSize = 502
 
 		// we have to do something different for small connection sizes.
-		fwd_open, err := client.NewForwardOpenStandard()
+		fwd_open, err := client.newForwardOpenStandard()
 		if err != nil {
 			return fmt.Errorf("couldn't create forward open. %w", err)
 		}
@@ -194,7 +194,7 @@ func (client *Client) connect() error {
 		items0 := make([]CIPItem, 2)
 		items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 		items0[1] = fwd_open
-		itemdata, err := SerializeItems(items0)
+		itemdata, err := serializeItems(items0)
 		if err != nil {
 			return err
 		}
@@ -213,7 +213,7 @@ func (client *Client) connect() error {
 			return fmt.Errorf("problem reading items header from forward open req. %w", err)
 		}
 
-		items, err = ReadItems(dat)
+		items, err = readItems(dat)
 		if err != nil {
 			return fmt.Errorf("problem reading items from forward open req. %w", err)
 		}
@@ -321,7 +321,7 @@ type msgEIPForwardOpen_Large struct {
 	Service CIPService
 	// path
 	PathSize     byte
-	ClassType    CIPClassSize
+	ClassType    cipClassSize
 	Class        byte
 	InstanceType cipInstanceSize
 	Instance     byte
@@ -343,7 +343,7 @@ type msgEIPForwardOpen_Large struct {
 	ConnPathSize           byte
 }
 
-func (client *Client) NewForwardOpenLarge() (CIPItem, error) {
+func (client *Client) newForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Large
 	rand.Seed(time.Now().Unix())
@@ -401,7 +401,7 @@ type msgCIPRegister struct {
 	OptionFlag      uint16
 }
 
-func (client *Client) NewForwardOpenStandard() (CIPItem, error) {
+func (client *Client) newForwardOpenStandard() (CIPItem, error) {
 	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 	var msg msgEIPForwardOpen_Standard
 

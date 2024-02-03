@@ -23,10 +23,10 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 	results := make([]any, 0, total)
 	msgs := 0
 
-	tags := make([]TagDescr, total)
+	tags := make([]tagDescr, total)
 
 	for i := range tagnames {
-		tags[i] = TagDescr{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
+		tags[i] = tagDescr{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
 	}
 
 	for n < total {
@@ -48,7 +48,7 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 	return results, nil
 }
 
-func (client *Client) countIOIsThatFit(tags []TagDescr) (int, error) {
+func (client *Client) countIOIsThatFit(tags []tagDescr) (int, error) {
 	// first generate IOIs for each tag
 	qty := len(tags)
 
@@ -75,7 +75,7 @@ func (client *Client) countIOIsThatFit(tags []TagDescr) (int, error) {
 	response_size := 0
 
 	for i, tag := range tags {
-		ioi, err := client.NewIOI(tag.TagName, tag.TagType)
+		ioi, err := client.newIOI(tag.TagName, tag.TagType)
 		if err != nil {
 			return 0, err
 		}

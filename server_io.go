@@ -28,7 +28,7 @@ func (p *IOProvider[Tin, Tout]) IORead() ([]byte, error) {
 	p.InMutex.Lock()
 	defer p.InMutex.Unlock()
 	b := bytes.Buffer{}
-	_, err := Pack(&b, CIPPack{}, *(p.In))
+	_, err := Pack(&b, *(p.In))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (p *IOProvider[Tin, Tout]) IOWrite(items []CIPItem) error {
 	p.OutMutex.Lock()
 	defer p.OutMutex.Unlock()
 
-	_, err = Unpack(b, CIPPack{}, p.Out)
+	_, err = Unpack(b, p.Out)
 	if err != nil {
 		return fmt.Errorf("problem unpacking data into output struct %w", err)
 	}

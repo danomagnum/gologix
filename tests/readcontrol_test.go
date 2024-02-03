@@ -48,12 +48,12 @@ func TestControl(t *testing.T) {
 		compareControl(fmt.Sprintf("test %d", i), wants[i], ctrl, t)
 
 		b := bytes.Buffer{}
-		_, err = gologix.Pack(&b, gologix.CIPPack{}, ctrl)
+		_, err = gologix.Pack(&b, ctrl)
 		if err != nil {
 			t.Errorf("problem packing data: %v", err)
 		}
 		var ctrl2 lgxtypes.CONTROL
-		_, err = gologix.Unpack(&b, gologix.CIPPack{}, &ctrl2)
+		_, err = gologix.Unpack(&b, &ctrl2)
 		if err != nil {
 			t.Errorf("problem unpacking %d: %v", i, err)
 		}

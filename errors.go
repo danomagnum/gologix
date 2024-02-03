@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Represents a CIP error.
 type CIPError struct {
 	Code     byte
 	Extended uint16
@@ -13,29 +14,47 @@ type CIPError struct {
 func (err *CIPError) Error() string {
 	ec := fmt.Sprintf("error %X%X: ", err.Code, err.Extended)
 	switch err.Code {
+	case 0x00:
+		return ec + " no error?  This shouldn't happen :/"
+	case 0x01:
+		return ec + " connection failure"
+	case 0x02:
+		return ec + " resource unavailable"
 	case 0x03:
-		return ec + "Bad parameter, size > 12 or size greater than size of element."
+		return ec + " bad parameter, size > 12 or size greater than size of element."
 	case 0x04:
-		return ec + "A syntax error was detected decoding the Request Path."
+		return ec + " a syntax error was detected decoding the request path"
 	case 0x05:
-		return ec + "Request Path destination unknown: probably instance number is not present."
+		return ec + " request path destination unknown: probably instance number is not present"
 	case 0x06:
-		return ec + "Insufficient Packet Space: Not enough room in the response buffer for all the data."
+		return ec + " insufficient packet space: not enough room in the response buffer for all the data"
+	case 0x07:
+		return ec + " connection lost"
+	case 0x08:
+		return ec + " service is not supported for the object/instance"
+	case 0x09:
+		return ec + " could not write attribute data - possibly in valid or wrong type"
 	case 0x0A:
-		return ec + "Attribute list error, generally attribute not supported. The status of the unsupported attribute is 0x14."
+		return ec + " attribute list error, generally attribute not supported. the status of the unsupported attribute is 0x14"
 	case 0x10:
 		switch err.Extended {
 		case 0x2101:
-			return ec + "Device state conflict: keyswitch position: The requestor is changing force information in HARD RUN mode."
+			return ec + " device state conflict: keyswitch position: the requestor is changing force information in HARD RUN mode"
 		case 0x2802:
-			return ec + "Device state conflict: Safety Status: The controller is in a state in which Safety Memory cannot be modified."
+			return ec + " device state conflict: safety status: the controller is in a state in which safety memory cannot be modified"
 		}
 	case 0x13:
-		return ec + "Insufficient Request Data: Data too short for expected param."
+		return ec + " insufficient Request Data: Data too short for expected param"
+	case 0x16:
+		return ec + " object does not exist"
+	case 0x1A:
+		return ec + " routing failure: request too large"
+	case 0x1B:
+		return ec + " routing failure: response too large"
 	case 0x1C:
-		return ec + "Attribute List Shortage: The list of attribute numbers was too few for the number of attributes parameter"
+		return ec + " attribute list shortage: the list of attribute numbers was too few for the number of attributes parameter"
 	case 0x26:
-		return ec + "The Request Path Size received was shorter or longer than expected."
+		return ec + " the request path size received was shorter or longer than expected."
 	case 0xFF:
 		switch err.Extended {
 		case 0x2104:
@@ -50,23 +69,23 @@ func (err *CIPError) Error() string {
 	return ec + "Unknown Error"
 }
 
-func NewMultiError(err error) MultiError {
+func newMultiError(err error) multiError {
 	if err != nil {
-		return MultiError{[]error{err}}
+		return multiError{[]error{err}}
 	}
-	return MultiError{[]error{}}
+	return multiError{[]error{}}
 }
 
 // combine multiple errors together.
-type MultiError struct {
+type multiError struct {
 	errs []error
 }
 
-func (e *MultiError) Add(err error) {
+func (e *multiError) Add(err error) {
 	e.errs = append(e.errs, err)
 }
 
-func (e MultiError) Error() string {
+func (e multiError) Error() string {
 	err_str := ""
 	for i := range e.errs {
 		err_str = fmt.Sprintf("%s: %s", err_str, e.errs[i])
@@ -74,7 +93,7 @@ func (e MultiError) Error() string {
 	return err_str
 }
 
-func (e MultiError) Unwrap() error {
+func (e multiError) Unwrap() error {
 	if len(e.errs) > 2 {
 		e.errs = e.errs[1:]
 		return e
@@ -88,6 +107,6 @@ func (e MultiError) Unwrap() error {
 	return nil
 }
 
-func (e MultiError) Is(target error) bool {
+func (e multiError) Is(target error) bool {
 	return errors.Is(e.errs[0], target)
 }

@@ -104,7 +104,7 @@ const defaultIOIBufferSize = 256
 
 // The IOI is the tag name structure that CIP requires.  It's parsed out into tag length, tag name pairs with additional
 // data on the backside to indicate what index is requested if needed.
-func (client *Client) NewIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
+func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err error) {
 	if client.ioi_cache == nil {
 		client.ioi_cache = make(map[string]*tagIOI)
 	}
@@ -227,7 +227,7 @@ func marshalIOIPart(tagpath string) ([]byte, error) {
 		//tag_size += 1
 	}
 
-	tag_name_header := [2]byte{byte(SegmentTypeExtendedSymbolic), byte(tag_size)}
+	tag_name_header := [2]byte{byte(segmentTypeExtendedSymbolic), byte(tag_size)}
 	tag_name_msg := append(tag_name_header[:], []byte(t.BasePath)...)
 	// has to be an even number of bytes.
 	if need_extend {

@@ -53,7 +53,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		CipObject_Template, CIPInstance(str_instance),
@@ -69,7 +69,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
 	number_of_attr_to_receive := 4
 	attr_Size_32bitWords := 4
@@ -87,7 +87,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing item data: %w", err)
 	}
@@ -107,7 +107,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem reading padding. %w", err)
 	}
 
-	resp_items, err := ReadItems(data)
+	resp_items, err := readItems(data)
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("couldn't parse items. %w", err)
 	}
@@ -156,7 +156,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
 		CipObject_Template, CIPInstance(str_instance),
@@ -172,7 +172,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		PathLength:    byte(p.Len() / 2),
 	}
 
-	reqitems[1] = NewItem(cipItem_ConnectedData, readmsg)
+	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
 	start_offset := uint32(0)
 	read_length := uint16(template_info.SizeWords*4 - 23)
@@ -182,7 +182,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	reqitems[1].Serialize(byte(0))
 	reqitems[1].Serialize(uint16(1))
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("problem serializing item data: %w", err)
 	}
@@ -202,7 +202,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read padding. %w", err)
 	}
 
-	resp_items, err := ReadItems(data)
+	resp_items, err := readItems(data)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't parse items. %w", err)
 	}

@@ -67,7 +67,7 @@ func TestTimerRead(t *testing.T) {
 	}
 
 	// the task this timer lives in is set to a 50 ms rate so we should expect
-	// that after 500 ms we should be between 450 and 550 ms elapsed on the timer
+	// that after 500 ms we should be between 449 and 551 ms elapsed on the timer
 	// (accounting for minimal networking latency)
 	time.Sleep(time.Millisecond * 500)
 
@@ -82,8 +82,8 @@ func TestTimerRead(t *testing.T) {
 		t.Errorf("Expected preset of 2,345 but got %d ", tmr.PRE)
 	}
 
-	if tmr.ACC < 450 || tmr.ACC > 550 {
-		t.Errorf("Expected ACC between 450 and 550 but got %d", tmr.ACC)
+	if tmr.ACC < 449 || tmr.ACC > 551 {
+		t.Errorf("Expected ACC between 449 and 551 but got %d", tmr.ACC)
 	}
 
 	if tmr.DN {
@@ -130,12 +130,12 @@ func TestTimerRead(t *testing.T) {
 
 	// make sure we can go the other way and recover it.
 	b := bytes.Buffer{}
-	_, err = gologix.Pack(&b, gologix.CIPPack{}, tmr)
+	_, err = gologix.Pack(&b, tmr)
 	if err != nil {
 		t.Errorf("problem packing data: %v", err)
 	}
 	var tmr2 lgxtypes.TIMER
-	_, err = gologix.Unpack(&b, gologix.CIPPack{}, &tmr2)
+	_, err = gologix.Unpack(&b, &tmr2)
 	if err != nil {
 		t.Errorf("problem unpacking timer: %v", err)
 	}

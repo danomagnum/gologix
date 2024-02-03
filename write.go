@@ -48,7 +48,7 @@ func (client *Client) Write(tag string, value any) error {
 func (client *Client) write_single(tag string, value any) error {
 	//service = 0x4D // cipService_Write
 	datatype, _ := GoVarToCIPType(value)
-	ioi, err := client.NewIOI(tag, datatype)
+	ioi, err := client.newIOI(tag, datatype)
 	if err != nil {
 		return fmt.Errorf("problem generating IOI. %w", err)
 	}
@@ -70,14 +70,14 @@ func (client *Client) write_single(tag string, value any) error {
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
 	reqitems[1].Serialize(ioi_header)
 	reqitems[1].Serialize(ioi.Buffer)
 	reqitems[1].Serialize(ioi_footer)
 	reqitems[1].Serialize(value)
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (client *Client) write_single(tag string, value any) error {
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
 	}
-	items, err := ReadItems(data)
+	items, err := readItems(data)
 	if err != nil {
 		return fmt.Errorf("problem reading items from write, %w", err)
 	}

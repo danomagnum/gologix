@@ -96,14 +96,14 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	iois := make([]*tagIOI, qty)
 	for i, tag := range tags {
 		var err error
-		iois[i], err = client.NewIOI(tag, types[i])
+		iois[i], err = client.newIOI(tag, types[i])
 		if err != nil {
 			return err
 		}
 	}
 
 	reqitems := make([]CIPItem, 2)
-	reqitems[0] = NewItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
@@ -163,7 +163,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	reqitems[1].Serialize(jump_table)
 	reqitems[1].Serialize(b.Bytes())
 
-	itemdata, err := SerializeItems(reqitems)
+	itemdata, err := serializeItems(reqitems)
 	if err != nil {
 		return err
 	}
