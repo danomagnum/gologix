@@ -17,6 +17,11 @@ type Logger interface {
 	Printf(format string, v ...any)
 }
 
+type sLogger interface {
+	Printf(format string, v ...any)
+	Debug(format string, v ...any)
+}
+
 // you have to change this read sequencer every time you make a new tag request.  If you don't, you
 // won't get an error but it will return the last value you requested again.
 // You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
