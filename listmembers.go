@@ -18,7 +18,7 @@ type msgGetTemplateAttrListResponse struct {
 	SequenceCount   uint16
 	Service         CIPService
 	Reserved        byte
-	Status          byte
+	Status          CIPStatus
 	Status_extended byte
 	Count           uint16
 

@@ -315,3 +315,155 @@ const (
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
 	CipObject_RunMode                      CIPClass = 0x8E
 )
+
+// from https://rockwellautomation.custhelp.com/ci/okcsFattach/get/114390_5
+
+type CIPStatus byte
+
+const (
+	CIPStatus_OK                             CIPStatus = 0x00
+	CIPStatus_ConnectionFailure              CIPStatus = 0x01
+	CIPStatus_ResourceUnavailable            CIPStatus = 0x02
+	CIPStatus_InvalidParameterValue          CIPStatus = 0x03
+	CIPStatus_PathSegmentError               CIPStatus = 0x04
+	CIPStatus_PathDestinationUnknown         CIPStatus = 0x05
+	CIPStatus_PartialTransfer                CIPStatus = 0x06
+	CIPStatus_ConnectionLost                 CIPStatus = 0x07
+	CIPStatus_ServiceNotSupported            CIPStatus = 0x08
+	CIPStatus_InvalidAttributeValue          CIPStatus = 0x09
+	CIPStatus_AttributeListError             CIPStatus = 0x0A
+	CIPStatus_AlreadyInRequestedMode         CIPStatus = 0x0B
+	CIPStatus_ObjectStateConflict            CIPStatus = 0x0C
+	CIPStatus_ObjectAlreadyExists            CIPStatus = 0x0D
+	CIPStatus_AttributeNotSettable           CIPStatus = 0x0E
+	CIPStatus_PrivilegeViolation             CIPStatus = 0x0F
+	CIPStatus_DeviceStateConflict            CIPStatus = 0x10
+	CIPStatus_ReplyDataTooLarge              CIPStatus = 0x11
+	CIPStatus_FragmentationOfMessage         CIPStatus = 0x12
+	CIPStatus_NotEnoughData                  CIPStatus = 0x13
+	CIPStatus_AttributeNotSupported          CIPStatus = 0x14
+	CIPStatus_TooMuchData                    CIPStatus = 0x15
+	CIPStatus_ObjectDoesNotExist             CIPStatus = 0x16
+	CIPStatus_ServiceFragmentation           CIPStatus = 0x17
+	CIPStatus_NoStoredAttributeData          CIPStatus = 0x18
+	CIPStatus_StoreOperationFailure          CIPStatus = 0x19
+	CIPStatus_RoutingFailureReqTooLarge      CIPStatus = 0x1A
+	CIPStatus_RoutingFailureRespTooLarge     CIPStatus = 0x1B
+	CIPStatus_MissingAttributeListEntry      CIPStatus = 0x1C
+	CIPStatus_InvalidAttributeValueList      CIPStatus = 0x1D
+	CIPStatus_EmbeddedServiceError           CIPStatus = 0x1E
+	CIPStatus_VendorSpecificError            CIPStatus = 0x1F
+	CIPStatus_InvalidParameter               CIPStatus = 0x20
+	CIPStatus_WriteOnceValueOrMedium         CIPStatus = 0x21
+	CIPStatus_InvalidReplyReceived           CIPStatus = 0x22
+	CIPStatus_BufferOverflow                 CIPStatus = 0x23
+	CIPStatus_MessageFormatError             CIPStatus = 0x24
+	CIPStatus_KeyFailure                     CIPStatus = 0x25
+	CIPStatus_PathSizeInvalid                CIPStatus = 0x26
+	CIPStatus_UnexpectedAttribInList         CIPStatus = 0x27
+	CIPStatus_InvalidMemberID                CIPStatus = 0x28
+	CIPStatus_MemberNotSettable              CIPStatus = 0x29
+	CIPStatus_Group2OnlyServerGeneralFailure CIPStatus = 0x2A
+	CIPStatus_UnknownModbusError             CIPStatus = 0x2B
+	CIPStatus_AttributeNotGettable           CIPStatus = 0x2C
+)
+
+func (s CIPStatus) String() string {
+	switch s {
+	case CIPStatus_OK:
+		return "OK"
+	case CIPStatus_ConnectionFailure:
+		return "ConnectionFailure"
+	case CIPStatus_ResourceUnavailable:
+		return "ResourceUnavailable"
+	case CIPStatus_InvalidParameterValue:
+		return "InvalidParameterValue"
+	case CIPStatus_PathSegmentError:
+		return "PathSegmentError"
+	case CIPStatus_PathDestinationUnknown:
+		return "PathDestinationUnknown"
+	case CIPStatus_PartialTransfer:
+		return "PartialTransfer"
+	case CIPStatus_ConnectionLost:
+		return "ConnectionLost"
+	case CIPStatus_ServiceNotSupported:
+		return "ServiceNotSupported"
+	case CIPStatus_InvalidAttributeValue:
+		return "InvalidAttributeValue"
+	case CIPStatus_AttributeListError:
+		return "AttributeListError"
+	case CIPStatus_AlreadyInRequestedMode:
+		return "AlreadyInRequestedMode"
+	case CIPStatus_ObjectStateConflict:
+		return "ObjectStateConflict"
+	case CIPStatus_ObjectAlreadyExists:
+		return "ObjectAlreadyExists"
+	case CIPStatus_AttributeNotSettable:
+		return "AttributeNotSettable"
+	case CIPStatus_PrivilegeViolation:
+		return "PrivilegeViolation"
+	case CIPStatus_DeviceStateConflict:
+		return "DeviceStateConflict"
+	case CIPStatus_ReplyDataTooLarge:
+		return "ReplyDataTooLarge"
+	case CIPStatus_FragmentationOfMessage:
+		return "FragmentationOfMessage"
+	case CIPStatus_NotEnoughData:
+		return "NotEnoughData"
+	case CIPStatus_AttributeNotSupported:
+		return "AttributeNotSupported"
+	case CIPStatus_TooMuchData:
+		return "TooMuchData"
+	case CIPStatus_ObjectDoesNotExist:
+		return "ObjectDoesNotExist"
+	case CIPStatus_ServiceFragmentation:
+		return "ServiceFragmentation"
+	case CIPStatus_NoStoredAttributeData:
+		return "NoStoredAttributeData"
+	case CIPStatus_StoreOperationFailure:
+		return "StoreOperationFailure"
+	case CIPStatus_RoutingFailureReqTooLarge:
+		return "RoutingFailureReqTooLarge"
+	case CIPStatus_RoutingFailureRespTooLarge:
+		return "RoutingFailureRespTooLarge"
+	case CIPStatus_MissingAttributeListEntry:
+		return "MissingAttributeListEntry"
+	case CIPStatus_InvalidAttributeValueList:
+		return "InvalidAttributeValueList"
+	case CIPStatus_EmbeddedServiceError:
+		return "EmbeddedServiceError"
+	case CIPStatus_VendorSpecificError:
+		return "VendorSpecificError"
+	case CIPStatus_InvalidParameter:
+		return "InvalidParameter"
+	case CIPStatus_WriteOnceValueOrMedium:
+		return "WriteOnceValueOrMedium"
+	case CIPStatus_InvalidReplyReceived:
+		return "InvalidReplyReceived"
+	case CIPStatus_BufferOverflow:
+		return "BufferOverflow"
+	case CIPStatus_MessageFormatError:
+		return "MessageFormatError"
+	case CIPStatus_KeyFailure:
+		return "KeyFailure"
+	case CIPStatus_PathSizeInvalid:
+		return "PathSizeInvalid"
+	case CIPStatus_UnexpectedAttribInList:
+		return "UnexpectedAttribInList"
+	case CIPStatus_InvalidMemberID:
+		return "InvalidMemberID"
+	case CIPStatus_MemberNotSettable:
+		return "MemberNotSettable"
+	case CIPStatus_Group2OnlyServerGeneralFailure:
+		return "Group2OnlyServerGeneralFailure"
+	case CIPStatus_UnknownModbusError:
+		return "UnknownModbusError"
+	case CIPStatus_AttributeNotGettable:
+		return "AttributeNotGettable"
+	default:
+		if s > 0x2C && s < 0xD0 {
+			return fmt.Sprintf("Unknown Error: 0x%X (reserved by CIP for future extensions)", byte(s))
+		}
+		return fmt.Sprintf("Unknown CIPStatus: 0x%X (reserved for object class and service errors)", byte(s))
+	}
+}

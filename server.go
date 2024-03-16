@@ -234,7 +234,6 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			}
 
 		}
-
 	}
 
 }

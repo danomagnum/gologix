@@ -261,16 +261,12 @@ type msgPreItemData struct {
 
 type msgCIPMessageRouterResponse struct {
 	Service    CIPService
-	Reserved   byte // always 0
-	Status     byte // result status
-	Status_Len byte // additional result word count - can be zero
+	Reserved   byte      // always 0
+	Status     CIPStatus // result status
+	Status_Len byte      // additional result word count - can be zero
 }
 
 type msgEIPForwardOpen_Reply struct {
-	//Service        cipService
-	//Reserved       byte // always 0
-	//Status         byte // result status
-	//Status_Len     byte // additional result word count - can be zero
 	OTConnectionID uint32
 	TOConnectionID uint32
 	Unknown3       uint16
@@ -452,7 +448,7 @@ func (client *Client) newForwardOpenStandard() (CIPItem, error) {
 type msgEIPForwardOpen_Standard_Reply struct {
 	Service                CIPService
 	Reserved               byte
-	Status                 byte
+	Status                 CIPStatus
 	StatusLen              byte
 	OTConnectionID         uint32
 	TOConnectionID         uint32

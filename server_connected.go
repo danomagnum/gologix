@@ -327,7 +327,8 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
 		if !ok {
-			return errors.New("was expecting a string but didn't get one")
+			err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, 9, 0)
+			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 		}
 		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, cipStringPacker(res_str))
 	} else {
@@ -363,6 +364,23 @@ func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID u
 	for i := range payload {
 		items[1].Serialize(payload[i])
 	}
+	itemdata, err := serializeItems(items)
+	if err != nil {
+		return fmt.Errorf("could not serialize items: %w", err)
+	}
+	return h.send(cipCommandSendUnitData, itemdata)
+}
+
+func (h *serverTCPHandler) sendConnectedError(s CIPService, seq uint16, connID uint32, status CIPStatus, statusExtended byte) error {
+	items := make([]CIPItem, 2)
+	items[0] = newItem(cipItem_ConnectionAddress, connID)
+	items[1] = newItem(cipItem_ConnectedData, seq)
+	resp := msgUnconnWriteResultHeader{
+		Service:        s.AsResponse(),
+		Status:         status,
+		StatusExtended: statusExtended,
+	}
+	items[1].Serialize(resp)
 	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)

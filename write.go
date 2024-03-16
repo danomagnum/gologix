@@ -122,13 +122,13 @@ type msgWriteResultHeader struct {
 	SequenceCount  uint16
 	Service        CIPService
 	Reserved       byte
-	Status         byte
+	Status         CIPStatus
 	StatusExtended byte
 }
 
 type msgUnconnWriteResultHeader struct {
 	Service        CIPService
 	Reserved       byte
-	Status         byte
+	Status         CIPStatus
 	StatusExtended byte
 }
