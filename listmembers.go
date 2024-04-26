@@ -83,9 +83,6 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		uint16(attr_MemberCount),
 		uint16(attr_symbol_type),
 	})
-	reqitems[1].Serialize(byte(1))
-	reqitems[1].Serialize(byte(0))
-	reqitems[1].Serialize(uint16(1))
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
@@ -178,9 +175,6 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	read_length := uint16(template_info.SizeWords*4 - 23)
 	reqitems[1].Serialize(start_offset)
 	reqitems[1].Serialize(read_length)
-	reqitems[1].Serialize(byte(1))
-	reqitems[1].Serialize(byte(0))
-	reqitems[1].Serialize(uint16(1))
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {

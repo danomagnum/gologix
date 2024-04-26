@@ -55,9 +55,6 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 	attr2_symbol_type := 2
 	attr8_arraydims := 8
 	reqitems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
-	reqitems[1].Serialize(byte(1))
-	reqitems[1].Serialize(byte(0))
-	reqitems[1].Serialize(uint16(1))
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
