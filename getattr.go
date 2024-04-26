@@ -200,8 +200,9 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 	var resphdr cipAttributeResponseHdr
 	items[1].DeSerialize(&resphdr)
-	//dat := make([]byte, hdr.Length-26)
-	//items[1].DeSerialize(&dat)
+	if resphdr.Status != uint16(CIPStatus_OK) {
+		return &items[1], fmt.Errorf("response header has status 0x%X (%v)", resphdr.Status, CIPStatus(resphdr.Status))
+	}
 
 	// There is a count before there is any result data - we'll remove that here.
 	// If needed, the item can always be Reset() to get all the data from the start.

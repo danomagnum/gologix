@@ -182,6 +182,7 @@ func TestGetAttrList(t *testing.T) {
 		1, 2, 3, 4, 6, 7) // properties
 	if err != nil {
 		t.Errorf("problem reading items: %v", err)
+		return
 	}
 
 	type CtrlAttrStruct struct {
