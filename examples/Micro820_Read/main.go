@@ -44,4 +44,33 @@ func main() {
 	// do whatever you want with the value
 	log.Printf("input_dat has value %d\n", input_dat)
 
+	var mybool bool
+	err = client.Read("MyVar1", &mybool)
+	if err != nil {
+		log.Printf("error reading 'MyVar1' tag. %v\n", err)
+	}
+	log.Printf("MyVar1 = %v", mybool)
+
+	var mydint int32
+	err = client.Read("MyVar2", &mydint)
+	if err != nil {
+		log.Printf("error reading 'MyVar2' tag. %v\n", err)
+	}
+	log.Printf("MyVar2 = %v", mydint)
+
+	// Note that this will NOT work.  Micro 8x0 does not support multi-reads.
+	readall := struct {
+		MyVar1   bool    `gologix:"MyVar1"`
+		MyVar2   int32   `gologix:"MyVar2"`
+		InputDat []int32 `gologix:"inputs"`
+	}{}
+	readall.InputDat = make([]int32, 8)
+
+	err = client.ReadMulti(&readall)
+	if err != nil {
+		// this error will always happen with a micro 8x0
+		log.Printf("error reading multi. %v\n", err)
+	}
+	log.Printf("Multi = %+v", readall)
+
 }
