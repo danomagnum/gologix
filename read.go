@@ -647,6 +647,10 @@ func (client *Client) readList(tags []tagDescr) ([]any, error) {
 	}
 	_ = hdr
 
+	if hdr.Status != 0 {
+		return nil, fmt.Errorf("problem reading tags. Status %v", CIPStatus(hdr.Status))
+	}
+
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
@@ -661,10 +665,32 @@ func (client *Client) readList(tags []tagDescr) ([]any, error) {
 	}
 	ritem := items[1]
 	var reply_hdr msgMultiReadResultHeader
-	err = binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
+	//err = binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
+	reply_hdr.SequenceCount, err = ritem.Uint16()
 	if err != nil {
-		return nil, fmt.Errorf("problem reading reply header. %w", err)
+		return nil, fmt.Errorf("problem reading reply header sequence count. %w", err)
 	}
+	byt, err := ritem.Byte()
+	reply_hdr.Service = CIPService(byt)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading reply header service code. %w", err)
+	}
+	_, err = ritem.Byte()
+	if err != nil {
+		return nil, fmt.Errorf("problem reading reply header padding byte. %w", err)
+	}
+	reply_hdr.Status, err = ritem.Uint16()
+	if err != nil {
+		return nil, fmt.Errorf("problem reading reply header status. %w", err)
+	}
+	if reply_hdr.Status != uint16(CIPStatus_OK) {
+		return nil, fmt.Errorf("service returned status %v", CIPStatus(reply_hdr.Status))
+	}
+	reply_hdr.Reply_Count, err = ritem.Uint16()
+	if err != nil {
+		return nil, fmt.Errorf("problem reading reply header item count. %w", err)
+	}
+
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
 	err = binary.Read(&ritem, binary.LittleEndian, &offset_table)
 	if err != nil {
