@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+
+	"github.com/npat-efault/crc16"
 )
 
 type cipPack struct {
@@ -377,4 +379,107 @@ func ReadPacked[T any](client *Client, tag string) (T, error) {
 
 	return data, nil
 
+}
+
+// perform type encoding per TypeEncode_CIPRW.pdf from the rockwell site.  Also returns the abbreviated type ID
+func TypeEncode(data any) (string, uint16, error) {
+	// TODO: does this whole thing break if we have a struct with bools, what with their ZZZZZZ prefixed values and all?
+	//       I suspect it does.  The UDT type definitions won gold at the bad idea olympics.
+
+	encoded := ""
+	// bitpos and bitpack are for packing bits into bytes.  bitpos is the position in the byte and bitpack is the packed bits that
+	// haven't been written to w yet.
+	bitpos := 0
+
+	// start reflecting and loop through the fields of the struct
+	refType := reflect.TypeOf(data)
+	refVal := reflect.ValueOf(data)
+
+	// start with the structure name
+	encoded = refType.Name()
+	for i := 0; i < refType.NumField(); i++ {
+		field := refType.Field(i)
+		k := refVal.Field(i).Kind()
+
+		// there are two conditions where we pack bits.  Multiple bools in series or a bool array.
+		switch k {
+		case reflect.Array:
+			// we have an array without "nopack".  Check if it is a bool array
+			arr := refVal.Field(i)
+			var at string
+			if arr.Type().Elem().Kind() != reflect.Struct {
+				at, _ = goTypeToLogixTypeName(field.Type.Elem())
+			} else {
+				at, _, _ = TypeEncode(arr.Index(0).Interface())
+			}
+			encoded += fmt.Sprintf(",%s[%d]", at, arr.Len())
+			continue
+		case reflect.Bool:
+			// try to pack bools
+			if bitpos == 0 {
+				encoded += ",SINT"
+			}
+			bitpos++
+			// when we have a full byte, flush it.
+			if bitpos >= 8 {
+				bitpos = 0
+
+			}
+			continue
+
+		}
+
+		// we don't have a packable bool.  First thing we need to do is check whether there are some packed bools that still need flushed out.
+		bitpos = 0
+
+		// finally, if the field is some sub-structure, recurse.  Otherwise we will write the data out
+		if k != reflect.Struct {
+			n, _ := goTypeToLogixTypeName(refVal.Field(i).Type())
+			encoded += fmt.Sprintf(",%s", n)
+		} else {
+			str_text, _, err := TypeEncode(refVal.Field(i).Interface())
+			if err != nil {
+				return "", 0, fmt.Errorf("problem encoding sub-structure: %w", err)
+			}
+			encoded += fmt.Sprintf(",%s", str_text)
+		}
+	}
+
+	crc := crc16.Checksum(crc_conf, []byte(encoded))
+
+	return encoded, crc, nil
+}
+
+func goTypeToLogixTypeName(t reflect.Type) (string, error) {
+	switch t.Name() {
+	case "int8":
+		return "SINT", nil
+	case "int16":
+		return "INT", nil
+	case "int32":
+		return "DINT", nil
+	case "int64":
+		return "LINT", nil
+	case "uint8":
+		return "SINT", nil
+	case "uint16":
+		return "UINT", nil
+	case "uint32":
+		return "UDINT", nil
+	case "uint64":
+		return "ULINT", nil
+	case "float32":
+		return "REAL", nil
+	case "float64":
+		return "LREAL", nil
+	}
+	return "", nil
+}
+
+// this is the confirguration for the CRC16 checksum used in the abbreviated type ID calculation for
+// UDT types..
+var crc_conf = &crc16.Conf{
+	Poly:   0x8005,
+	BitRev: true,
+	BigEnd: false,
 }

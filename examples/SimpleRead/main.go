@@ -43,4 +43,13 @@ func main() {
 	// do whatever you want with the value
 	log.Printf("tag1 has value %d", tag1)
 
+	var dat struct {
+		Field1 int32
+		Field2 float32
+	}
+	err = client.Read("Program:Gologix_Tests.ReadUDT", &dat)
+	if err != nil {
+		log.Printf("error reading testint. %v", err)
+	}
+
 }

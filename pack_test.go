@@ -161,3 +161,43 @@ func TestPack2(t *testing.T) {
 
 	}
 }
+
+// this test verifies the "Type Encoding String" described in TypeEncodeCIPRW.pdf is correct for the
+// example UDT1, UDT2, UDT3 they give.  It then verifies the CRC16 checksum of that string.
+func TestEncodeUDT(t *testing.T) {
+
+	type UDT3 struct {
+		U3A byte
+		U3B [4]byte
+	}
+
+	type UDT2 struct {
+		U2A int32
+		U2B [3]byte
+		U2C UDT3
+		U2D [2]UDT3
+	}
+
+	type UDT1 struct {
+		U1A byte
+		U1B [2]byte
+		U1C UDT2
+		U1D [4]UDT3
+	}
+
+	encoding, crc, err := TypeEncode(UDT1{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+	want := "UDT1,SINT,SINT[2],UDT2,DINT,SINT[3],UDT3,SINT,SINT[4],UDT3,SINT,SINT[4][2],UDT3,SINT,SINT[4][4]"
+	if encoding != want {
+		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", encoding, want)
+	}
+
+	want_crc := uint16(0x5F58)
+	if crc != want_crc {
+		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+
+}
