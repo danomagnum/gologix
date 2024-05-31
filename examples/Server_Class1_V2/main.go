@@ -62,12 +62,21 @@ func main() {
 		In:  &inInstance,
 		Out: &outInstance,
 	}
-	path3, err := gologix.ParsePath("1,2")
+	path3, err := gologix.ParsePath("1,0")
 	if err != nil {
 		log.Printf("problem parsing path. %v", err)
 		os.Exit(1)
 	}
-	r.Handle(path3.Bytes(), &p3)
+
+	path_bytes := path3.Bytes()
+
+	// if you want to use a "generic ethernet module" instead of a "generic ethernet bridge" you can use this path
+	// I'm not sure if this is always the case or if it's just the way I have it set up.  Either way if you set up the gologix server
+	// in your hardware tree and get an error of the form "no tag provider for path [52 4]" but with different numbers, let me know
+	// and try those instead.
+	//path_bytes := []byte{52, 4}
+
+	r.Handle(path_bytes, &p3)
 
 	s := gologix.NewServer(&r)
 	go s.Serve()
