@@ -18,3 +18,4 @@
 - https://github.com/mikeav-soft/LogixTool/tree/master
 - https://www.automation-pros.com/enip1/UserManual.pdf
 - https://rockwellautomation.custhelp.com/ci/okcsFattach/get/114390_5
+- https://www.rockwellautomation.com/content/dam/rockwell-automation/sites/downloads/pdf/developerguide.pdf

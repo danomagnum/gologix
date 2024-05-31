@@ -232,6 +232,11 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			if err != nil {
 				return fmt.Errorf("problem with sendunitdata %w", err)
 			}
+		case cipCommandListServices:
+			err = h.sendListServicesData(eiphdr)
+			if err != nil {
+				return fmt.Errorf("problem with sendlistservices %w", err)
+			}
 
 		}
 	}
@@ -668,4 +673,16 @@ func (h *serverTCPHandler) newEIPHeader(cmd CIPCommand, size int) (hdr eipHeader
 
 	return
 
+}
+
+func (h *serverTCPHandler) sendListServicesData(hdr eipHeader) error {
+	// on a list services request there is no more data to read.
+	response := []byte{}
+	binary.LittleEndian.AppendUint16(response, 1)                     // item count
+	binary.LittleEndian.AppendUint16(response, 0x0100)                // item 0 type code
+	binary.LittleEndian.AppendUint16(response, 10)                    // item 0 length
+	binary.LittleEndian.AppendUint16(response, 1)                     // item 0 version
+	binary.LittleEndian.AppendUint16(response, 0b0000_0001_0010_0000) // item 0 capability flags (class 1 and cip routing)
+	response = append(response, []byte("Communications  ")...)        // item 0 service name
+	return h.send(cipCommandSendRRData, response)
 }
