@@ -24,7 +24,7 @@ type Server struct {
 	Logger      Logger
 }
 
-// an instance of serverTCPHandler will be created for every incomming connection to the EIP tcp port.
+// an instance of serverTCPHandler will be created for every incoming connection to the EIP tcp port.
 // it handles receiving messages, figuring out what kind they are, and using the associated server's ConnMgr and Router to
 // dispatch the appropriate code
 type serverTCPHandler struct {
@@ -94,8 +94,8 @@ func (srv *Server) Serve() error {
 		}
 	}()
 
-	// we will wait forever for one of the serve goroutines to let us know they crased.
-	// then we'll close them both and check for errors, combining them all toghether and returning it.
+	// we will wait forever for one of the serve goroutines to let us know they crashed.
+	// then we'll close them both and check for errors, combining them all together and returning it.
 	err = <-errch
 	final_err := newMultiError(err)
 
@@ -125,7 +125,7 @@ func (srv *Server) serveTCP() error {
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
-				srv.Logger.Printf("Error on connnection %v. %v", h.conn.RemoteAddr().String(), err)
+				srv.Logger.Printf("Error on connection %v. %v", h.conn.RemoteAddr().String(), err)
 			}
 		}()
 	}
@@ -138,7 +138,7 @@ type cipIOSeqAccessData struct {
 
 // this listens on the eip udp port and handles incoming messages.
 // for each message that comes it it figures out which connection it belongs to and
-// dispatches it accordingly to the proper router engpoint.
+// dispatches it accordingly to the proper router endpoint.
 func (srv *Server) serveUDP() error {
 	bufsize := 4096
 	for {
@@ -366,7 +366,7 @@ func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 
 func (h *serverTCPHandler) forwardClose(i CIPItem) error {
 	h.server.Logger.Printf("got forward close from %v", h.conn.RemoteAddr())
-	var fwd_close msgEIPForwardClose
+	var fwd_close msgEIPForwardClose // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_close)
 	if err != nil {
 		h.server.Logger.Printf("problem parsing forward close. %v", err)
@@ -388,9 +388,61 @@ func (h *serverTCPHandler) forwardClose(i CIPItem) error {
 	return nil
 }
 
+// in this message T is for target and O is for originator so
+// TO is target -> originator and OT is originator -> target
+type msgEIPForwardOpen_Standard struct {
+	Service                CIPService
+	PathSize               byte
+	ClassType              byte
+	Class                  byte
+	InstanceType           byte
+	Instance               byte
+	Priority               byte
+	TimeoutTicks           byte
+	OTConnectionID         uint32
+	TOConnectionID         uint32
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	Multiplier             uint32
+	OTRPI                  uint32
+	OTNetworkConnParams    uint16
+	TORPI                  uint32
+	TONetworkConnParams    uint16
+	TransportTrigger       byte
+	ConnPathSize           byte
+}
+
+type msgEIPForwardOpen_Large struct {
+	// service
+	Service CIPService
+	// path
+	PathSize     byte
+	ClassType    cipClassSize
+	Class        byte
+	InstanceType cipInstanceSize
+	Instance     byte
+
+	// service specific data
+	Priority               byte
+	TimeoutTicks           byte
+	OTConnectionID         uint32
+	TOConnectionID         uint32
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	Multiplier             uint32
+	OTRPI                  uint32
+	OTNetworkConnParams    uint32
+	TORPI                  uint32
+	TONetworkConnParams    uint32
+	TransportTrigger       byte
+	ConnPathSize           byte
+}
+
 func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("got large forward open from %v", h.conn.RemoteAddr())
-	var fwd_open msgEIPForwardOpen_Large
+	var fwd_open msgEIPForwardOpen_Large // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
@@ -462,7 +514,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 
 func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("got small forward open from %v", h.conn.RemoteAddr())
-	var fwd_open msgEIPForwardOpen_Standard
+	var fwd_open msgEIPForwardOpen_Standard // TODO: Transition this to the new forward open
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)

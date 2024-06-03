@@ -35,9 +35,12 @@ func main() {
 			log.Printf("problem with plc connection %s. Can't parse path. %v", plcconf.Name, err)
 			continue
 		}
-		conn := gologix.Client{
-			IPAddress: plcconf.Address,
+		controller := gologix.Controller{
+			IpAddress: plcconf.Address,
 			Path:      path,
+		}
+		conn := gologix.Client{
+			Controller: controller,
 		}
 
 		err = conn.Connect()

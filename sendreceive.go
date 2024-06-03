@@ -57,7 +57,7 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
-			err2 := client.disconnect()
+			err2 := client.Disconnect()
 			return fmt.Errorf("%w: %v", err, err2)
 		}
 		written += n
@@ -90,7 +90,7 @@ func (client *Client) recv_data() (eipHeader, *bytes.Buffer, error) {
 	}
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
-		err2 := client.disconnect()
+		err2 := client.Disconnect()
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
 	}
 	if client.SocketTimeout != 0 {
@@ -104,7 +104,7 @@ func (client *Client) recv_data() (eipHeader, *bytes.Buffer, error) {
 
 		err = binary.Read(client.conn, binary.LittleEndian, &data)
 		if err != nil {
-			err2 := client.disconnect()
+			err2 := client.Disconnect()
 			return hdr, nil, fmt.Errorf("problem reading socket payload: %w: %v", err, err2)
 		}
 	}

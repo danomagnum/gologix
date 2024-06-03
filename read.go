@@ -293,7 +293,7 @@ func (client *Client) Read(tag string, data any) error {
 
 // Read a single tag with the datatype given by a parameter instead of inferred from a pointer.
 //
-// To read data of an unknown type, use CIPTypeUnknown for the datattype.
+// To read data of an unknown type, use CIPTypeUnknown for the data type.
 //
 // The data is returned as an interface{} so you'll probably have to type assert it.
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
@@ -309,26 +309,26 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		return nil, err
 	}
 
-	reqitems := make([]CIPItem, 2)
-	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	readmsg := msgCIPConnectedServiceReq{
+	readMsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
 		Service:       CIPService_Read,
 		PathLength:    byte(len(ioi.Bytes()) / 2),
 	}
 	// setup item
-	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
+	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
 	// add path
-	reqitems[1].Serialize(ioi.Bytes())
+	reqItems[1].Serialize(ioi.Bytes())
 	// add service specific data
-	reqitems[1].Serialize(elements)
+	reqItems[1].Serialize(elements)
 
-	itemdata, err := serializeItems(reqitems)
+	itemData, err := serializeItems(reqItems)
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +512,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		return fmt.Errorf("could not start multi read: %w", err)
 	}
 
-	// build the tag list from the structure by reflecing through the tags on the fields of the struct.
+	// build the tag list from the structure by reflecting through the tags on the fields of the struct.
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
@@ -522,7 +522,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	val := reflect.ValueOf(tag_str).Elem()
 	for i := range vf {
 		field := vf[i]
-		tagpath, ok := field.Tag.Lookup("gologix")
+		tagPath, ok := field.Tag.Lookup("gologix")
 		if !ok {
 			continue
 		}
@@ -530,8 +530,8 @@ func (client *Client) ReadMulti(tag_str any) error {
 		ct, elem := GoVarToCIPType(v)
 		types = append(types, ct)
 		elements = append(elements, elem)
-		tags = append(tags, tagpath)
-		tag_map[tagpath] = i
+		tags = append(tags, tagPath)
+		tag_map[tagPath] = i
 	}
 
 	result_values, err := client.ReadList(tags, types, elements)
@@ -541,12 +541,12 @@ func (client *Client) ReadMulti(tag_str any) error {
 
 	// now unpack the result values back into the given structure
 	for i, tag := range tags {
-		fieldno := tag_map[tag]
+		fieldNo := tag_map[tag]
 		val := result_values[i]
 
 		v := reflect.ValueOf(&tag_str).Elem().Elem().Elem()
 
-		fieldVal := v.Field(fieldno)
+		fieldVal := v.Field(fieldNo)
 
 		if fieldVal.Type().Kind() != reflect.Slice {
 			fieldVal.Set(reflect.ValueOf(val))
@@ -558,7 +558,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 		}
 
 		if err != nil {
-			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldno, tag, val)
+			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldNo, tag, val)
 		}
 
 	}
@@ -566,13 +566,13 @@ func (client *Client) ReadMulti(tag_str any) error {
 	return nil
 }
 
-type tagDescr struct {
+type tagDesc struct {
 	TagName  string
 	TagType  CIPType
 	Elements int
 }
 
-func (client *Client) readList(tags []tagDescr) ([]any, error) {
+func (client *Client) readList(tags []tagDesc) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
@@ -623,7 +623,7 @@ func (client *Client) readList(tags []tagDescr) ([]any, error) {
 		// TODO: calculate the actual message size, not just the IOI data size.
 		// TODO: We also need to caculate the response size we expect from the PLC and split
 		//       into multiple messages on that also.
-		if b.Len() > client.ConnectionSize {
+		if b.Len() > int(client.ConnectionSize) {
 			// TODO: split this read up into mulitple messages.
 			return nil, fmt.Errorf("maximum read message size is %d", client.ConnectionSize)
 		}
@@ -820,13 +820,13 @@ func (client *Client) ReadMap(m map[string]any) error {
 	}
 
 	total := len(m)
-	tags := make([]tagDescr, total)
+	tags := make([]tagDesc, total)
 	indexes := make([]string, total)
 	i := 0
 	for k := range m {
 		v := m[k]
 		ct, elem := GoVarToCIPType(v)
-		tags[i] = tagDescr{TagName: k, TagType: ct, Elements: elem}
+		tags[i] = tagDesc{TagName: k, TagType: ct, Elements: elem}
 		indexes[i] = k
 		i++
 	}
