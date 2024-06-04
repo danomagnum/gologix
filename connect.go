@@ -58,7 +58,7 @@ func (client *Client) Connect() error {
 		client.ioi_cache = make(map[string]*tagIOI)
 	}
 
-	address := fmt.Sprint("%s:%v", client.Controller.IpAddress, client.Controller.Port)
+	address := fmt.Sprintf("%s:%v", client.Controller.IpAddress, client.Controller.Port)
 	client.conn, err = net.DialTimeout("tcp", address, client.SocketTimeout)
 	if err != nil {
 		msg := "cannot connect to controller"
@@ -196,12 +196,6 @@ type msgCIPMessageRouterResponse struct {
 	StatusLen byte      // additional result word count - can be zero
 }
 
-type msgEIPForwardOpen_Reply struct {
-	OTConnectionID uint32
-	TOConnectionID uint32
-	Unknown3       uint16
-}
-
 type msgEIPForwardClose struct {
 	Service                CIPService
 	PathSize               byte
@@ -292,7 +286,7 @@ func (client *Client) newForwardOpenLarge() (CIPItem, error) {
 	// this next section is the path
 	msg.Priority = 0x0A
 	msg.TimeoutTicks = 0x0E
-	msg.OTConnectionID = client.sequenceNumber.Add(1) // pylogix always uses 0x20000002
+	msg.OTConnectionID = client.sequenceNumber.Add(1) // pyLogix always uses 0x20000002
 	msg.TOConnectionID = client.sequenceNumber.Add(1)
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
 	msg.VendorID = client.VendorId
@@ -444,8 +438,8 @@ type msgEIPForwardOpen_Standard_Reply struct {
 	ConnectionSerialNumber uint16
 	VendorID               uint16
 	OriginatorSerialNumber uint32
-	OTAPI                  uint32
-	TOAPI                  uint32
+	OTApi                  uint32
+	TOApi                  uint32
 	ReplySize              byte
 	Reserved2              byte
 }

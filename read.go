@@ -417,7 +417,7 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 		if !ok {
 			return t, fmt.Errorf("couldn't cast to bytes. %w", err)
 		}
-		return parseArrayStuct[T](b, elements)
+		return parseArrayStruct[T](b, elements)
 	}
 
 	//cast, ok := val.([]T)
@@ -556,11 +556,6 @@ func (client *Client) ReadMulti(tag_str any) error {
 				fieldVal.Index(j).Set(reflect.ValueOf(val).Index(j).Elem())
 			}
 		}
-
-		if err != nil {
-			return fmt.Errorf("problem populating field %v with tag %v of value %v", fieldNo, tag, val)
-		}
-
 	}
 
 	return nil
@@ -585,8 +580,8 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 		}
 	}
 
-	reqitems := make([]CIPItem, 2)
-	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	ioi_header := msgCIPConnectedMultiServiceReq{
 		Sequence:     uint16(sequencer()),
@@ -621,27 +616,27 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 			return nil, fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
 		}
 		// TODO: calculate the actual message size, not just the IOI data size.
-		// TODO: We also need to caculate the response size we expect from the PLC and split
+		// TODO: We also need to calculate the response size we expect from the PLC and split
 		//       into multiple messages on that also.
 		if b.Len() > int(client.ConnectionSize) {
-			// TODO: split this read up into mulitple messages.
+			// TODO: split this read up into multiple messages.
 			return nil, fmt.Errorf("maximum read message size is %d", client.ConnectionSize)
 		}
 	}
 
-	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the readsequencer is
+	// right now I'm putting the IOI data into the cip Item, but I suspect it might actually be that the read sequencer is
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
-	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Serialize(ioi_header)
-	reqitems[1].Serialize(jump_table)
-	reqitems[1].Serialize(&b)
+	reqItems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
+	reqItems[1].Serialize(ioi_header)
+	reqItems[1].Serialize(jump_table)
+	reqItems[1].Serialize(&b)
 
-	itemdata, err := serializeItems(reqitems)
+	itemData, err := serializeItems(reqItems)
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, err
 	}
@@ -663,69 +658,69 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	if len(items) != 2 {
 		return nil, fmt.Errorf("wrong Number of Items. Expected 2 but got %v", len(items))
 	}
-	ritem := items[1]
+	rItem := items[1]
 	var reply_hdr msgMultiReadResultHeader
-	//err = binary.Read(&ritem, binary.LittleEndian, &reply_hdr)
-	reply_hdr.SequenceCount, err = ritem.Uint16()
+	//err = binary.Read(&rItem, binary.LittleEndian, &reply_hdr)
+	reply_hdr.SequenceCount, err = rItem.Uint16()
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header sequence count. %w", err)
 	}
-	byt, err := ritem.Byte()
+	byt, err := rItem.Byte()
 	reply_hdr.Service = CIPService(byt)
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header service code. %w", err)
 	}
-	_, err = ritem.Byte()
+	_, err = rItem.Byte()
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header padding byte. %w", err)
 	}
-	reply_hdr.Status, err = ritem.Uint16()
+	reply_hdr.Status, err = rItem.Uint16()
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header status. %w", err)
 	}
 	if reply_hdr.Status != uint16(CIPStatus_OK) {
 		return nil, fmt.Errorf("service returned status %v", CIPStatus(reply_hdr.Status))
 	}
-	reply_hdr.Reply_Count, err = ritem.Uint16()
+	reply_hdr.Reply_Count, err = rItem.Uint16()
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header item count. %w", err)
 	}
 
 	offset_table := make([]uint16, reply_hdr.Reply_Count)
-	err = binary.Read(&ritem, binary.LittleEndian, &offset_table)
+	err = binary.Read(&rItem, binary.LittleEndian, &offset_table)
 	if err != nil {
 		return nil, fmt.Errorf("problem reading offset table. %w", err)
 	}
-	rb, err := ritem.Bytes()
+	rb, err := rItem.Bytes()
 	if err != nil {
 		return nil, err
 	}
 	result_values := make([]interface{}, reply_hdr.Reply_Count)
 	for i := 0; i < int(reply_hdr.Reply_Count); i++ {
 		offset := offset_table[i] + 10 // offset doesn't start at 0 in the item
-		mybytes := bytes.NewBuffer(rb[offset:])
-		rhdr := msgMultiReadResult{}
-		err = binary.Read(mybytes, binary.LittleEndian, &rhdr)
+		myBytes := bytes.NewBuffer(rb[offset:])
+		rHdr := msgMultiReadResult{}
+		err = binary.Read(myBytes, binary.LittleEndian, &rHdr)
 		if err != nil {
 			return nil, fmt.Errorf("problem reading multi result header. %w", err)
 		}
 
 		// bit 8 of the service indicates whether it is a response service
-		if !rhdr.Service.IsResponse() {
-			return nil, fmt.Errorf("wasn't a response service. Got %v", rhdr.Service)
+		if !rHdr.Service.IsResponse() {
+			return nil, fmt.Errorf("wasn't a response service. Got %v", rHdr.Service)
 		}
-		rhdr.Service = rhdr.Service.UnResponse()
-		if rhdr.Status != 0 {
-			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rhdr.Status)
+		rHdr.Service = rHdr.Service.UnResponse()
+		if rHdr.Status != 0 {
+			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rHdr.Status)
 		}
 		if tags[i].Elements == 1 {
-			if tags[i].TagType == CIPTypeBOOL && rhdr.Type != CIPTypeBOOL && iois[i].BitAccess {
+			if tags[i].TagType == CIPTypeBOOL && rHdr.Type != CIPTypeBOOL && iois[i].BitAccess {
 				// we have requested a bool from some other type.  Maybe a bit access?
-				value, err := readValue(rhdr.Type, mybytes)
+				value, err := readValue(rHdr.Type, myBytes)
 				if err != nil {
 					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
 				}
-				val, err := getBit(rhdr.Type, value, iois[i].BitPosition)
+				val, err := getBit(rHdr.Type, value, iois[i].BitPosition)
 				if err != nil {
 					client.Logger.Printf("problem reading value for this guy")
 					continue
@@ -733,31 +728,31 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				result_values[i] = val
 			} else if tags[i].TagType == CIPTypeSTRING {
 				str_hdr := cipStringHeader{}
-				err = binary.Read(mybytes, binary.LittleEndian, &str_hdr)
+				err = binary.Read(myBytes, binary.LittleEndian, &str_hdr)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
 				}
 				str := make([]byte, str_hdr.Length)
-				err = binary.Read(mybytes, binary.LittleEndian, str)
+				err = binary.Read(myBytes, binary.LittleEndian, str)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 				}
 				result_values[i] = string(str)
 			} else {
-				result_values[i], err = rhdr.Type.readValue(mybytes)
+				result_values[i], err = rHdr.Type.readValue(myBytes)
 				if err != nil {
 					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
 				}
 			}
 
 			if verbose {
-				client.Logger.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rhdr, result_values[i])
+				client.Logger.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rHdr, result_values[i])
 			}
 		} else {
 			// multi-element type.
 			val := make([]any, tags[i].Elements)
 			for respIndex := 0; respIndex < tags[i].Elements; respIndex++ {
-				value, err := readValue(rhdr.Type, mybytes)
+				value, err := readValue(rHdr.Type, myBytes)
 				if err != nil {
 					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
 				}
@@ -771,7 +766,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 
 }
 
-func parseArrayStuct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
+func parseArrayStruct[T GoLogixTypes](dat []byte, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	// val should be a byte slice
 	b := bytes.NewBuffer(dat)
@@ -841,12 +836,12 @@ func (client *Client) ReadMap(m map[string]any) error {
 		if err != nil {
 			return err
 		}
-		subresults, err := client.readList(tags[n : n+n_new])
+		subResults, err := client.readList(tags[n : n+n_new])
 		n += n_new
 		if err != nil {
 			return err
 		}
-		result_values = append(result_values, subresults...)
+		result_values = append(result_values, subResults...)
 
 	}
 
