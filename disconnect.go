@@ -1,22 +1,39 @@
 package gologix
 
 import (
-	"errors"
 	"fmt"
+	"log/slog"
 )
 
-// You will want to defer this after a successfull Connect() to make sure you free up the controller resources
-// to disconect we send two items - a null item and an unconnected data item for the unregister service
+// You will want to defer this after a successful Connect() to make sure you free up the controller resources
+// to disconnect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
 	if !client.Connected {
 		return nil
 	}
 	var err error
+	client.SLogger.Info("starting disconnection")
+
+	client.Connected = false
+	if client.KeepAliveRunning {
+		close(client.cancel_keepalive)
+	}
 
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{} // null item
+	items[1] = CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
 
-	reg_msg := msgCIPMessage_UnRegister{
+	path, err := Serialize(
+		client.Controller.Path,
+		CipObject_MessageRouter,
+		CIPInstance(1),
+	)
+	if err != nil {
+		client.SLogger.Error("Error serializing path", slog.String("err", err.Error()))
+		return fmt.Errorf("error serializing path: %w", err)
+	}
+
+	msg := msgCipUnRegister{
 		Service:                CIPService_ForwardClose,
 		CipPathSize:            0x02,
 		ClassType:              cipClass_8bit,
@@ -26,46 +43,49 @@ func (client *Client) Disconnect() error {
 		Priority:               0x0A,
 		TimeoutTicks:           0x0E,
 		ConnectionSerialNumber: client.ConnectionSerialNumber,
-		VendorID:               client.VendorID,
-		OriginatorSerialNumber: client.serialNumber,
-		PathSize:               3,                                           // 16 bit words
-		Path:                   [6]byte{0x01, 0x00, 0x20, 0x02, 0x24, 0x01}, // TODO: generate paths automatically
+		VendorID:               client.VendorId,
+		OriginatorSerialNumber: client.SerialNumber,
+		PathSize:               byte(path.Len() / 2),
+		Reserved:               0x00,
 	}
 
-	items[1] = newItem(cipItem_UnconnectedData, reg_msg)
+	items[1].Serialize(msg)
+	items[1].Serialize(path)
 
-	itemdata, err := serializeItems(items)
+	itemData, err := serializeItems(items)
 	if err != nil {
-		return err
+		client.SLogger.Error(
+			"unable to serialize itemData. Forcing connection closed",
+			slog.String("err", err.Error()),
+		)
+	} else {
+		header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
+		if err != nil {
+			client.SLogger.Error(
+				"error sending disconnect request",
+				slog.String("err", err.Error()),
+			)
+		}
+
+		_, err = client.parseResponse(&header, data)
+		if err != nil {
+			client.SLogger.Error(
+				"error parsing disconnect response",
+				slog.String("err", err.Error()),
+			)
+		}
 	}
-	err = client.send(cipCommandSendRRData, itemdata)
+
+	err = client.conn.Close()
 	if err != nil {
-		err2 := client.disconnect()
-		return fmt.Errorf("couldn't send unconnect req %w: %v", err, err2)
+		client.SLogger.Error("error closing connection", slog.String("err", err.Error()))
 	}
-	client.disconnect()
+
+	client.SLogger.Info("successfully disconnected from controller")
 	return nil
-
 }
 
-// module internal disconnect that closes the connection and cancels the watchdog/keepalive
-func (client *Client) disconnect() error {
-	if !client.Connected {
-		return errors.New("already disconnected")
-	}
-	client.Connected = false
-
-	// this will kill the keepalive goroutine
-	close(client.cancel_keepalive)
-
-	err := client.conn.Close()
-	if err != nil {
-		err = fmt.Errorf("error closing connection: %w", err)
-	}
-	return err
-}
-
-type msgCIPMessage_UnRegister struct {
+type msgCipUnRegister struct {
 	Service                CIPService
 	CipPathSize            byte
 	ClassType              cipClassSize
@@ -77,6 +97,6 @@ type msgCIPMessage_UnRegister struct {
 	ConnectionSerialNumber uint16
 	VendorID               uint16
 	OriginatorSerialNumber uint32
-	PathSize               uint16
-	Path                   [6]byte
+	PathSize               uint8
+	Reserved               byte // Always 0x00
 }

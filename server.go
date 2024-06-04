@@ -24,7 +24,7 @@ type Server struct {
 	Logger      Logger
 }
 
-// an instance of serverTCPHandler will be created for every incomming connection to the EIP tcp port.
+// an instance of serverTCPHandler will be created for every incoming connection to the EIP tcp port.
 // it handles receiving messages, figuring out what kind they are, and using the associated server's ConnMgr and Router to
 // dispatch the appropriate code
 type serverTCPHandler struct {
@@ -78,25 +78,25 @@ func (srv *Server) Serve() error {
 
 	// we'll start two server goroutines and then wait for either of them to error out on the error channel.
 
-	errch := make(chan error)
+	errCh := make(chan error)
 
 	go func() {
 		err := srv.serveUDP()
 		if err != nil {
-			errch <- fmt.Errorf("problem serving UDP. %w", err)
+			errCh <- fmt.Errorf("problem serving UDP. %w", err)
 		}
 	}()
 
 	go func() {
 		err := srv.serveTCP()
 		if err != nil {
-			errch <- fmt.Errorf("problem serving TCP. %w", err)
+			errCh <- fmt.Errorf("problem serving TCP. %w", err)
 		}
 	}()
 
-	// we will wait forever for one of the serve goroutines to let us know they crased.
-	// then we'll close them both and check for errors, combining them all toghether and returning it.
-	err = <-errch
+	// we will wait forever for one of the serve goroutines to let us know they crashed.
+	// then we'll close them both and check for errors, combining them all together and returning it.
+	err = <-errCh
 	final_err := newMultiError(err)
 
 	err = srv.TCPListener.Close()
@@ -125,7 +125,7 @@ func (srv *Server) serveTCP() error {
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
-				srv.Logger.Printf("Error on connnection %v. %v", h.conn.RemoteAddr().String(), err)
+				srv.Logger.Printf("Error on connection %v. %v", h.conn.RemoteAddr().String(), err)
 			}
 		}()
 	}
@@ -138,9 +138,9 @@ type cipIOSeqAccessData struct {
 
 // this listens on the eip udp port and handles incoming messages.
 // for each message that comes it it figures out which connection it belongs to and
-// dispatches it accordingly to the proper router engpoint.
+// dispatches it accordingly to the proper router endpoint.
 func (srv *Server) serveUDP() error {
-	bufsize := 4096
+	bufSize := 4096
 	for {
 		b := make([]byte, 4096)
 		buf := bytes.NewBuffer(b)
@@ -149,7 +149,7 @@ func (srv *Server) serveUDP() error {
 			srv.Logger.Printf("Read 0 bytes on udp listener.")
 			continue
 		}
-		if n == bufsize {
+		if n == bufSize {
 			srv.Logger.Printf("udp buffer size not big enough!")
 			continue
 		}
@@ -207,35 +207,35 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 	}()
 
 	for {
-		var eiphdr eipHeader
-		err := binary.Read(h.conn, binary.LittleEndian, &eiphdr)
+		var eipHdr eipHeader
+		err := binary.Read(h.conn, binary.LittleEndian, &eipHdr)
 		if err != nil {
 			return fmt.Errorf("problem reading eip header. %w", err)
 		}
-		h.context = eiphdr.Context
+		h.context = eipHdr.Context
 		h.server.Logger.Printf("context: %v\n", h.context)
-		switch eiphdr.Command {
+		switch eipHdr.Command {
 		case cipCommandRegisterSession:
-			err = h.registerSession(eiphdr)
+			err = h.registerSession(eipHdr)
 			if err != nil {
 				return fmt.Errorf("problem with register session %w", err)
 			}
 		case cipCommandSendRRData:
 			// this is things like forward opens
-			err = h.sendRRData(eiphdr)
+			err = h.sendRRData(eipHdr)
 			if err != nil {
-				return fmt.Errorf("problem with sendrrdata %w", err)
+				return fmt.Errorf("problem with sendRRData %w", err)
 			}
 		case cipCommandSendUnitData:
 			// this is things like writes and reads
-			err = h.sendUnitData(eiphdr)
+			err = h.sendUnitData(eipHdr)
 			if err != nil {
-				return fmt.Errorf("problem with sendunitdata %w", err)
+				return fmt.Errorf("problem with sendUnitData %w", err)
 			}
 		case cipCommandListServices:
-			err = h.sendListServicesData(eiphdr)
+			err = h.sendListServicesData(eipHdr)
 			if err != nil {
-				return fmt.Errorf("problem with sendlistservices %w", err)
+				return fmt.Errorf("problem with sendListServices %w", err)
 			}
 
 		}
@@ -257,7 +257,7 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := readItems(h.conn)
 	if err != nil {
-		return fmt.Errorf("problem reading items for rrdata %w", err)
+		return fmt.Errorf("problem reading items for rrData %w", err)
 	}
 	if len(items) != 2 {
 		return fmt.Errorf("expected 2 items. got %v", len(items))
@@ -266,8 +266,8 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 	if items[0].Header.ID != cipItem_ConnectionAddress {
 		return fmt.Errorf("should have had a connected data item in position 0. got %v", items[0].Header.ID)
 	}
-	var connid uint32
-	err = items[0].DeSerialize(&connid)
+	var connId uint32
+	err = items[0].DeSerialize(&connId)
 	if err != nil {
 		return fmt.Errorf("problem deserializing connection ID %w", err)
 	}
@@ -323,11 +323,11 @@ func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
 		Service:       s.AsResponse(),
 	}
 	items[1].Serialize(resp)
-	itemdata, err := serializeItems(items)
+	itemData, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
-	return h.send(cipCommandSendUnitData, itemdata)
+	return h.send(cipCommandSendUnitData, itemData)
 }
 
 func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
@@ -344,7 +344,7 @@ func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := readItems(h.conn)
 	if err != nil {
-		return fmt.Errorf("problem reading items for rrdata %w", err)
+		return fmt.Errorf("problem reading items for rrData %w", err)
 	}
 	h.server.Logger.Printf("items: %+v", items)
 	if len(items) != 2 {
@@ -366,7 +366,7 @@ func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 
 func (h *serverTCPHandler) forwardClose(i CIPItem) error {
 	h.server.Logger.Printf("got forward close from %v", h.conn.RemoteAddr())
-	var fwd_close msgEIPForwardClose
+	var fwd_close msgEIPForwardClose // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_close)
 	if err != nil {
 		h.server.Logger.Printf("problem parsing forward close. %v", err)
@@ -388,9 +388,61 @@ func (h *serverTCPHandler) forwardClose(i CIPItem) error {
 	return nil
 }
 
-func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
+// in this message T is for target and O is for originator so
+// TO is target -> originator and OT is originator -> target
+type msgEIPForwardOpen_Standard struct {
+	Service                CIPService
+	PathSize               byte
+	ClassType              byte
+	Class                  byte
+	InstanceType           byte
+	Instance               byte
+	Priority               byte
+	TimeoutTicks           byte
+	OTConnectionID         uint32
+	TOConnectionID         uint32
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	Multiplier             uint32
+	OTRPI                  uint32
+	OTNetworkConnParams    uint16
+	TORPI                  uint32
+	TONetworkConnParams    uint16
+	TransportTrigger       byte
+	ConnPathSize           byte
+}
+
+type msgEIPForwardOpen_Large struct {
+	// service
+	Service CIPService
+	// path
+	PathSize     byte
+	ClassType    cipClassSize
+	Class        byte
+	InstanceType cipInstanceSize
+	Instance     byte
+
+	// service specific data
+	Priority               byte
+	TimeoutTicks           byte
+	OTConnectionID         uint32
+	TOConnectionID         uint32
+	ConnectionSerialNumber uint16
+	VendorID               uint16
+	OriginatorSerialNumber uint32
+	Multiplier             uint32
+	OTRPI                  uint32
+	OTNetworkConnParams    uint32
+	TORPI                  uint32
+	TONetworkConnParams    uint32
+	TransportTrigger       byte
+	ConnPathSize           byte
+}
+
+func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("got large forward open from %v", h.conn.RemoteAddr())
-	var fwd_open msgEIPForwardOpen_Large
+	var fwd_open msgEIPForwardOpen_Large // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
@@ -403,7 +455,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
 	path := fwd_path[:2]
 
-	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
+	//preItem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items[1] = newItem(cipItem_UnconnectedData, nil)
@@ -420,24 +472,24 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 		h.OTConnectionID = fwd_open.OTConnectionID
 	}
 	fwd_open.OTConnectionID = h.OTConnectionID
-	fwopenresphdr := msgEIPForwardOpen_Standard_Reply{
+	fwOpenRespHdr := msgEIPForwardOpen_Standard_Reply{
 		Service:                fwd_open.Service.AsResponse(),
 		OTConnectionID:         h.OTConnectionID,
 		TOConnectionID:         h.TOConnectionID,
 		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
 		VendorID:               fwd_open.VendorID,
 		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
-		OTAPI:                  0,
-		TOAPI:                  0,
+		OTApi:                  0,
+		TOApi:                  0,
 	}
 
-	items[1].Serialize(fwopenresphdr)
+	items[1].Serialize(fwOpenRespHdr)
 
-	itemdata, err := serializeItems(items)
+	itemData, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
-	err = h.send(cipCommandSendRRData, itemdata)
+	err = h.send(cipCommandSendRRData, itemData)
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -462,7 +514,7 @@ func (h *serverTCPHandler) largeforwardOpen(i CIPItem) error {
 
 func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("got small forward open from %v", h.conn.RemoteAddr())
-	var fwd_open msgEIPForwardOpen_Standard
+	var fwd_open msgEIPForwardOpen_Standard // TODO: Transition this to the new forward open
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
 		return fmt.Errorf("problem with fwd open parsing %w", err)
@@ -475,7 +527,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	h.server.Logger.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
 	path := fwd_path[:2]
 
-	//preitem := msgPreItemData{Handle: 0, Timeout: 0}
+	//preItem := msgPreItemData{Handle: 0, Timeout: 0}
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
 	items[1] = newItem(cipItem_UnconnectedData, nil)
@@ -492,24 +544,24 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 		h.OTConnectionID = fwd_open.OTConnectionID
 	}
 	fwd_open.OTConnectionID = h.OTConnectionID
-	fwopenresphdr := msgEIPForwardOpen_Standard_Reply{
+	fwOpenRespHdr := msgEIPForwardOpen_Standard_Reply{
 		Service:                fwd_open.Service.AsResponse(),
 		OTConnectionID:         h.OTConnectionID,
 		TOConnectionID:         h.TOConnectionID,
 		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
 		VendorID:               fwd_open.VendorID,
 		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
-		OTAPI:                  0,
-		TOAPI:                  0,
+		OTApi:                  0,
+		TOApi:                  0,
 	}
 
-	items[1].Serialize(fwopenresphdr)
+	items[1].Serialize(fwOpenRespHdr)
 
-	itemdata, err := serializeItems(items)
+	itemData, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)
 	}
-	err = h.send(cipCommandSendRRData, itemdata)
+	err = h.send(cipCommandSendRRData, itemData)
 	if err != nil {
 		return fmt.Errorf("problem sending response data %w", err)
 	}
@@ -550,12 +602,12 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 	remote = strings.Split(remote, ":")[0]
 	addr := fmt.Sprintf("%s:2222", remote)
 
-	udpconn, err := net.Dial("udp", addr)
+	udpConn, err := net.Dial("udp", addr)
 	if err != nil {
 		h.server.Logger.Printf("[ERROR] problem connecting UDP. %v", err)
 		return
 	}
-	defer udpconn.Close()
+	defer udpConn.Close()
 
 	for {
 		seq++
@@ -583,11 +635,11 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 
 		p, err := serializeItems(items)
 		if err != nil {
-			h.server.Logger.Printf("could not serialzie items: %v", err)
+			h.server.Logger.Printf("could not serialize items: %v", err)
 		}
 		payload := *p
 		payload = payload[6:]
-		_, err = udpconn.Write(payload)
+		_, err = udpConn.Write(payload)
 		if err != nil {
 			h.server.Logger.Printf("problem writing %v", err)
 		}
@@ -683,23 +735,23 @@ const (
 )
 
 type listServicesReply struct {
-	Count     uint16
-	TypeCode  uint16
-	Length    uint16
-	Version   uint16
-	CapaFlags ServiceCapabilityFlags
-	Name      [16]byte
+	Count    uint16
+	TypeCode uint16
+	Length   uint16
+	Version  uint16
+	CapFlags ServiceCapabilityFlags
+	Name     [16]byte
 }
 
 func (h *serverTCPHandler) sendListServicesData(hdr eipHeader) error {
 	// on a list services request there is no more data to read.
 	response := listServicesReply{
-		Count:     1,
-		TypeCode:  0x0100,
-		Length:    10,
-		Version:   1,
-		CapaFlags: ServiceCapabilityFlag_CipEncapsulation | ServiceCapabilityFlag_SupportsClass1UDP,
-		Name:      [16]byte{'C', 'o', 'm', 'm', 'u', 'n', 'i', 'c', 'a', 't', 'i', 'o', 'n', 's', ' ', ' '},
+		Count:    1,
+		TypeCode: 0x0100,
+		Length:   10,
+		Version:  1,
+		CapFlags: ServiceCapabilityFlag_CipEncapsulation | ServiceCapabilityFlag_SupportsClass1UDP,
+		Name:     [16]byte{'C', 'o', 'm', 'm', 'u', 'n', 'i', 'c', 'a', 't', 'i', 'o', 'n', 's', ' ', ' '},
 	}
 	return h.send(cipCommandSendRRData, response)
 }

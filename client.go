@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"log"
+	"log/slog"
 	"math/rand"
 	"net"
 	"sync"
@@ -36,43 +37,46 @@ func sequencer() uint32 {
 	return atomic.AddUint32(&sequenceValue, 1)
 }
 
+// Defines parameters from the host CIP device that the client will connect to
+type Controller struct {
+	IpAddress string
+	Port      uint   // Default CIP port = 44818
+	VendorId  uint16 // VendorID from ODVA. Default = 0x9999 to prevent conflicts with existing vendors
+
+	// path to the controller as a byte slice.
+	// typically 1, 0 where 1 is the back plane and 0 is the slot
+	// The data in the path should be similar to how you set it up in a msg instruction.
+	// ex: 1, 0 where 1 -> back plane, 0 -> slot 0, etc...
+	// but it has to be formatted properly as bytes (there are header bytes, etc for each portion of the path)
+	// you can use the Serialize function to generate this or the GeneratePath function if it's a simpler path
+	Path *bytes.Buffer
+}
+
 // Client is the main class for reading and writing tags in the PLC.
 // You probably want to create a new client using NewClient() instead of instantiating
 // the struct directly.
 type Client struct {
-	// ip address for connecting to the PLC comms module.
-	IPAddress string
+	Controller Controller
 
-	// the port is always 44818
-	Port string // = ":44818"
-
-	// vendor ID should be provided by ODVA.  Since we probably don't have an
-	// official ID, we'll use the hex'd version of the founding of america.
-	VendorID uint16 //= 0x1776
-
-	// serial number for the device.
-	SerialNumber uint32
-	// the exported field can be set if it needs to be fixed
-	serialNumber uint32
-
-	// path to the controller as a byte slice.
-	// The data in the path should be similar to how you set it up in a msg instruction.
-	// ex: 1, 0 where 1 -> backlane, 0 -> slot 0, etc...
-	// but it has to be formatted properly as bytes (there are header bytes, etc for each portion of the path)
-	// you can use the Serialize function to generate this or the GeneratePath function if it's a simpler path
-	Path *bytes.Buffer
+	SerialNumber uint32 // serial number for the client
+	VendorId     uint16 // vendor id for the client as determined from ODVA
 
 	// Used for the keepalive messages.
 	SocketTimeout time.Duration
 
 	// Set to true to allow auto-connects on reads and writes without having to call Connect() yourself.
-	AutoConnect   bool
-	AutoKeepalive bool
+	AutoConnect bool
 
-	RPI time.Duration
+	// Monitor status of PLC and keeps connection alive
+	KeepAlive          bool
+	KeepAliveProps     []CIPAttribute
+	KeepAliveFrequency time.Duration
+	KeepAliveRunning   bool
+
+	RPI time.Duration // Request Packet Interval
 
 	// this keeps track of what tags are in the controller.
-	// it maps tag names to a struct which has, among other things, the intance ID and class
+	// it maps tag names to a struct which has, among other things, the instance ID and class
 	// which can be used to read the tag more efficiently than sending the ascii tag name to the
 	// controller.  If you don't want to use this, set SocketTimeout to 0 and never call ListAllTags
 	KnownTags map[string]KnownTag
@@ -83,9 +87,10 @@ type Client struct {
 	OTNetworkConnectionID  uint32
 	HeaderSequenceCounter  uint16
 	Connected              bool
-	ConnectionSize         int
+	ConnectionSize         uint16
 	ConnectionSerialNumber uint16
-	Context                uint64 // fun fact - rockwell PLCs don't mind being rickrolled.
+	Context                uint64 // fun fact - rockwell PLCs don't mind being rick rolled.
+	sequenceNumber         atomic.Uint32
 
 	cancel_keepalive chan struct{}
 
@@ -93,7 +98,8 @@ type Client struct {
 	ioi_cache map[string]*tagIOI
 
 	// Replace this to capture logs
-	Logger Logger
+	Logger  Logger
+	SLogger *slog.Logger
 }
 
 // Create a client with reasonable defaults for the given ip address.
@@ -101,27 +107,33 @@ type Client struct {
 // Before using the client, you will probably want to call Connect().
 // After connecting be sure to call disconnect() when you are done with the client.  Probably a good place for a defer.
 //
-// Default path is backplane, slot 0.  For devices that aren't in a rack and aren't control or compact logix,
+// Default path is back plane, slot 0.  For devices that aren't in a rack and aren't control or compact logix,
 // such as the micro800 series or io modules, etc...  you probably want to change the path to []byte{}
 // after creating the client with this function.
 func NewClient(ip string) *Client {
-	// default path is backplane -> slot 0
-	p, err := ParsePath("1,0")
+	// default path is back plane -> slot 0
+	path, err := ParsePath("1,0")
 	if err != nil {
 		log.Panicf("this should not have failed since the path is hardcoded.  problem with path. %v", err)
 	}
+	controller := Controller{
+		IpAddress: ip,
+		Port:      portDefault,
+		Path:      path,
+	}
 	return &Client{
-		IPAddress:      ip,
-		ConnectionSize: 4000,
-		Path:           p,
-		Port:           ":44818",
-		VendorID:       0x1776,
-		AutoConnect:    true,
-		AutoKeepalive:  false,
-		RPI:            time.Millisecond * 2500,
-		SocketTimeout:  time.Second * 10,
-		ioi_cache:      make(map[string]*tagIOI),
-		Logger:         log.Default(),
+		Controller:         controller,
+		VendorId:           vendorIdDefault,
+		ConnectionSize:     connSizeLargeDefault,
+		AutoConnect:        true,
+		KeepAlive:          true,
+		KeepAliveFrequency: time.Second * 30,
+		KeepAliveProps:     []CIPAttribute{1, 2, 3, 4, 10},
+		RPI:                rpiDefault,
+		SocketTimeout:      socketTimeoutDefault,
+		ioi_cache:          make(map[string]*tagIOI),
+		Logger:             log.Default(),
+		SLogger:            slog.Default(),
 	}
 
 }

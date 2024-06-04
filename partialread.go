@@ -23,10 +23,10 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 	results := make([]any, 0, total)
 	msgs := 0
 
-	tags := make([]tagDescr, total)
+	tags := make([]tagDesc, total)
 
 	for i := range tagnames {
-		tags[i] = tagDescr{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
+		tags[i] = tagDesc{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
 	}
 
 	for n < total {
@@ -51,7 +51,7 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 	return results, nil
 }
 
-func (client *Client) countIOIsThatFit(tags []tagDescr) (int, error) {
+func (client *Client) countIOIsThatFit(tags []tagDesc) (int, error) {
 	// first generate IOIs for each tag
 	qty := len(tags)
 
@@ -100,7 +100,7 @@ func (client *Client) countIOIsThatFit(tags []tagDescr) (int, error) {
 		newSize += ioihdr_size + len(ioi.Buffer) + ioiftr_size // the new ioi data
 
 		response_size += tags[i].TagType.Size() * tags[i].Elements
-		if newSize > client.ConnectionSize || response_size > client.ConnectionSize {
+		if newSize > int(client.ConnectionSize) || response_size > int(client.ConnectionSize) {
 			// break before adding this ioi to the list since it will push us over.
 			// we'll continue with n iois (n only increments after an IOI is added)
 			break

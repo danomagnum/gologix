@@ -73,45 +73,43 @@ type msgListInstanceHeader struct {
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (client *Client) ListAllTags(start_instance uint32) error {
-
-	// have to start at 1.
-	if start_instance == 0 {
-		start_instance = 1
+	const minimumTagValue = 1
+	if start_instance < minimumTagValue {
+		start_instance = minimumTagValue
 	}
 
-	reqitems := make([]CIPItem, 2)
-	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	p, err := Serialize(
+	path, err := Serialize(
 		CipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
 		return fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedServiceReq{
+	readMsg := msgCIPConnectedServiceReq{
 		SequenceCount: uint16(sequencer()),
 		Service:       CIPService_GetInstanceAttributeList,
-		PathLength:    byte(p.Len() / 2),
+		PathLength:    byte(path.Len() / 2),
 	}
 
 	// setup item
-	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
+	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
 	// add path
-	reqitems[1].Serialize(p.Bytes())
+	reqItems[1].Serialize(path.Bytes())
 	// add service specific data
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
-	attr8_arraydims := 8
-	reqitems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arraydims)})
+	attr8_arrayDims := 8
+	reqItems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arrayDims)})
 
-	itemdata, err := serializeItems(reqitems)
+	itemData, err := serializeItems(reqItems)
 	if err != nil {
 		return fmt.Errorf("problem serializing items: %w", err)
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
 	if err != nil {
 		return err
 	}
@@ -156,10 +154,10 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		}
 		tag_string := string(tag_name)
 
-		// the end of the tagname has to be aligned on a 16 bit word
-		//tagname_alignment := tag_hdr.NameLength % 2
-		//if tagname_alignment != 0 {
-		//data2.Next(int(tagname_alignment))
+		// the end of the tagName has to be aligned on a 16 bit word
+		//tagName_alignment := tag_hdr.NameLength % 2
+		//if tagName_alignment != 0 {
+		//data2.Next(int(tagName_alignment))
 		//}
 		err = binary.Read(data2, binary.LittleEndian, tag_ftr)
 		if err != nil {

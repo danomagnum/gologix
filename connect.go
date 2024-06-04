@@ -1,257 +1,187 @@
 package gologix
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
+	"log/slog"
 	"net"
 	"time"
 )
 
+const (
+	connSizeLargeDefault    = 4000   // default large connection size
+	connSizeStandardDefault = 512    // default small connection size
+	connSizeStandardMax     = 512    // maximum size of connection for standard
+	portDefault             = 44818  // default CIP port
+	vendorIdDefault         = 0x9999 // default vendor id. Used to prevent vendor ID conflicts
+	socketTimeoutDefault    = time.Second * 10
+	rpiDefault              = time.Millisecond * 2500
+)
+
 // Connect to the PLC.
 func (client *Client) Connect() error {
+	if client.SLogger != nil {
+		client.SLogger = client.SLogger.With(slog.String("controllerIp", client.Controller.IpAddress))
+	}
 	if client.ConnectionSize == 0 {
-		client.ConnectionSize = 4000
-		//client.ConnectionSize = 508
+		client.ConnectionSize = connSizeLargeDefault
 	}
 
-	if client.Port == "" {
-		client.Port = ":44818"
+	if client.Controller.Port == 0 {
+		client.Controller.Port = portDefault
 	}
-	if client.VendorID == 0 {
+	if client.Controller.VendorId == 0 {
+		client.Controller.VendorId = vendorIdDefault
+	}
+	if client.SocketTimeout == 0 {
+		client.SocketTimeout = socketTimeoutDefault
+	}
+	if client.RPI == 0 {
+		client.RPI = rpiDefault
+	}
+	client.sequenceNumber.Add(1)
 
-		client.VendorID = 0x1776
-	}
-	if client.SerialNumber != 0 {
-		client.serialNumber = client.SerialNumber
-	} else {
-		client.serialNumber = sequencer()
-	}
-
-	// default path is backplane -> slot 0
+	// default path is back plane -> slot 0
 	var err error
-	if client.Path == nil {
-		client.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
+	if client.Controller.Path == nil {
+		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
 		if err != nil {
-			return fmt.Errorf("can't setup default path. %w", err)
-
+			msg := "cannot setup default path"
+			client.SLogger.Error(msg, slog.String("err", err.Error()))
+			return fmt.Errorf("%s: %w", msg, err)
 		}
 	}
 
 	if client.ioi_cache == nil {
 		client.ioi_cache = make(map[string]*tagIOI)
 	}
-	return client.connect()
+
+	address := fmt.Sprintf("%s:%v", client.Controller.IpAddress, client.Controller.Port)
+	client.conn, err = net.DialTimeout("tcp", address, client.SocketTimeout)
+	if err != nil {
+		msg := "cannot connect to controller"
+		client.SLogger.Error(msg, slog.String("err", err.Error()))
+		return fmt.Errorf("%s: %w", msg, err)
+	}
+
+	err = client.registerSession()
+	if err != nil {
+		return err
+	}
+
+	if client.ConnectionSize > connSizeStandardMax {
+		item, err := client.newForwardOpenLarge()
+		if err != nil {
+			return err
+		}
+		err = client.forwardOpen(item)
+		if err != nil {
+			client.SLogger.Warn("large forward open failed. falling back to standard forward open", slog.String("err", err.Error()))
+			client.ConnectionSize = connSizeStandardDefault
+		}
+	}
+	if client.ConnectionSize <= connSizeStandardMax {
+		item, err := client.newForwardOpenStandard()
+		if err != nil {
+			return err
+		}
+		err = client.forwardOpen(item)
+		if err != nil {
+			client.SLogger.Error("unable to open connection", slog.String("err", err.Error()))
+			return err
+		}
+	}
+	client.Connected = true
+
+	if client.KeepAlive {
+		go client.keepalive()
+	}
+	return nil
 }
 
-func (client *Client) register_session() error {
-	reg_msg := msgCIPRegister{}
-	reg_msg.ProtocolVersion = 1
-	reg_msg.OptionFlag = 0
-
-	//binary.Write(conn.Conn, binary.LittleEndian, register_msg)
-	//client.Send(cipCommandRegisterSession, reg_msg)
-	resp_hdr, resp_data, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
-	//resp_hdr, resp_data, err := client.recv_data(cipCommandRegisterSession, reg_msg)
-	if err != nil {
-		return fmt.Errorf("couldn't get connect response %w", err)
+func (client *Client) registerSession() error {
+	reg_msg := msgCIPRegister{
+		ProtocolVersion: 1,
+		OptionFlag:      0,
 	}
-	client.SessionHandle = resp_hdr.SessionHandle
-	client.Logger.Printf("Session Handle %v", client.SessionHandle)
-	_ = resp_data
-	return nil
 
+	header, _, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
+	if err != nil {
+		msg := "cannot get connect response"
+		client.SLogger.Error(msg, slog.String("err", err.Error()))
+		return fmt.Errorf("%s: %w", msg, err)
+	}
+	client.SessionHandle = header.SessionHandle
+	client.SLogger.Info("Session connected", slog.Any("sessionHandle", client.SessionHandle))
+	return nil
 }
 
 func (client *Client) keepalive() {
-	if !client.AutoKeepalive || client.SocketTimeout == 0 {
+	if !client.KeepAlive || client.SocketTimeout == 0 {
+		return
+	}
+	if client.KeepAliveRunning {
+		err := errors.New("keepalive already running")
+		client.SLogger.Warn(err.Error())
+	}
+	client.SLogger.Debug("starting keep alive")
+	client.KeepAliveRunning = true
+	defer func() { client.KeepAliveRunning = false }()
+
+	originalProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
+	if err != nil {
+		client.Logger.Printf("keepalive prop list failed. %v", err)
+		client.SLogger.Error(
+			"initial keep alive property get failed",
+			slog.Any("client.KeepAliveProps", client.KeepAliveProps),
+		)
 		return
 	}
 
-	og_props, err := client.GetControllerPropList()
-	if err != nil {
-		client.Logger.Printf("keepalive prop list failed. %v", err)
-		return
-	}
 	err = client.ListAllTags(0)
 	if err != nil {
 		client.Logger.Printf("keepalive list tags failed. %v", err)
 		return
 	}
+
 	t := time.NewTicker(client.SocketTimeout / 4)
 	for {
 		select {
 		case <-t.C:
-			if client.Connected {
-				new_props, err := client.GetControllerPropList()
+			if !client.Connected {
+				client.SLogger.Warn("keepalive failed. not connected")
+				return
+			}
+
+			newProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
+			if err != nil {
+				client.Logger.Printf("keepalive failed. %v", err)
+				client.SLogger.Error("keepalive failed", slog.String("err", err.Error()))
+				client.Disconnect()
+				return
+			}
+			if newProps != originalProps {
+				client.Logger.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", originalProps, newProps)
+				client.SLogger.Info(
+					"controller change detected. re-analyzing types",
+					slog.Any("originalProps", originalProps),
+					slog.Any("newProps", newProps),
+				)
+				err := client.ListAllTags(0)
 				if err != nil {
-					client.Logger.Printf("keepalive failed. %v", err)
-					client.Disconnect()
+					client.Logger.Printf("keepalive list tags failed. %v", err)
 					return
 				}
-				if !new_props.Match(og_props) {
-					client.Logger.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", og_props, new_props)
-					err := client.ListAllTags(0)
-					if err != nil {
-						client.Logger.Printf("keepalive list tags failed. %v", err)
-						return
-					}
-					og_props = new_props
-
-				}
-
+				originalProps = newProps
 			}
+
 		case <-client.cancel_keepalive:
 			t.Stop()
 			return
-
 		}
 	}
-
-}
-
-// To connect we first send a register session command.
-// based on the reply we get from that we send a forward open command.
-func (client *Client) connect() error {
-	if client.Connected {
-		return nil
-	}
-	client.KnownTags = make(map[string]KnownTag)
-	var err error
-	client.conn, err = net.DialTimeout("tcp", client.IPAddress+client.Port, client.SocketTimeout)
-	if err != nil {
-		return err
-	}
-
-	err = client.register_session()
-	if err != nil {
-		return err
-	}
-
-	if client.ConnectionSize == 0 {
-		client.ConnectionSize = 4002
-	}
-	// we have to do something different for small connection sizes.
-	fwd_open, err := client.newForwardOpenLarge()
-	if err != nil {
-		return fmt.Errorf("couldn't create forward open. %w", err)
-	}
-	s := binary.Size(fwd_open)
-	_ = s
-	items0 := make([]CIPItem, 2)
-	items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
-	items0[1] = fwd_open
-
-	itemdata, err := serializeItems(items0)
-	if err != nil {
-		return err
-	}
-	hdr, dat, err := client.send_recv_data(cipCommandSendRRData, itemdata)
-	if err != nil {
-		return err
-	}
-	_ = hdr
-	if hdr.Status != 0x00 {
-		return fmt.Errorf("large Forward Open Failed. code %v", hdr.Status)
-	}
-	// header before items
-	preitem := msgPreItemData{}
-	err = binary.Read(dat, binary.LittleEndian, &preitem)
-	if err != nil {
-		return fmt.Errorf("problem reading items header from forward open req. %w", err)
-	}
-
-	items, err := readItems(dat)
-	if err != nil {
-		return fmt.Errorf("problem reading items from forward open req. %w", err)
-	}
-
-	fwopenresphdr := msgCIPMessageRouterResponse{}
-	err = items[1].DeSerialize(&fwopenresphdr)
-	if err != nil {
-		return fmt.Errorf("error deserializing forward open response header. %w", err)
-	}
-	extended_status := make([]byte, fwopenresphdr.Status_Len*2)
-	if fwopenresphdr.Status_Len != 0 {
-		err = items[1].DeSerialize(&extended_status)
-		if err != nil {
-			return fmt.Errorf("error deserializing forward open response header extended status. %w", err)
-		}
-	}
-
-	if fwopenresphdr.Status != 0x00 {
-		client.Logger.Printf("bad status on large forward open header. got %x. Falling back to small forward open", fwopenresphdr.Status)
-		client.ConnectionSize = 502
-
-		// we have to do something different for small connection sizes.
-		fwd_open, err := client.newForwardOpenStandard()
-		if err != nil {
-			return fmt.Errorf("couldn't create forward open. %w", err)
-		}
-		s := binary.Size(fwd_open)
-		_ = s
-		items0 := make([]CIPItem, 2)
-		items0[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
-		items0[1] = fwd_open
-		itemdata, err := serializeItems(items0)
-		if err != nil {
-			return err
-		}
-		hdr, dat, err := client.send_recv_data(cipCommandSendRRData, itemdata)
-		if err != nil {
-			return err
-		}
-		_ = hdr
-		if hdr.Status != 0x00 {
-			return fmt.Errorf("small Forward Open Failed. code %v", hdr.Status)
-		}
-		// header before items
-		preitem = msgPreItemData{}
-		err = binary.Read(dat, binary.LittleEndian, &preitem)
-		if err != nil {
-			return fmt.Errorf("problem reading items header from forward open req. %w", err)
-		}
-
-		items, err = readItems(dat)
-		if err != nil {
-			return fmt.Errorf("problem reading items from forward open req. %w", err)
-		}
-
-		fwopenresphdr = msgCIPMessageRouterResponse{}
-		err = items[1].DeSerialize(&fwopenresphdr)
-		if err != nil {
-			return fmt.Errorf("error deserializing forward open response header. %w", err)
-		}
-		extended_status = make([]byte, fwopenresphdr.Status_Len*2)
-		if fwopenresphdr.Status_Len != 0 {
-			err = items[1].DeSerialize(&extended_status)
-			if err != nil {
-				return fmt.Errorf("error deserializing forward open response header extended status. %w", err)
-			}
-		}
-
-		if fwopenresphdr.Status != 0x00 {
-			return fmt.Errorf("bad status on both forward opens. got %x", fwopenresphdr.Status)
-		}
-
-	}
-
-	forwardopenresp := msgEIPForwardOpen_Reply{}
-	err = items[1].DeSerialize(&forwardopenresp)
-	if err != nil {
-		return fmt.Errorf("error unmarshaling forward open response. %w", err)
-	}
-	client.OTNetworkConnectionID = forwardopenresp.OTConnectionID
-	client.Logger.Printf("Connection ID: OT=%d, TO=%d", forwardopenresp.OTConnectionID, forwardopenresp.TOConnectionID)
-
-	client.Connected = true
-
-	client.cancel_keepalive = make(chan struct{})
-	go client.keepalive()
-
-	return nil
-
 }
 
 type msgPreItemData struct {
@@ -260,16 +190,10 @@ type msgPreItemData struct {
 }
 
 type msgCIPMessageRouterResponse struct {
-	Service    CIPService
-	Reserved   byte      // always 0
-	Status     CIPStatus // result status
-	Status_Len byte      // additional result word count - can be zero
-}
-
-type msgEIPForwardOpen_Reply struct {
-	OTConnectionID uint32
-	TOConnectionID uint32
-	Unknown3       uint16
+	Service   CIPService
+	Reserved  byte      // always 0
+	Status    CIPStatus // result status
+	StatusLen byte      // additional result word count - can be zero
 }
 
 type msgEIPForwardClose struct {
@@ -287,108 +211,96 @@ type msgEIPForwardClose struct {
 	ConnPathSize           byte
 }
 
+// message for opening either a large or standard connection
 // in this message T is for target and O is for originator so
 // TO is target -> originator and OT is originator -> target
-type msgEIPForwardOpen_Standard struct {
-	Service                CIPService
-	PathSize               byte
-	ClassType              byte
-	Class                  byte
-	InstanceType           byte
-	Instance               byte
-	Priority               byte
-	TimeoutTicks           byte
-	OTConnectionID         uint32
-	TOConnectionID         uint32
-	ConnectionSerialNumber uint16
-	VendorID               uint16
-	OriginatorSerialNumber uint32
-	Multiplier             uint32
-	OTRPI                  uint32
-	OTNetworkConnParams    uint16
-	TORPI                  uint32
-	TONetworkConnParams    uint16
-	TransportTrigger       byte
-	ConnPathSize           byte
-}
-
-type msgEIPForwardOpen_Large struct {
-	// service
-	Service CIPService
-	// path
-	PathSize     byte
+type cipForwardOpen[T uint16 | uint32] struct {
+	Service      CIPService
+	PathSize     byte // length in words
 	ClassType    cipClassSize
 	Class        byte
 	InstanceType cipInstanceSize
 	Instance     byte
 
-	// service specific data
-	Priority               byte
-	TimeoutTicks           byte
+	Priority               byte // 0x0A means normal multiplier (about 1 second)
+	TimeoutTicks           byte // number of "priority" ticks (Ex: 0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
 	OTConnectionID         uint32
 	TOConnectionID         uint32
 	ConnectionSerialNumber uint16
 	VendorID               uint16
 	OriginatorSerialNumber uint32
 	Multiplier             uint32
-	OTRPI                  uint32
-	OTNetworkConnParams    uint32
-	TORPI                  uint32
-	TONetworkConnParams    uint32
+	OtRpi                  uint32
+	OTNetworkConnParams    T // uint16 if standard, uint32 if large
+	ToRpi                  uint32
+	TONetworkConnParams    T // uint16 if standard, uint32 if large
 	TransportTrigger       byte
 	ConnPathSize           byte
 }
 
 func (client *Client) newForwardOpenLarge() (CIPItem, error) {
 	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
-	var msg msgEIPForwardOpen_Large
-	rand.Seed(time.Now().Unix())
+	if client.ConnectionSize == 0 {
+		client.ConnectionSize = connSizeLargeDefault
+	}
+	if client.ConnectionSize <= connSizeStandardMax {
+		client.SLogger.Info(
+			"The size could be a standard connection",
+			slog.Any("standardMaxSize", connSizeStandardMax),
+			slog.Any("size", client.ConnectionSize),
+		)
+	}
 
-	p, err := Serialize(
-		client.Path,
-		//CIPPort{PortNo: 1}, CIPAddress(0),
-		CipObject_MessageRouter, CIPInstance(1))
+	path, err := Serialize(
+		client.Controller.Path,
+		CipObject_MessageRouter,
+		CIPInstance(1),
+	)
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	client.ConnectionSerialNumber = uint16(sequencer())
-	ConnectionParams := uint32(0x4200)
-	ConnectionParams = ConnectionParams << 16 // for long packet
-	ConnectionParams += uint32(client.ConnectionSize)
+	client.ConnectionSerialNumber = uint16(client.sequenceNumber.Add(1))
+	const (
+		redundantOwner     uint32 = 0 // 0 = no-redundant, 1 = redundant
+		connectionType     uint32 = 2 // 0 = null, 1 = multicast, 2 = point to point, 3 = reserved
+		priority           uint32 = 0 // 0 = low, 1 = high, 2 = scheduled, 3 = urgent
+		connectionSizeType uint32 = 1 // 1 = variable, 0 = fixed
+	)
+	connectionParameters := uint32(
+		redundantOwner<<31 |
+			connectionType<<29 |
+			priority<<26 |
+			connectionSizeType<<25 |
+			uint32(client.ConnectionSize),
+	)
 
+	var msg cipForwardOpen[uint32]
 	msg.Service = CIPService_LargeForwardOpen
 	// this next section is the path
-	msg.PathSize = 0x02 // length in words
+	msg.PathSize = 0x02
 	msg.ClassType = cipClass_8bit
 	msg.Class = byte(CipObject_ConnectionManager)
 	msg.InstanceType = cipInstance_8bit
 	msg.Instance = 0x01
-	// end of path
-	msg.Priority = 0x0A     // 0x0A means normal multiplier (about 1 second?)
-	msg.TimeoutTicks = 0x0E // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
-	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = sequencer() // pylogix always uses 0x20000002
-	msg.TOConnectionID = sequencer()
+	// this next section is the path
+	msg.Priority = 0x0A
+	msg.TimeoutTicks = 0x0E
+	msg.OTConnectionID = client.sequenceNumber.Add(1) // pyLogix always uses 0x20000002
+	msg.TOConnectionID = client.sequenceNumber.Add(1)
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
-	msg.VendorID = client.VendorID
-	msg.OriginatorSerialNumber = client.serialNumber
+	msg.VendorID = client.VendorId
+	msg.OriginatorSerialNumber = client.SerialNumber
 	msg.Multiplier = 0x03
-	//msg.OTRPI = 0x00201234
-	if client.RPI == 0 {
-		client.RPI = 2500 * time.Millisecond
-	}
-	msg.OTRPI = uint32(client.RPI / time.Microsecond)
-	msg.OTNetworkConnParams = ConnectionParams
-	//msg.TORPI = 0x00204001
-	msg.TORPI = uint32(client.RPI / time.Microsecond)
-	msg.TONetworkConnParams = ConnectionParams
+	msg.OtRpi = uint32(client.RPI / time.Microsecond)
+	msg.OTNetworkConnParams = connectionParameters
+	msg.ToRpi = uint32(client.RPI / time.Microsecond)
+	msg.TONetworkConnParams = connectionParameters
 	msg.TransportTrigger = 0xA3
-	msg.ConnPathSize = byte(p.Len() / 2)
-	item.Serialize(msg)
-	item.Serialize(p.Bytes())
+	msg.ConnPathSize = byte(path.Len() / 2)
 
-	client.Logger.Printf("Attempted Connection ID: OT=%d, TO=%d", msg.OTConnectionID, msg.TOConnectionID)
+	item.Serialize(msg)
+	item.Serialize(path.Bytes())
 	return item, nil
 }
 
@@ -398,51 +310,122 @@ type msgCIPRegister struct {
 }
 
 func (client *Client) newForwardOpenStandard() (CIPItem, error) {
+	if client.ConnectionSize == 0 {
+		client.ConnectionSize = connSizeStandardDefault
+	}
+	if client.ConnectionSize > connSizeStandardMax {
+		client.SLogger.Warn(
+			"connection size too large. resetting to max size",
+			slog.Any("oldConnectionSize", client.ConnectionSize),
+			slog.Any("newConnectionSize", connSizeStandardMax),
+		)
+		client.ConnectionSize = connSizeStandardMax
+	}
 	item := CIPItem{Header: cipItemHeader{ID: cipItem_UnconnectedData}}
-	var msg msgEIPForwardOpen_Standard
 
-	rand.Seed(time.Now().Unix())
-
-	p, err := Serialize(
-		client.Path,
-		CipObject_MessageRouter, CIPInstance(1))
+	path, err := Serialize(
+		client.Controller.Path,
+		CipObject_MessageRouter,
+		CIPInstance(1),
+	)
 	if err != nil {
 		return item, fmt.Errorf("couldn't build path. %w", err)
 	}
 
-	client.ConnectionSerialNumber = uint16(rand.Uint32())
-	ConnectionParams := uint16(0x43F6)
+	client.ConnectionSerialNumber = uint16(client.sequenceNumber.Add(1))
+	const (
+		redundantOwner     uint16 = 0 // 0 = no-redundant, 1 = redundant
+		connectionType     uint16 = 2 // 0 = null, 1 = multicast, 2 = point to point, 3 = reserved
+		priority           uint16 = 0 // 0 = low, 1 = high, 2 = scheduled, 3 = urgent
+		connectionSizeType uint16 = 1 // 1 = variable, 0 = fixed
+	)
+	connectionParameters := uint16(
+		redundantOwner<<15 |
+			connectionType<<13 |
+			priority<<10 |
+			connectionSizeType<<9 |
+			client.ConnectionSize,
+	)
 
+	var msg cipForwardOpen[uint16]
 	msg.Service = CIPService_ForwardOpen
 	// this next section is the path
-	msg.PathSize = 0x02 // length in words
-	msg.ClassType = byte(cipClass_8bit)
+	msg.PathSize = 0x02
+	msg.ClassType = cipClass_8bit
 	msg.Class = byte(CipObject_ConnectionManager)
-	msg.InstanceType = byte(cipInstance_8bit)
+	msg.InstanceType = cipInstance_8bit
 	msg.Instance = 0x01
 	// end of path
-	msg.Priority = 0x07     // 0x0A means normal multiplier (about 1 second?)
-	msg.TimeoutTicks = 0xE9 // number of "priority" ticks (0x0E = 14 * Priority = ~1 sec => ~ 14 seconds.)
-	//msg.OTConnectionID = 0x05318008
-	msg.OTConnectionID = sequencer()
-	msg.TOConnectionID = sequencer()
+	msg.Priority = 0x07
+	msg.TimeoutTicks = 0xE9
+	msg.OTConnectionID = client.sequenceNumber.Add(1)
+	msg.TOConnectionID = client.sequenceNumber.Add(1)
 	msg.ConnectionSerialNumber = client.ConnectionSerialNumber
-	msg.VendorID = client.VendorID
-	msg.OriginatorSerialNumber = client.serialNumber
+	msg.VendorID = client.VendorId
+	msg.OriginatorSerialNumber = client.SerialNumber
 	msg.Multiplier = 0x00
-	if client.RPI == 0 {
-		client.RPI = 2500 * time.Millisecond
-	}
-	msg.OTRPI = uint32(client.RPI / time.Microsecond)
-	msg.OTNetworkConnParams = uint16(ConnectionParams)
-	msg.TORPI = uint32(client.RPI / time.Microsecond)
-	msg.TONetworkConnParams = uint16(ConnectionParams)
+	msg.OtRpi = uint32(client.RPI / time.Microsecond)
+	msg.OTNetworkConnParams = connectionParameters
+	msg.ToRpi = uint32(client.RPI / time.Microsecond)
+	msg.TONetworkConnParams = connectionParameters
 	msg.TransportTrigger = 0xA3
-	msg.ConnPathSize = byte(p.Len() / 2)
+	msg.ConnPathSize = byte(path.Len() / 2)
 	item.Serialize(msg)
-	item.Serialize(p.Bytes())
+	item.Serialize(path.Bytes())
 
 	return item, nil
+}
+
+func (client *Client) forwardOpen(forwardOpenMsg CIPItem) error {
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = CIPItem{Header: cipItemHeader{ID: cipItem_Null}}
+	reqItems[1] = forwardOpenMsg
+	itemData, err := serializeItems(reqItems)
+	if err != nil {
+		client.SLogger.Error("error serializing items", slog.String("err", err.Error()))
+		return err
+	}
+
+	header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
+	if err != nil {
+		client.SLogger.Error("error sending data", slog.String("err", err.Error()))
+		return err
+	}
+
+	items, err := client.parseResponse(&header, data)
+	if err != nil {
+		client.SLogger.Error("error parsing response", slog.String("err", err.Error()))
+		return err
+	}
+
+	respContent := msgCipForwardOpenReply{}
+	err = items[1].DeSerialize(&respContent)
+	if err != nil {
+		client.SLogger.Error("error deserializing forward open response", slog.String("err", err.Error()))
+		return fmt.Errorf("error deserializing forward open response content. %w", err)
+	}
+
+	client.OTNetworkConnectionID = respContent.OtNetworkConnectionId
+
+	client.SLogger.Info(
+		"successfully opened connection",
+		slog.Any("ConnectionSize", uint32(client.ConnectionSize)),
+		slog.Any("OTNetworkConnectionId", respContent.OtNetworkConnectionId),
+	)
+
+	return nil
+}
+
+type msgCipForwardOpenReply struct {
+	OtNetworkConnectionId  uint32
+	TOConnectionId         uint32
+	ConnectionSerialNumber uint16
+	OriginatorVendorId     uint16
+	OriginatorSerialNumber uint32
+	OTApiNs                uint32
+	TOApiNs                uint32
+	ApplicationReply       uint8
+	Reserved               uint8
 }
 
 type msgEIPForwardOpen_Standard_Reply struct {
@@ -455,8 +438,8 @@ type msgEIPForwardOpen_Standard_Reply struct {
 	ConnectionSerialNumber uint16
 	VendorID               uint16
 	OriginatorSerialNumber uint32
-	OTAPI                  uint32
-	TOAPI                  uint32
+	OTApi                  uint32
+	TOApi                  uint32
 	ReplySize              byte
 	Reserved2              byte
 }
@@ -466,11 +449,56 @@ func (client *Client) checkConnection() error {
 		if client.AutoConnect {
 			err := client.Connect()
 			if err != nil {
-				return fmt.Errorf("not connected and connect attemp failed: %w", err)
+				return fmt.Errorf("not connected and connect attempt failed: %w", err)
 			}
 		} else {
 			return errors.New("not connected")
 		}
 	}
 	return nil
+}
+
+func (client *Client) parseResponse(header *eipHeader, data *bytes.Buffer) ([]CIPItem, error) {
+	if header.Status != 0 {
+		return nil, fmt.Errorf("forward open failed. status: %v", header.Status)
+	}
+
+	preItem := msgPreItemData{}
+	err := binary.Read(data, binary.LittleEndian, &preItem)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading items header from forward open request. %w", err)
+	}
+
+	items, err := readItems(data)
+	if err != nil {
+		return nil, fmt.Errorf("problem reading items from forward open request. %w", err)
+	}
+
+	respHeader := msgCIPMessageRouterResponse{}
+	err = items[1].DeSerialize(&respHeader)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing forward open response header. %w", err)
+	}
+
+	extended_status := make([]byte, respHeader.StatusLen*2)
+	if respHeader.StatusLen != 0 {
+		err = items[1].DeSerialize(&extended_status)
+		if err != nil {
+			return nil, fmt.Errorf("error deserializing forward open response header extended status. %w", err)
+		}
+	}
+	if respHeader.Status != 0 {
+		var errMsg string
+		switch respHeader.Status {
+		case 1:
+			errMsg = "connection failure"
+		case 8:
+			errMsg = "service not supported"
+		default:
+			errMsg = "bad status on header"
+		}
+		client.SLogger.Error(errMsg, slog.Any("status", respHeader.Status))
+		return nil, fmt.Errorf("%s status: %v", errMsg, respHeader.Status)
+	}
+	return items, nil
 }

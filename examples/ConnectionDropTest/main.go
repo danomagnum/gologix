@@ -9,13 +9,13 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for reading an INT tag named "TestInt" in the controller.
 func main() {
 	var err error
 
 	// setup the client.  If you need a different path you'll have to set that.
 	client := gologix.NewClient("192.168.2.244")
-	client.Path = &bytes.Buffer{}
+	client.Controller.Path = &bytes.Buffer{}
 
 	// for example, to have a controller on slot 1 instead of 0 you could do this
 	// client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
@@ -28,7 +28,7 @@ func main() {
 		log.Printf("Error opening client. %v", err)
 		os.Exit(1)
 	}
-	// setup a deffered disconnect.  If you don't disconnect you might have trouble reconnecting because
+	// setup a deferred disconnect.  If you don't disconnect you might have trouble reconnecting because
 	// you won't have sent the close forward open.  You'll have to wait for the CIP connection to time out
 	// if that happens (about a minute)
 	defer client.Disconnect()
