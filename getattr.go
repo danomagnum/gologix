@@ -151,36 +151,35 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 // If there are no variable-length fields in the attributes you are getting, the best way is to create the equivalent
 // struct as above with the proper types for the AttrX_Value instead of []byte and do an item.Serialize(&InstanceOfMyType)
 func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ...CIPAttribute) (*CIPItem, error) {
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
-	reqitems := make([]CIPItem, 2)
-	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
-	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
-
-	p, err := Serialize(
-		class, instance,
-	)
+	path, err := Serialize(class, instance)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't build path. %w", err)
+		return nil, fmt.Errorf("could not build path. %w", err)
 	}
 
-	readmsg := msgCIPConnectedServiceReq{
-		SequenceCount: uint16(sequencer()),
+	readMsg := msgCIPConnectedServiceReq{
+		SequenceCount: uint16(client.sequenceNumber.Add(1)),
 		Service:       CIPService_GetAttributeList,
-		PathLength:    byte(p.Len() / 2),
+		PathLength:    byte(path.Len() / 2),
 	}
 
-	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Serialize(p.Bytes())
-	reqitems[1].Serialize(uint16(len(attrs)))
+	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
+	reqItems[1].Serialize(path.Bytes())
+	reqItems[1].Serialize(uint16(len(attrs)))
 	for i := range attrs {
-		reqitems[1].Serialize(uint16(attrs[i]))
+		reqItems[1].Serialize(uint16(attrs[i]))
 	}
+	reqItems[1].Serialize(byte(1))
+	reqItems[1].Serialize(byte(0))
+	reqItems[1].Serialize(uint16(1))
 
-	itemdata, err := serializeItems(reqitems)
+	itemData, err := serializeItems(reqItems)
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
 
 	if err != nil {
 		return nil, err
@@ -191,6 +190,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
 		client.Logger.Printf("Problem reading read result header. %v", err)
+		return nil, err
 	}
 	items, err := readItems(data)
 	if err != nil {
@@ -198,10 +198,10 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 		return nil, err
 	}
 
-	var resphdr cipAttributeResponseHdr
-	items[1].DeSerialize(&resphdr)
-	if resphdr.Status != uint16(CIPStatus_OK) {
-		return &items[1], fmt.Errorf("response header has status 0x%X (%v)", resphdr.Status, CIPStatus(resphdr.Status))
+	var respHdr cipAttributeResponseHdr
+	items[1].DeSerialize(&respHdr)
+	if respHdr.Status != uint16(CIPStatus_OK) {
+		return &items[1], fmt.Errorf("response header has status 0x%X (%v)", respHdr.Status, CIPStatus(respHdr.Status))
 	}
 
 	// There is a count before there is any result data - we'll remove that here.

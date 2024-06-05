@@ -21,17 +21,21 @@ type eipHeader struct {
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
 func (client *Client) send(cmd CIPCommand, msgs ...any) error {
-	// calculate size of all message parts
-	size := 0
+	// calculate messageLen of all message parts
+	messageLen := 0
 	for _, msg := range msgs {
-		size += binary.Size(msg)
+		messageLen += binary.Size(msg)
+	}
+	if messageLen > int(client.ConnectionSize) {
+		err := fmt.Errorf("message length (%d) exceeds connection size (%d)", messageLen, client.ConnectionSize)
+		return err
 	}
 	// build header based on size
-	hdr := client.newEIPHeader(cmd, size)
+	hdr := client.newEIPHeader(cmd, messageLen)
 
 	// initialize a buffer and add the header to it.
 	// the 24 is from the header size
-	b := make([]byte, 0, size+24)
+	b := make([]byte, 0, messageLen+24)
 	buf := bytes.NewBuffer(b)
 	err := binary.Write(buf, binary.LittleEndian, hdr)
 	if err != nil {
@@ -57,8 +61,12 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
+			err = fmt.Errorf("problem writing to socket: %w", err)
 			err2 := client.Disconnect()
-			return fmt.Errorf("%w: %v", err, err2)
+			if err2 != nil {
+				err = fmt.Errorf("%w: problem disconnecting: %w", err, err2)
+			}
+			return err
 		}
 		written += n
 	}
@@ -122,7 +130,6 @@ func (client *Client) newEIPHeader(cmd CIPCommand, size int) (hdr eipHeader) {
 	client.HeaderSequenceCounter++
 
 	hdr.Command = cmd
-	//hdr.Command = 0x0070
 	hdr.Length = uint16(size)
 	hdr.SessionHandle = client.SessionHandle
 	hdr.Status = 0

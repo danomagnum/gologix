@@ -29,7 +29,7 @@ func (client *Client) Disconnect() error {
 		CIPInstance(1),
 	)
 	if err != nil {
-		client.SLogger.Error("Error serializing path", slog.String("err", err.Error()))
+		client.SLogger.Error("Error serializing path", slog.Any("err", err))
 		return fmt.Errorf("error serializing path: %w", err)
 	}
 
@@ -56,14 +56,14 @@ func (client *Client) Disconnect() error {
 	if err != nil {
 		client.SLogger.Error(
 			"unable to serialize itemData. Forcing connection closed",
-			slog.String("err", err.Error()),
+			slog.Any("err", err),
 		)
 	} else {
 		header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
 		if err != nil {
 			client.SLogger.Error(
 				"error sending disconnect request",
-				slog.String("err", err.Error()),
+				slog.Any("err", err),
 			)
 		}
 
@@ -71,14 +71,14 @@ func (client *Client) Disconnect() error {
 		if err != nil {
 			client.SLogger.Error(
 				"error parsing disconnect response",
-				slog.String("err", err.Error()),
+				slog.Any("err", err),
 			)
 		}
 	}
 
 	err = client.conn.Close()
 	if err != nil {
-		client.SLogger.Error("error closing connection", slog.String("err", err.Error()))
+		client.SLogger.Error("error closing connection", slog.Any("err", err))
 	}
 
 	client.SLogger.Info("successfully disconnected from controller")
