@@ -109,10 +109,16 @@ const (
 	CIPService_Create                 CIPService = 0x08
 	CIPService_Delete                 CIPService = 0x09
 	CIPService_MultipleService        CIPService = 0x0A
+	_                                 CIPService = 0x0B // CIP Reserved
+	_                                 CIPService = 0x0C // CIP Reserved
 	CIPService_ApplyAttributes        CIPService = 0x0D
 	CIPService_GetAttributeSingle     CIPService = 0x0E
+	_                                 CIPService = 0x0F // CIP Reserved
 	CIPService_SetAttributeSingle     CIPService = 0x10
 	CIPService_FindNextObjectInstance CIPService = 0x11
+	_                                 CIPService = 0x12 // CIP Reserved
+	_                                 CIPService = 0x13 // CIP Reserved
+	CIPService_ErrorResponse          CIPService = 0x14
 	CIPService_Restore                CIPService = 0x15
 	CIPService_Save                   CIPService = 0x16
 	CIPService_NOP                    CIPService = 0x17
@@ -122,10 +128,15 @@ const (
 	CIPService_RemoveMember           CIPService = 0x1B
 	CIPService_GroupSync              CIPService = 0x1C
 	CIPService_GetMemberList          CIPService = 0x1D
-	// cip object services
+	_                                 CIPService = 0x1E // CIP Reserved
+	_                                 CIPService = 0x1F
+	_                                 CIPService = 0x31 // CIP Reserved
+	// cip object services -- do these change per CIP object?
+	CIPService_GetInstanceList          CIPService = 0x4B
 	CIPService_Read                     CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
 	CIPService_Write                    CIPService = 0x4D
-	CIPService_ForwardClose             CIPService = 0x4E // Also seen this called "read modify write" //cipService_ReadModWrite     cipService = 0x4E // Read Modify Write
+	CIPService_ForwardClose             CIPService = 0x4E
+	cipService_ReadModWrite             CIPService = 0x4E
 	CIPService_GetConnectionOwner       CIPService = 0x5A
 	CIPService_ForwardOpen              CIPService = 0x54
 	CIPService_LargeForwardOpen         CIPService = 0x5B
