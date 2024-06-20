@@ -131,6 +131,7 @@ func NewClient(ip string) *Client {
 		KeepAliveProps:     []CIPAttribute{1, 2, 3, 4, 10},
 		RPI:                rpiDefault,
 		SocketTimeout:      socketTimeoutDefault,
+		KnownTags:          make(map[string]KnownTag),
 		ioi_cache:          make(map[string]*tagIOI),
 		Logger:             log.Default(),
 		SLogger:            slog.Default(),

@@ -12,8 +12,8 @@ import (
 
 const (
 	connSizeLargeDefault    = 4000   // default large connection size
-	connSizeStandardDefault = 512    // default small connection size
-	connSizeStandardMax     = 512    // maximum size of connection for standard
+	connSizeStandardDefault = 511    // default small connection size
+	connSizeStandardMax     = 511    // maximum size of connection for standard
 	portDefault             = 44818  // default CIP port
 	vendorIdDefault         = 0x9999 // default vendor id. Used to prevent vendor ID conflicts
 	socketTimeoutDefault    = time.Second * 10
@@ -49,7 +49,7 @@ func (client *Client) Connect() error {
 		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
 		if err != nil {
 			msg := "cannot setup default path"
-			client.SLogger.Error(msg, slog.String("err", err.Error()))
+			client.SLogger.Error(msg, slog.Any("err", err))
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 	}
@@ -62,7 +62,7 @@ func (client *Client) Connect() error {
 	client.conn, err = net.DialTimeout("tcp", address, client.SocketTimeout)
 	if err != nil {
 		msg := "cannot connect to controller"
-		client.SLogger.Error(msg, slog.String("err", err.Error()))
+		client.SLogger.Error(msg, slog.Any("err", err))
 		return fmt.Errorf("%s: %w", msg, err)
 	}
 
@@ -78,7 +78,7 @@ func (client *Client) Connect() error {
 		}
 		err = client.forwardOpen(item)
 		if err != nil {
-			client.SLogger.Warn("large forward open failed. falling back to standard forward open", slog.String("err", err.Error()))
+			client.SLogger.Warn("large forward open failed. falling back to standard forward open", slog.Any("err", err))
 			client.ConnectionSize = connSizeStandardDefault
 		}
 	}
@@ -89,7 +89,7 @@ func (client *Client) Connect() error {
 		}
 		err = client.forwardOpen(item)
 		if err != nil {
-			client.SLogger.Error("unable to open connection", slog.String("err", err.Error()))
+			client.SLogger.Error("unable to open connection", slog.Any("err", err))
 			return err
 		}
 	}
@@ -110,7 +110,7 @@ func (client *Client) registerSession() error {
 	header, _, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
 	if err != nil {
 		msg := "cannot get connect response"
-		client.SLogger.Error(msg, slog.String("err", err.Error()))
+		client.SLogger.Error(msg, slog.Any("err", err))
 		return fmt.Errorf("%s: %w", msg, err)
 	}
 	client.SessionHandle = header.SessionHandle
@@ -127,26 +127,30 @@ func (client *Client) keepalive() {
 		client.SLogger.Warn(err.Error())
 	}
 	client.SLogger.Debug("starting keep alive")
+	client.cancel_keepalive = make(chan struct{})
 	client.KeepAliveRunning = true
 	defer func() { client.KeepAliveRunning = false }()
 
 	originalProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 	if err != nil {
-		client.Logger.Printf("keepalive prop list failed. %v", err)
+		client.Logger.Printf("keepalive prop list failed. %w", err)
 		client.SLogger.Error(
 			"initial keep alive property get failed",
 			slog.Any("client.KeepAliveProps", client.KeepAliveProps),
+			slog.Any("err", err),
 		)
 		return
 	}
 
 	err = client.ListAllTags(0)
 	if err != nil {
-		client.Logger.Printf("keepalive list tags failed. %v", err)
+		client.Logger.Printf("keepalive list tags failed. %w", err)
+		client.SLogger.Error("keepalive list tags failed", slog.Any("err", err))
 		return
 	}
 
-	t := time.NewTicker(client.SocketTimeout / 4)
+	t := time.NewTicker(client.KeepAliveFrequency)
+	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
@@ -157,8 +161,8 @@ func (client *Client) keepalive() {
 
 			newProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 			if err != nil {
-				client.Logger.Printf("keepalive failed. %v", err)
-				client.SLogger.Error("keepalive failed", slog.String("err", err.Error()))
+				client.Logger.Printf("keepalive failed. %w", err)
+				client.SLogger.Error("keepalive failed", slog.Any("err", err))
 				client.Disconnect()
 				return
 			}
@@ -179,7 +183,6 @@ func (client *Client) keepalive() {
 
 		case <-client.cancel_keepalive:
 			t.Stop()
-			return
 		}
 	}
 }
@@ -382,26 +385,26 @@ func (client *Client) forwardOpen(forwardOpenMsg CIPItem) error {
 	reqItems[1] = forwardOpenMsg
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
-		client.SLogger.Error("error serializing items", slog.String("err", err.Error()))
+		client.SLogger.Error("error serializing items", slog.Any("err", err))
 		return err
 	}
 
 	header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
 	if err != nil {
-		client.SLogger.Error("error sending data", slog.String("err", err.Error()))
+		client.SLogger.Error("error sending data", slog.Any("err", err))
 		return err
 	}
 
 	items, err := client.parseResponse(&header, data)
 	if err != nil {
-		client.SLogger.Error("error parsing response", slog.String("err", err.Error()))
+		client.SLogger.Error("error parsing response", slog.Any("err", err))
 		return err
 	}
 
 	respContent := msgCipForwardOpenReply{}
 	err = items[1].DeSerialize(&respContent)
 	if err != nil {
-		client.SLogger.Error("error deserializing forward open response", slog.String("err", err.Error()))
+		client.SLogger.Error("error deserializing forward open response", slog.Any("err", err))
 		return fmt.Errorf("error deserializing forward open response content. %w", err)
 	}
 
