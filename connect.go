@@ -182,7 +182,7 @@ func (client *Client) keepalive() {
 			}
 
 		case <-client.cancel_keepalive:
-			t.Stop()
+			return
 		}
 	}
 }
