@@ -16,11 +16,8 @@ type eipHeader struct {
 	Options       uint32
 }
 
-// send takes the command followed by all the structures that need
-// concatenated together.
-//
-// It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (client *Client) send(cmd CIPCommand, msgs ...any) error {
+// prepares a bytes buffer for sending a message
+func (client *Client) sendMsgBuild(cmd CIPCommand, msgs ...any) ([]byte, error) {
 	// calculate messageLen of all message parts
 	messageLen := 0
 	for _, msg := range msgs {
@@ -28,7 +25,7 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	}
 	if messageLen > int(client.ConnectionSize) {
 		err := fmt.Errorf("message length (%d) exceeds connection size (%d)", messageLen, client.ConnectionSize)
-		return err
+		return nil, err
 	}
 	// build header based on size
 	hdr := client.newEIPHeader(cmd, messageLen)
@@ -39,18 +36,25 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 	buf := bytes.NewBuffer(b)
 	err := binary.Write(buf, binary.LittleEndian, hdr)
 	if err != nil {
-		return fmt.Errorf("problem writing header to buffer. %w", err)
+		return nil, fmt.Errorf("problem writing header to buffer. %w", err)
 	}
 
 	// add all message components to the buffer.
 	for _, msg := range msgs {
 		err = binary.Write(buf, binary.LittleEndian, msg)
 		if err != nil {
-			return fmt.Errorf("problem writing msg to buffer. %w", err)
+			return nil, fmt.Errorf("problem writing msg to buffer. %w", err)
 		}
 	}
 
-	b = buf.Bytes()
+	return buf.Bytes(), nil
+}
+
+// send takes the command followed by all the structures that need
+// concatenated together.
+//
+// It builds the appropriate header for all the data, puts the packet together, and then sends it.
+func (client *Client) sendData(b []byte) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
@@ -76,18 +80,34 @@ func (client *Client) send(cmd CIPCommand, msgs ...any) error {
 
 // sends one message and gets one response in a mutex-protected way.
 func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *bytes.Buffer, error) {
-	client.mutex.Lock()
-	defer client.mutex.Unlock()
-	err := client.send(cmd, msgs...)
+	buffer, err := client.sendMsgBuild(cmd, msgs...)
 	if err != nil {
-		return eipHeader{}, nil, err
+		return eipHeader{}, nil, fmt.Errorf("error preparing to send message: %w", err)
 	}
-	return client.recv_data()
-
+	client.mutex.Lock()
+	err = client.sendData(buffer)
+	if err != nil {
+		client.mutex.Unlock()
+		err2 := client.Disconnect()
+		if err2 != nil {
+			return eipHeader{}, nil, fmt.Errorf("error disconnecting after send error %w: %w", err, err2)
+		}
+		return eipHeader{}, nil, fmt.Errorf("error sending data resulting in forced disconnect: %w", err)
+	}
+	hdr, buf, err := client.recvData()
+	client.mutex.Unlock()
+	if err != nil {
+		err2 := client.Disconnect()
+		if err2 != nil {
+			return hdr, buf, fmt.Errorf("error disconnecting after recvError %w: %w", err, err2)
+		}
+		return hdr, buf, fmt.Errorf("error receiving data resulting in forced disconnect: %w", err)
+	}
+	return hdr, buf, nil
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (client *Client) recv_data() (eipHeader, *bytes.Buffer, error) {
+func (client *Client) recvData() (eipHeader, *bytes.Buffer, error) {
 
 	hdr := eipHeader{}
 	var err error
@@ -98,8 +118,7 @@ func (client *Client) recv_data() (eipHeader, *bytes.Buffer, error) {
 	}
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
-		err2 := client.Disconnect()
-		return hdr, nil, fmt.Errorf("problem reading header from socket: %w: %v", err, err2)
+		return hdr, nil, fmt.Errorf("problem reading header from socket: %w", err)
 	}
 	if client.SocketTimeout != 0 {
 		client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
@@ -112,8 +131,7 @@ func (client *Client) recv_data() (eipHeader, *bytes.Buffer, error) {
 
 		err = binary.Read(client.conn, binary.LittleEndian, &data)
 		if err != nil {
-			err2 := client.Disconnect()
-			return hdr, nil, fmt.Errorf("problem reading socket payload: %w: %v", err, err2)
+			return hdr, nil, fmt.Errorf("problem reading socket payload: %w", err)
 		}
 	}
 	buf := bytes.NewBuffer(data)
