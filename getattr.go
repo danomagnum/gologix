@@ -171,9 +171,6 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	for i := range attrs {
 		reqItems[1].Serialize(uint16(attrs[i]))
 	}
-	reqItems[1].Serialize(byte(1))
-	reqItems[1].Serialize(byte(0))
-	reqItems[1].Serialize(uint16(1))
 
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
