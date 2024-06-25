@@ -12,7 +12,7 @@ import (
 // the time object's usec since the unix epoch.
 func TestGenericCIPMessage1(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

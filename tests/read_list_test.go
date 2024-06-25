@@ -9,7 +9,7 @@ import (
 // bug report (issue 8): read list fails if one of the tags is a string.
 func TestReadListWithString(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -85,7 +85,7 @@ func TestReadListWithString(t *testing.T) {
 // bug report (issue 8): read list fails if one of the tags is a string.
 func TestReadMultiWithString(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

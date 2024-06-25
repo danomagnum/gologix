@@ -8,7 +8,7 @@ import (
 
 func TestReconnection(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -61,7 +61,7 @@ func TestReconnection(t *testing.T) {
 
 func TestNoReconnection(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	client.AutoConnect = false
 	err := client.Connect()
 	if err != nil {
