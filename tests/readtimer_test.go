@@ -107,7 +107,7 @@ func TestTimerRead(t *testing.T) {
 		t.Errorf("Expected preset of 2,345 but got %d ", tmr.PRE)
 	}
 
-	if tmr.ACC <= 2345 {
+	if tmr.ACC < 2345 {
 		t.Errorf("Expected ACC at least 2,345 but got %d", tmr.ACC)
 	}
 

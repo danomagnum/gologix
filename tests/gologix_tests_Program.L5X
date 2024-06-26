@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" ExportDate="Sun Aug 06 23:11:03 2023" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" ExportDate="Tue Jun 25 22:40:41 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
 <DataType Name="TestUDT" Family="NoFamily" Class="User">
@@ -29,6 +29,47 @@
 </DataType>
 </DataTypes>
 <Tags Use="Context">
+<Tag Name="GetPropResult" TagType="Base" DataType="SINT" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="SINT" Dimensions="32" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+<Element Index="[3]" Value="0"/>
+<Element Index="[4]" Value="0"/>
+<Element Index="[5]" Value="0"/>
+<Element Index="[6]" Value="0"/>
+<Element Index="[7]" Value="0"/>
+<Element Index="[8]" Value="0"/>
+<Element Index="[9]" Value="0"/>
+<Element Index="[10]" Value="0"/>
+<Element Index="[11]" Value="0"/>
+<Element Index="[12]" Value="0"/>
+<Element Index="[13]" Value="0"/>
+<Element Index="[14]" Value="0"/>
+<Element Index="[15]" Value="0"/>
+<Element Index="[16]" Value="0"/>
+<Element Index="[17]" Value="0"/>
+<Element Index="[18]" Value="0"/>
+<Element Index="[19]" Value="0"/>
+<Element Index="[20]" Value="0"/>
+<Element Index="[21]" Value="0"/>
+<Element Index="[22]" Value="0"/>
+<Element Index="[23]" Value="0"/>
+<Element Index="[24]" Value="0"/>
+<Element Index="[25]" Value="0"/>
+<Element Index="[26]" Value="0"/>
+<Element Index="[27]" Value="0"/>
+<Element Index="[28]" Value="0"/>
+<Element Index="[29]" Value="0"/>
+<Element Index="[30]" Value="0"/>
+<Element Index="[31]" Value="0"/>
+</Array>
+</Data>
+</Tag>
 <Tag Name="gologix_msg_send2" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
 <![CDATA[0]]>
@@ -61,6 +102,47 @@
 </Data>
 <Data Format="Decorated">
 <DataValue DataType="DINT" Radix="Decimal" Value="36"/>
+</Data>
+</Tag>
+<Tag Name="TestDintArr" TagType="Base" DataType="DINT" Dimensions="10" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[4351,4352,4353,4354,4355,4356,4357,4358,4359,4360]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="10" Radix="Decimal">
+<Element Index="[0]" Value="4351"/>
+<Element Index="[1]" Value="4352"/>
+<Element Index="[2]" Value="4353"/>
+<Element Index="[3]" Value="4354"/>
+<Element Index="[4]" Value="4355"/>
+<Element Index="[5]" Value="4356"/>
+<Element Index="[6]" Value="4357"/>
+<Element Index="[7]" Value="4358"/>
+<Element Index="[8]" Value="4359"/>
+<Element Index="[9]" Value="4360"/>
+</Array>
+</Data>
+</Tag>
+<Tag Name="TestInt" TagType="Base" DataType="INT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write" Max="5555" Min="-543">
+<Description>
+<![CDATA[MyDescr]]>
+</Description>
+<EngineeringUnits>
+<EngineeringUnit>
+<![CDATA[counts]]>
+</EngineeringUnit>
+</EngineeringUnits>
+<Data Format="L5K">
+<![CDATA[999]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="999"/>
+</Data>
+</Tag>
+<Tag Name="Testmsg2" TagType="Base" DataType="MESSAGE" ExternalAccess="Read/Write">
+<Data Format="Message">
+<MessageParameters MessageType="CIP Generic" RequestedLength="0" ConnectedFlag="2" ConnectionPath="gologix, 1, 0" CommTypeCode="0" ServiceCode="16#000e" ObjectType="16#0006" TargetObject="1" AttributeNumber="16#0023" LocalIndex="0" DestinationTag="GetPropResult[0]"
+ LargePacketUsage="false"/>
 </Data>
 </Tag>
 <Tag Name="TestReal" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
@@ -101,7 +183,7 @@
 <Tags>
 <Tag Name="CounterBytes" TagType="Base" DataType="SINT" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[0,0,0,8,-89,-106,8,0,-1,-1,-1,127,0,0,0,0,10,0,0,-128,16,0,0,-128,-100,75,57,-15,52,-44,9,0]]]>
+<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,4,0,0,0,10,0,0,-128,12,0,0,-128,-100,75,57,-15,12,24,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="32" Radix="Decimal">
@@ -113,11 +195,11 @@
 <Element Index="[5]" Value="-106"/>
 <Element Index="[6]" Value="8"/>
 <Element Index="[7]" Value="0"/>
-<Element Index="[8]" Value="-1"/>
-<Element Index="[9]" Value="-1"/>
-<Element Index="[10]" Value="-1"/>
-<Element Index="[11]" Value="127"/>
-<Element Index="[12]" Value="0"/>
+<Element Index="[8]" Value="120"/>
+<Element Index="[9]" Value="2"/>
+<Element Index="[10]" Value="0"/>
+<Element Index="[11]" Value="0"/>
+<Element Index="[12]" Value="4"/>
 <Element Index="[13]" Value="0"/>
 <Element Index="[14]" Value="0"/>
 <Element Index="[15]" Value="0"/>
@@ -125,7 +207,7 @@
 <Element Index="[17]" Value="0"/>
 <Element Index="[18]" Value="0"/>
 <Element Index="[19]" Value="-128"/>
-<Element Index="[20]" Value="16"/>
+<Element Index="[20]" Value="12"/>
 <Element Index="[21]" Value="0"/>
 <Element Index="[22]" Value="0"/>
 <Element Index="[23]" Value="-128"/>
@@ -133,9 +215,9 @@
 <Element Index="[25]" Value="75"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="52"/>
-<Element Index="[29]" Value="-44"/>
-<Element Index="[30]" Value="9"/>
+<Element Index="[28]" Value="12"/>
+<Element Index="[29]" Value="24"/>
+<Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 </Array>
 </Data>
@@ -256,6 +338,47 @@
 <Element Index="[98]" Value="0"/>
 <Element Index="[99]" Value="232058"/>
 </Array>
+</Data>
+</Tag>
+<Tag Name="MultiWriteBool" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="MultiWriteDint" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[110198]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="110198"/>
+</Data>
+</Tag>
+<Tag Name="MultiWriteInt" TagType="Base" DataType="INT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[321]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="321"/>
+</Data>
+</Tag>
+<Tag Name="MultiWriteReal" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[7.65399981e+000]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="7.654"/>
+</Data>
+</Tag>
+<Tag Name="MultiWriteString" TagType="Base" DataType="STRING" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[12,'String Test!$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		]]]>
+</Data>
+<Data Format="String" Length="12">
+<![CDATA['String Test!']]>
 </Data>
 </Tag>
 <Tag Name="ReadBool" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
@@ -576,6 +699,54 @@
 </Structure>
 </Element>
 </Array>
+</Data>
+</Tag>
+<Tag Name="Temp" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="TestAlarmAck" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="TestAlarmDisable" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="TestAlarmEnable" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="TestAlarmReset" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="TestAlarmTrigger" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
 <Tag Name="TestControl" TagType="Base" DataType="CONTROL" Dimensions="32" Constant="false" ExternalAccess="Read/Write">
@@ -1039,12 +1210,12 @@
 </Tag>
 <Tag Name="TestCounter" TagType="Base" DataType="COUNTER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[134217728,562855,2147483647]]]>
+<![CDATA[[134217728,562855,632]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="COUNTER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="562855"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="2147483647"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="632"/>
 <DataValueMember Name="CU" DataType="BOOL" Value="0"/>
 <DataValueMember Name="CD" DataType="BOOL" Value="0"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -1055,7 +1226,7 @@
 </Tag>
 <Tag Name="TestTimer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[2204737,2345,0]]]>
+<![CDATA[[4051024,2345,0]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -1095,16 +1266,24 @@
 <DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
+<Tag Name="test_msg2" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
 <Tag Name="TimerBytes" TagType="Base" DataType="SINT" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[65,-92,33,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,24,0,0,-128,-100,75,57,-15,-100,-45,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		,0,0,0,0,0,0,0,0]]]>
+<![CDATA[[80,-48,61,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-100,75,57,-15,-60,24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		,0,0,0,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="64" Radix="Decimal">
-<Element Index="[0]" Value="65"/>
-<Element Index="[1]" Value="-92"/>
-<Element Index="[2]" Value="33"/>
+<Element Index="[0]" Value="80"/>
+<Element Index="[1]" Value="-48"/>
+<Element Index="[2]" Value="61"/>
 <Element Index="[3]" Value="0"/>
 <Element Index="[4]" Value="41"/>
 <Element Index="[5]" Value="9"/>
@@ -1122,7 +1301,7 @@
 <Element Index="[17]" Value="0"/>
 <Element Index="[18]" Value="0"/>
 <Element Index="[19]" Value="-128"/>
-<Element Index="[20]" Value="24"/>
+<Element Index="[20]" Value="8"/>
 <Element Index="[21]" Value="0"/>
 <Element Index="[22]" Value="0"/>
 <Element Index="[23]" Value="-128"/>
@@ -1130,9 +1309,9 @@
 <Element Index="[25]" Value="75"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="-100"/>
-<Element Index="[29]" Value="-45"/>
-<Element Index="[30]" Value="9"/>
+<Element Index="[28]" Value="-60"/>
+<Element Index="[29]" Value="24"/>
+<Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 <Element Index="[32]" Value="0"/>
 <Element Index="[33]" Value="0"/>
@@ -1393,6 +1572,61 @@
 </Tag>
 </Tags>
 <Routines>
+<Routine Name="Global_Tag_References" Type="ST">
+<STContent>
+<Line Number="0">
+<![CDATA[// This program is to "map" all global tags in so they get included]]>
+</Line>
+<Line Number="1">
+<![CDATA[// in the exported l5x output.]]>
+</Line>
+<Line Number="2">
+<![CDATA[]]>
+</Line>
+<Line Number="3">
+<![CDATA[Temp := TestDintArr[0];]]>
+</Line>
+<Line Number="4">
+<![CDATA[Temp := TestDintArr[1];]]>
+</Line>
+<Line Number="5">
+<![CDATA[Temp := TestDintArr[2];]]>
+</Line>
+<Line Number="6">
+<![CDATA[Temp := TestDintArr[3];]]>
+</Line>
+<Line Number="7">
+<![CDATA[Temp := TestDintArr[4];]]>
+</Line>
+<Line Number="8">
+<![CDATA[Temp := TestDintArr[5];]]>
+</Line>
+<Line Number="9">
+<![CDATA[Temp := TestDintArr[6];]]>
+</Line>
+<Line Number="10">
+<![CDATA[Temp := TestDintArr[7];]]>
+</Line>
+<Line Number="11">
+<![CDATA[Temp := TestDintArr[8];]]>
+</Line>
+<Line Number="12">
+<![CDATA[Temp := TestDintArr[9];]]>
+</Line>
+<Line Number="13">
+<![CDATA[]]>
+</Line>
+<Line Number="14">
+<![CDATA[Temp := TestDint;]]>
+</Line>
+<Line Number="15">
+<![CDATA[]]>
+</Line>
+<Line Number="16">
+<![CDATA[Temp := TestInt;]]>
+</Line>
+</STContent>
+</Routine>
 <Routine Name="Main" Type="RLL">
 <RLLContent>
 <Rung Number="0" Type="N">
@@ -1428,6 +1662,16 @@
 <Rung Number="6" Type="N">
 <Text>
 <![CDATA[COP(TestCounter,CounterBytes[0],32);]]>
+</Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Text>
+<![CDATA[XIC(TestAlarmTrigger)ALMD(TestAlarm,TestAlarmAck,TestAlarmReset,TestAlarmDisable,TestAlarmEnable);]]>
+</Text>
+</Rung>
+<Rung Number="8" Type="N">
+<Text>
+<![CDATA[XIC(test_msg2)MSG(Testmsg2);]]>
 </Text>
 </Rung>
 </RLLContent>
