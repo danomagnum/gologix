@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" ExportDate="Tue Jun 25 22:21:18 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" ExportDate="Tue Jun 25 22:40:41 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
 <DataType Name="TestUDT" Family="NoFamily" Class="User">
@@ -102,6 +102,41 @@
 </Data>
 <Data Format="Decorated">
 <DataValue DataType="DINT" Radix="Decimal" Value="36"/>
+</Data>
+</Tag>
+<Tag Name="TestDintArr" TagType="Base" DataType="DINT" Dimensions="10" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[4351,4352,4353,4354,4355,4356,4357,4358,4359,4360]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="10" Radix="Decimal">
+<Element Index="[0]" Value="4351"/>
+<Element Index="[1]" Value="4352"/>
+<Element Index="[2]" Value="4353"/>
+<Element Index="[3]" Value="4354"/>
+<Element Index="[4]" Value="4355"/>
+<Element Index="[5]" Value="4356"/>
+<Element Index="[6]" Value="4357"/>
+<Element Index="[7]" Value="4358"/>
+<Element Index="[8]" Value="4359"/>
+<Element Index="[9]" Value="4360"/>
+</Array>
+</Data>
+</Tag>
+<Tag Name="TestInt" TagType="Base" DataType="INT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write" Max="5555" Min="-543">
+<Description>
+<![CDATA[MyDescr]]>
+</Description>
+<EngineeringUnits>
+<EngineeringUnit>
+<![CDATA[counts]]>
+</EngineeringUnit>
+</EngineeringUnits>
+<Data Format="L5K">
+<![CDATA[999]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="999"/>
 </Data>
 </Tag>
 <Tag Name="Testmsg2" TagType="Base" DataType="MESSAGE" ExternalAccess="Read/Write">
@@ -664,6 +699,14 @@
 </Structure>
 </Element>
 </Array>
+</Data>
+</Tag>
+<Tag Name="Temp" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[0]]>
+</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
 <Tag Name="TestAlarm" TagType="Base" DataType="ALARM_DIGITAL" ExternalAccess="Read/Write">
@@ -1537,6 +1580,61 @@
 </Tag>
 </Tags>
 <Routines>
+<Routine Name="Global_Tag_References" Type="ST">
+<STContent>
+<Line Number="0">
+<![CDATA[// This program is to "map" all global tags in so they get included]]>
+</Line>
+<Line Number="1">
+<![CDATA[// in the exported l5x output.]]>
+</Line>
+<Line Number="2">
+<![CDATA[]]>
+</Line>
+<Line Number="3">
+<![CDATA[Temp := TestDintArr[0];]]>
+</Line>
+<Line Number="4">
+<![CDATA[Temp := TestDintArr[1];]]>
+</Line>
+<Line Number="5">
+<![CDATA[Temp := TestDintArr[2];]]>
+</Line>
+<Line Number="6">
+<![CDATA[Temp := TestDintArr[3];]]>
+</Line>
+<Line Number="7">
+<![CDATA[Temp := TestDintArr[4];]]>
+</Line>
+<Line Number="8">
+<![CDATA[Temp := TestDintArr[5];]]>
+</Line>
+<Line Number="9">
+<![CDATA[Temp := TestDintArr[6];]]>
+</Line>
+<Line Number="10">
+<![CDATA[Temp := TestDintArr[7];]]>
+</Line>
+<Line Number="11">
+<![CDATA[Temp := TestDintArr[8];]]>
+</Line>
+<Line Number="12">
+<![CDATA[Temp := TestDintArr[9];]]>
+</Line>
+<Line Number="13">
+<![CDATA[]]>
+</Line>
+<Line Number="14">
+<![CDATA[Temp := TestDint;]]>
+</Line>
+<Line Number="15">
+<![CDATA[]]>
+</Line>
+<Line Number="16">
+<![CDATA[Temp := TestInt;]]>
+</Line>
+</STContent>
+</Routine>
 <Routine Name="Main" Type="RLL">
 <RLLContent>
 <Rung Number="0" Type="N">
