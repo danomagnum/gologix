@@ -7,6 +7,7 @@ import (
 )
 
 func TestMembersList(t *testing.T) {
+	t.Skip("controller specific test")
 
 	tc := getTestConfig()
 	client := gologix.NewClient(tc.PlcAddress)
