@@ -8,7 +8,7 @@ import (
 
 func TestMultipleConns(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -21,7 +21,7 @@ func TestMultipleConns(t *testing.T) {
 		}
 	}()
 
-	client2 := gologix.NewClient(tc.PLC_Address)
+	client2 := gologix.NewClient(tc.PlcAddress)
 	err = client2.Connect()
 	if err != nil {
 		t.Error(err)

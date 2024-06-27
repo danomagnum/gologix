@@ -13,7 +13,9 @@ func LoadTags(l5xData RSLogix5000Content) (map[string]any, error) {
 	for _, tag := range l5xData.Controller.Tags.Tag {
 		if tag.Data != nil {
 			if len(tag.Data) > 1 {
-				tags[tag.NameAttr], err = L5xTypeToGoType(tag.DataTypeAttr, tag.Data[1].DataValue.ValueAttr)
+				if tag.Data[1].DataValue != nil {
+					tags[tag.NameAttr], err = L5xTypeToGoType(tag.DataTypeAttr, tag.Data[1].DataValue.ValueAttr)
+				}
 			}
 		}
 		if err != nil {

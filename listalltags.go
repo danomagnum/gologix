@@ -238,7 +238,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
-	if data_hdr.Status == 6 && start_instance < 200 {
+	if data_hdr.Status == 6 { //} && start_instance < 200 {
 		err = client.ListAllTags(start_instance)
 		if err != nil {
 			return err

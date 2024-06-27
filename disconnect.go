@@ -3,19 +3,28 @@ package gologix
 import (
 	"fmt"
 	"log/slog"
+	"time"
 )
 
 // You will want to defer this after a successful Connect() to make sure you free up the controller resources
 // to disconnect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
-	if !client.Connected {
+	if client.connecting {
+		client.SLogger.Debug("waiting for client to finish connecting before disconnecting")
+		for client.connecting {
+			time.Sleep(time.Millisecond * 10)
+		}
+	}
+	if !client.connected || client.disconnecting {
 		return nil
 	}
+	client.disconnecting = true
+	defer func() { client.disconnecting = false }()
+	client.connected = false
 	var err error
 	client.SLogger.Info("starting disconnection")
 
-	client.Connected = false
-	if client.KeepAliveRunning {
+	if client.keepAliveRunning {
 		close(client.cancel_keepalive)
 	}
 
@@ -65,14 +74,14 @@ func (client *Client) Disconnect() error {
 				"error sending disconnect request",
 				slog.Any("err", err),
 			)
-		}
-
-		_, err = client.parseResponse(&header, data)
-		if err != nil {
-			client.SLogger.Error(
-				"error parsing disconnect response",
-				slog.Any("err", err),
-			)
+		} else {
+			_, err = client.parseResponse(&header, data)
+			if err != nil {
+				client.SLogger.Error(
+					"error parsing disconnect response",
+					slog.Any("err", err),
+				)
+			}
 		}
 	}
 
@@ -82,6 +91,16 @@ func (client *Client) Disconnect() error {
 	}
 
 	client.SLogger.Info("successfully disconnected from controller")
+	return nil
+}
+
+// Cancels keepalive if KeepAliveAutoStart is false. Use force to cancel keepalive regardless.
+// If forced, the keepalive will not resume unless the client is reconnected or KeepAlive is triggered
+func (client *Client) KeepAliveCancel(force bool) error {
+	if client.KeepAliveAutoStart && !force {
+		return fmt.Errorf("unable to cancel keepalive due to AutoKeepAlive == true")
+	}
+	close(client.cancel_keepalive)
 	return nil
 }
 

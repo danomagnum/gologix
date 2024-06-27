@@ -11,7 +11,7 @@ import (
 
 func TestReadArrNew(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -41,7 +41,7 @@ func TestReadArrNew(t *testing.T) {
 
 func TestReadNewUDT(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -66,7 +66,7 @@ func TestReadNewUDT(t *testing.T) {
 }
 func TestReadNewUDTArr(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -103,7 +103,7 @@ func TestReadNewUDTArr(t *testing.T) {
 
 func TestReadBoolPack(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -143,7 +143,7 @@ func TestReadBoolPack(t *testing.T) {
 
 func TestReadNew(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -238,7 +238,7 @@ func TestReadMulti(t *testing.T) {
 	}
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -265,7 +265,7 @@ func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	client.SocketTimeout = time.Minute
 	err := client.Connect()
 	if err != nil {
@@ -297,7 +297,7 @@ func TestReadTimeout(t *testing.T) {
 // so we check around that value for magic numbers in the array.
 func TestReadTooManyTags(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

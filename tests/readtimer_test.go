@@ -14,7 +14,7 @@ func TestTimerRead(t *testing.T) {
 	var tmr lgxtypes.TIMER
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -107,7 +107,7 @@ func TestTimerRead(t *testing.T) {
 		t.Errorf("Expected preset of 2,345 but got %d ", tmr.PRE)
 	}
 
-	if tmr.ACC <= 2345 {
+	if tmr.ACC < 2345 {
 		t.Errorf("Expected ACC at least 2,345 but got %d", tmr.ACC)
 	}
 
@@ -165,7 +165,7 @@ func TestTimerRead(t *testing.T) {
 func TestTimerStructRead(t *testing.T) {
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
