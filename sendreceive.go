@@ -23,10 +23,6 @@ func (client *Client) sendMsgBuild(cmd CIPCommand, msgs ...any) ([]byte, error) 
 	for _, msg := range msgs {
 		messageLen += binary.Size(msg)
 	}
-	if messageLen > int(client.ConnectionSize) {
-		err := fmt.Errorf("message length (%d) exceeds connection size (%d)", messageLen, client.ConnectionSize)
-		return nil, err
-	}
 	// build header based on size
 	hdr := client.newEIPHeader(cmd, messageLen)
 
@@ -65,12 +61,7 @@ func (client *Client) sendData(b []byte) error {
 		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
-			err = fmt.Errorf("problem writing to socket: %w", err)
-			err2 := client.Disconnect()
-			if err2 != nil {
-				err = fmt.Errorf("%w: problem disconnecting: %w", err, err2)
-			}
-			return err
+			return fmt.Errorf("problem writing to socket: %w", err)
 		}
 		written += n
 	}
@@ -85,6 +76,7 @@ func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *b
 		return eipHeader{}, nil, fmt.Errorf("error preparing to send message: %w", err)
 	}
 	client.mutex.Lock()
+
 	err = client.sendData(buffer)
 	if err != nil {
 		client.mutex.Unlock()
@@ -94,6 +86,7 @@ func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *b
 		}
 		return eipHeader{}, nil, fmt.Errorf("error sending data resulting in forced disconnect: %w", err)
 	}
+
 	hdr, buf, err := client.recvData()
 	client.mutex.Unlock()
 	if err != nil {
