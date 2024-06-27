@@ -67,11 +67,10 @@ type Client struct {
 	// Set to true to allow auto-connects on reads and writes without having to call Connect() yourself.
 	AutoConnect bool
 
-	// Monitor status of PLC and keeps connection alive
-	KeepAlive          bool
-	KeepAliveProps     []CIPAttribute
+	KeepAliveAutoStart bool           // if the state is changed the keepalive will continue to run unless cancelled
+	KeepAliveProps     []CIPAttribute // properties monitored during keep alive
 	KeepAliveFrequency time.Duration
-	KeepAliveRunning   bool
+	keepAliveRunning   bool
 
 	RPI time.Duration // Request Packet Interval
 
@@ -86,10 +85,12 @@ type Client struct {
 	SessionHandle          uint32
 	OTNetworkConnectionID  uint32
 	HeaderSequenceCounter  uint16
-	Connected              bool
 	ConnectionSize         uint16
 	ConnectionSerialNumber uint16
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rick rolled.
+	connected              bool
+	connecting             bool
+	disconnecting          bool
 	sequenceNumber         atomic.Uint32
 
 	cancel_keepalive chan struct{}
@@ -126,7 +127,7 @@ func NewClient(ip string) *Client {
 		VendorId:           vendorIdDefault,
 		ConnectionSize:     connSizeLargeDefault,
 		AutoConnect:        true,
-		KeepAlive:          true,
+		KeepAliveAutoStart: true,
 		KeepAliveFrequency: time.Second * 30,
 		KeepAliveProps:     []CIPAttribute{1, 2, 3, 4, 10},
 		RPI:                rpiDefault,

@@ -22,6 +22,17 @@ const (
 
 // Connect to the PLC.
 func (client *Client) Connect() error {
+	if client.disconnecting {
+		client.SLogger.Debug("waiting for client to finish disconnecting before connecting")
+		for client.disconnecting {
+			time.Sleep(time.Millisecond * 10)
+		}
+	}
+	if client.connected || client.connecting {
+		return nil
+	}
+	client.connecting = true
+	defer func() { client.connecting = false }()
 	if client.SLogger != nil {
 		client.SLogger = client.SLogger.With(slog.String("controllerIp", client.Controller.IpAddress))
 	}
@@ -41,7 +52,7 @@ func (client *Client) Connect() error {
 	if client.RPI == 0 {
 		client.RPI = rpiDefault
 	}
-	client.sequenceNumber.Add(1)
+	client.sequenceNumber.Add(uint32(time.Now().UnixMilli()))
 
 	// default path is back plane -> slot 0
 	var err error
@@ -93,12 +104,16 @@ func (client *Client) Connect() error {
 			return err
 		}
 	}
-	client.Connected = true
+	client.connected = true
 
-	if client.KeepAlive {
-		go client.keepalive()
+	if client.KeepAliveAutoStart {
+		go client.KeepAlive()
 	}
 	return nil
+}
+
+func (client *Client) Connected() bool {
+	return client.connected
 }
 
 func (client *Client) registerSession() error {
@@ -118,18 +133,18 @@ func (client *Client) registerSession() error {
 	return nil
 }
 
-func (client *Client) keepalive() {
-	if !client.KeepAlive || client.SocketTimeout == 0 {
+func (client *Client) KeepAlive() {
+	if !client.KeepAliveAutoStart || client.SocketTimeout == 0 {
 		return
 	}
-	if client.KeepAliveRunning {
+	if client.keepAliveRunning {
 		err := errors.New("keepalive already running")
 		client.SLogger.Warn(err.Error())
 	}
 	client.SLogger.Debug("starting keep alive")
 	client.cancel_keepalive = make(chan struct{})
-	client.KeepAliveRunning = true
-	defer func() { client.KeepAliveRunning = false }()
+	client.keepAliveRunning = true
+	defer func() { client.keepAliveRunning = false }()
 
 	originalProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 	if err != nil {
@@ -154,7 +169,7 @@ func (client *Client) keepalive() {
 	for {
 		select {
 		case <-t.C:
-			if !client.Connected {
+			if !client.connected {
 				client.SLogger.Warn("keepalive failed. not connected")
 				return
 			}
@@ -182,6 +197,7 @@ func (client *Client) keepalive() {
 			}
 
 		case <-client.cancel_keepalive:
+			client.KeepAliveAutoStart = false
 			return
 		}
 	}
@@ -448,14 +464,14 @@ type msgEIPForwardOpen_Standard_Reply struct {
 }
 
 func (client *Client) checkConnection() error {
-	if !client.Connected {
+	if !client.connected {
 		if client.AutoConnect {
 			err := client.Connect()
 			if err != nil {
 				return fmt.Errorf("not connected and connect attempt failed: %w", err)
 			}
 		} else {
-			return errors.New("not connected")
+			return fmt.Errorf("not connected and AutoConnect not enabled")
 		}
 	}
 	return nil
