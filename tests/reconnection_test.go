@@ -9,6 +9,7 @@ import (
 func TestReconnection(t *testing.T) {
 	tc := getTestConfig()
 	client := gologix.NewClient(tc.PlcAddress)
+	client.KeepAliveAutoStart = false
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
