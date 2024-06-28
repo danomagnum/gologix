@@ -10,15 +10,15 @@ import (
 type CIPItemID uint16
 
 const (
-	cipItem_Null                CIPItemID = 0x0000
-	cipItem_ListIdentityReponse CIPItemID = 0x000C
-	cipItem_ConnectionAddress   CIPItemID = 0x00A1
-	cipItem_ConnectedData       CIPItemID = 0x00B1
-	cipItem_UnconnectedData     CIPItemID = 0x00B2
-	cipItem_ListServiceResponse CIPItemID = 0x0100
-	cipItem_SockAddrInfo_OT     CIPItemID = 0x8000 // socket address info
-	cipItem_SockAddrInfo_TO     CIPItemID = 0x8001 // socket address info
-	cipItem_SequenceAddress     CIPItemID = 0x8002
+	cipItem_Null                 CIPItemID = 0x0000
+	cipItem_ListIdentityResponse CIPItemID = 0x000C
+	cipItem_ConnectionAddress    CIPItemID = 0x00A1
+	cipItem_ConnectedData        CIPItemID = 0x00B1
+	cipItem_UnconnectedData      CIPItemID = 0x00B2
+	cipItem_ListServiceResponse  CIPItemID = 0x0100
+	cipItem_SockAddrInfo_OT      CIPItemID = 0x8000 // socket address info
+	cipItem_SockAddrInfo_TO      CIPItemID = 0x8001 // socket address info
+	cipItem_SequenceAddress      CIPItemID = 0x8002
 )
 
 // readItems takes an io.Reader positioned at the count of items in the data stream.
@@ -106,7 +106,7 @@ func (item *CIPItem) Rest() []byte {
 	return item.Data[item.Pos:]
 }
 
-// Retreive the next byte in the item's buffer and increment the buffer position.
+// Retrieve the next byte in the item's buffer and increment the buffer position.
 func (item *CIPItem) Byte() (byte, error) {
 	if len(item.Data) <= item.Pos {
 		return 0, fmt.Errorf("item out of data")
@@ -116,7 +116,7 @@ func (item *CIPItem) Byte() (byte, error) {
 	return b, nil
 }
 
-// Retreive 2 bytes from the buffer and increment the buffer position by 2.  The
+// Retrieve 2 bytes from the buffer and increment the buffer position by 2.  The
 // data is interpreted as a 16 bit unsigned integer.
 func (item *CIPItem) Uint16() (uint16, error) {
 	if len(item.Data) <= item.Pos+1 {
@@ -127,7 +127,7 @@ func (item *CIPItem) Uint16() (uint16, error) {
 	return val, nil
 }
 
-// Retreive 2 bytes from the buffer and increment the buffer position by 2.  The
+// Retrieve 2 bytes from the buffer and increment the buffer position by 2.  The
 // data is interpreted as a 16 bit signed integer.
 func (item *CIPItem) Int16() (int16, error) {
 	if len(item.Data) <= item.Pos+1 {
@@ -138,7 +138,7 @@ func (item *CIPItem) Int16() (int16, error) {
 	return int16(val), nil
 }
 
-// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit unsigned integer.
 func (item *CIPItem) Uint32() (uint32, error) {
 	if len(item.Data) <= item.Pos+3 {
@@ -149,7 +149,7 @@ func (item *CIPItem) Uint32() (uint32, error) {
 	return val, nil
 }
 
-// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit signed integer.
 func (item *CIPItem) Int32() (int32, error) {
 	if len(item.Data) <= item.Pos+3 {
@@ -160,7 +160,7 @@ func (item *CIPItem) Int32() (int32, error) {
 	return int32(val), nil
 }
 
-// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit unsigned integer.
 func (item *CIPItem) Uint64() (uint64, error) {
 	if len(item.Data) <= item.Pos+7 {
@@ -171,7 +171,7 @@ func (item *CIPItem) Uint64() (uint64, error) {
 	return val, nil
 }
 
-// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit signed integer.
 func (item *CIPItem) Int64() (int64, error) {
 	if len(item.Data) <= item.Pos+7 {
@@ -182,7 +182,7 @@ func (item *CIPItem) Int64() (int64, error) {
 	return int64(val), nil
 }
 
-// Retreive 4 bytes from the buffer and increment the buffer position by 4.  The
+// Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit floating point number.
 func (item *CIPItem) Float32() (float32, error) {
 	if len(item.Data) <= item.Pos+3 {
@@ -193,7 +193,7 @@ func (item *CIPItem) Float32() (float32, error) {
 	return val, err
 }
 
-// Retreive 8 bytes from the buffer and increment the buffer position by 8.  The
+// Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit floating point number.
 func (item *CIPItem) Float64() (float64, error) {
 	if len(item.Data) <= item.Pos+7 {
@@ -213,15 +213,15 @@ func (item *CIPItem) Float64() (float64, error) {
 func (item *CIPItem) Serialize(str any) error {
 	switch x := str.(type) {
 	case string:
-		strlen := uint32(len(x))
-		err := binary.Write(item, binary.LittleEndian, strlen)
+		strLen := uint32(len(x))
+		err := binary.Write(item, binary.LittleEndian, strLen)
 		if err != nil {
 			return fmt.Errorf("problem writing string header: %v", err)
 		}
-		if strlen%2 == 1 {
-			strlen++
+		if strLen%2 == 1 {
+			strLen++
 		}
-		//b := make([]byte, strlen)
+		//b := make([]byte, strLen)
 		b := make([]byte, 84)
 		copy(b, x)
 		err = binary.Write(item, binary.LittleEndian, b)
@@ -232,18 +232,18 @@ func (item *CIPItem) Serialize(str any) error {
 	case Serializable:
 		err := binary.Write(item, binary.LittleEndian, x.Bytes())
 		if err != nil {
-			return fmt.Errorf("Problem writing serializable item: %v", err)
+			return fmt.Errorf("problem writing serializable item: %v", err)
 		}
 	default:
 		err := binary.Write(item, binary.LittleEndian, str)
 		if err != nil {
-			return fmt.Errorf("Problem writing default item: %v", err)
+			return fmt.Errorf("problem writing default item: %v", err)
 		}
 	}
 	return nil
 }
 
-// DeSerialize an item's data into the given sturcture.
+// DeSerialize an item's data into the given structure.
 //
 // The position in the item's buffer is updated to account for the number of bytes
 // required.
@@ -265,7 +265,7 @@ func (item *CIPItem) Bytes() ([]byte, error) {
 }
 
 // Sets the items data position back to zero without removing the data.
-// Can be used to overrite the item's internal data or to re-read the item's data
+// Can be used to overwrite the item's internal data or to re-read the item's data
 func (item *CIPItem) Reset() {
 	item.Pos = 0
 }
@@ -288,26 +288,27 @@ type cipItemsHeader struct {
 // A lot of the time, item0 ends up being the "null" item with no Data section.
 //
 // A typical item structure will look like this:
-// byte		info          	Field
-// 0		Items Header	InterfaceHandle
-// 1
-// 2
-// 3
-// 4	             		SequenceCounter
-// 5
-// 6	               		ItemCount
-// 7		Item0 Header	Item ID
-// 8
-// 9 	            		Length (bytes) = N0
-// 10
-// 11 		Item0 Data   	Byte 0
-// ...
-// 11+N0	Item1 Header	Item ID
-// 12+N0
-// 13+N0	           		Length (bytes) = N1
-// 14+N0
-// 15+N0	Item1 Data   	Byte 0
-// ...  repeat for all items...
+//
+//	byte	info        	Field
+//	0   	Items Header	InterfaceHandle
+//	1
+//	2
+//	3
+//	4                   	SequenceCounter
+//	5
+//	6                   	ItemCount
+//	7   	Item0 Header	Item ID
+//	8
+//	9                   	Length (bytes) = N0
+//	10
+//	11  	Item0 Data   	Byte 0
+//	...
+//	11+N0	Item1 Header	Item ID
+//	12+N0
+//	13+N0	            	Length (bytes) = N1
+//	14+N0
+//	15+N0	Item1 Data   	Byte 0
+//	...  repeat for all items...
 func serializeItems(items []CIPItem) (*[]byte, error) {
 
 	b := new(bytes.Buffer)
@@ -325,7 +326,7 @@ func serializeItems(items []CIPItem) (*[]byte, error) {
 	for i, item := range items {
 		b2, err := item.Bytes()
 		if err != nil {
-			return nil, fmt.Errorf("problem byteing item %d: %w", i, err)
+			return nil, fmt.Errorf("problem byte-ing item %d: %w", i, err)
 		}
 		b.Write(b2)
 	}

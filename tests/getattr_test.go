@@ -10,7 +10,7 @@ import (
 func TestGetAttrSingle(t *testing.T) {
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -66,8 +66,8 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("product code: 0x%X", val)
-	if val != 0x97 {
-		t.Errorf("Product Code should have been 0x97 (Compact Logix?) but was 0x%X", val)
+	if val != tc.ProductCode {
+		t.Errorf("Product Code should have been %d (Compact Logix?) but was 0x%d", tc.ProductCode, val)
 	}
 
 	//MajorRevision (USINT, attribute 4)
@@ -87,8 +87,8 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("Version:%d.%d", major, minor)
-	if major != 33 || minor != 11 {
-		t.Errorf("Version should have been 33.11 but was %d.%d", major, minor)
+	if major != tc.SoftwareVersionMajor || minor != tc.SoftwareVersionMinor {
+		t.Errorf("Version should have been %d.%d but was %d.%d", tc.SoftwareVersionMajor, tc.SoftwareVersionMinor, major, minor)
 	}
 
 	//Status (UINT, attribute 5)
@@ -114,8 +114,8 @@ func TestGetAttrSingle(t *testing.T) {
 		return
 	}
 	log.Printf("serial: %d", serial)
-	if serial != 3223037449 {
-		t.Errorf("Serial # should have been 3223037449 but was %d", serial)
+	if serial != tc.SerialNumber {
+		t.Errorf("Serial # should have been %d but was %d", tc.SerialNumber, serial)
 	}
 
 	//ProductName (STR_32, attribute 7)
@@ -126,9 +126,8 @@ func TestGetAttrSingle(t *testing.T) {
 	_, _ = i.Byte()
 	name := string(i.Rest())
 	log.Printf("ProductName: %s", name)
-	wantName := "1769-L27ERM-QxC1B/A LOGIX5327ERM"
-	if name != wantName {
-		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", wantName, name)
+	if name != tc.ProductName {
+		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", tc.ProductName, name)
 	}
 
 	// test multi-byte instance
@@ -141,7 +140,7 @@ func TestGetAttrSingle(t *testing.T) {
 
 func TestGetCtrlProps(t *testing.T) {
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -164,7 +163,7 @@ func TestGetCtrlProps(t *testing.T) {
 func TestGetAttrList(t *testing.T) {
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -225,23 +224,22 @@ func TestGetAttrList(t *testing.T) {
 	if results.DeviceType != 0x0E {
 		t.Errorf("Device type should have been 0x0E (PLC) but was 0x%X", results.DeviceType)
 	}
-	if results.ProdCode != 0x97 {
-		t.Errorf("Product Code should have been 0x97 (Compact Logix?) but was 0x%X", results.ProdCode)
+	if results.ProdCode != tc.ProductCode {
+		t.Errorf("Product Code should have been %d (Compact Logix?) but was %d", tc.ProductCode, results.ProdCode)
 	}
 
-	if results.MajorRevision != 33 || results.MinorRevision != 11 {
-		t.Errorf("Version should have been 33.11 but was %d.%d", results.MajorRevision, results.MinorRevision)
+	if results.MajorRevision != tc.SoftwareVersionMajor || results.MinorRevision != tc.SoftwareVersionMinor {
+		t.Errorf("Version should have been %d.%d but was %d.%d", tc.SoftwareVersionMajor, tc.SoftwareVersionMinor, results.MajorRevision, results.MinorRevision)
 	}
 
-	if results.SerialNo != 3223037449 {
-		t.Errorf("Serial # should have been 3223037449 but was %d", results.SerialNo)
+	if results.SerialNo != tc.SerialNumber {
+		t.Errorf("Serial # should have been %d but was %d", tc.SerialNumber, results.SerialNo)
 	}
 
 	name := string(i.Rest())
 	log.Printf("ProductName: %s", name)
-	wantName := "1769-L27ERM-QxC1B/A LOGIX5327ERM"
-	if name != wantName {
-		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", wantName, name)
+	if name != tc.ProductName {
+		t.Errorf("Product Name should have been \n'%s' but was \n'%s'", tc.ProductName, name)
 	}
 
 }

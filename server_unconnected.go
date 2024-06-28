@@ -21,7 +21,7 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 
 	case CIPService_LargeForwardOpen:
 		item.Reset()
-		err = h.largeforwardOpen(item)
+		err = h.largeForwardOpen(item)
 		if err != nil {
 			return fmt.Errorf("problem handling large forward open. %w", err)
 		}

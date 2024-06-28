@@ -12,7 +12,7 @@ func TestCounterRead(t *testing.T) {
 	var cnt lgxtypes.COUNTER
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -33,12 +33,14 @@ func TestCounterRead(t *testing.T) {
 		return
 	}
 
-	if cnt.PRE != 562855 {
-		t.Errorf("Expected preset of 2,345 but got %d ", cnt.PRE)
+	const cntPre = 562855
+	if cnt.PRE != cntPre {
+		t.Errorf("Expected preset of %d but got %d ", cntPre, cnt.PRE)
 	}
 
-	if cnt.ACC != 632 {
-		t.Errorf("Expected ACC of 0 but got %d", cnt.ACC)
+	const cntAcc = 632
+	if cnt.ACC != cntAcc {
+		t.Errorf("Expected ACC of %d but got %d", cntAcc, cnt.ACC)
 	}
 
 	if cnt.DN {

@@ -14,7 +14,7 @@ func main() {
 	// setup the client.  If you need a different path you'll have to set that.
 	client := gologix.NewClient("192.168.2.244")
 	// micro8xx use no path.  So an empty buffer will give us that.
-	client.Path = &bytes.Buffer{}
+	client.Controller.Path = &bytes.Buffer{}
 
 	// connect using parameters in the client struct
 	err = client.Connect()
