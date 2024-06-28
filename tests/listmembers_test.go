@@ -8,9 +8,10 @@ import (
 )
 
 func TestMembersList(t *testing.T) {
+	t.Skip("controller specific test")
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

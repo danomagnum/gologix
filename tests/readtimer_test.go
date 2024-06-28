@@ -14,7 +14,7 @@ func TestTimerRead(t *testing.T) {
 	var tmr lgxtypes.TIMER
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)
@@ -165,7 +165,7 @@ func TestTimerRead(t *testing.T) {
 func TestTimerStructRead(t *testing.T) {
 
 	tc := getTestConfig()
-	client := gologix.NewClient(tc.PLC_Address)
+	client := gologix.NewClient(tc.PlcAddress)
 	err := client.Connect()
 	if err != nil {
 		t.Error(err)

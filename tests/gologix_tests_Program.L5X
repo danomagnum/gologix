@@ -709,6 +709,16 @@
 <DataValue DataType="DINT" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
+<Tag Name="TestAlarm" TagType="Base" DataType="ALARM_DIGITAL" ExternalAccess="Read/Write">
+<Data Format="Alarm">
+<AlarmDigitalParameters Severity="500" MinDurationPRE="0" ProgTime="DT#1970-01-01-00:00:00.000000Z" EnableIn="false" In="false" InFault="false" Condition="true" AckRequired="true" Latched="false" ProgAck="false" OperAck="false"
+ ProgReset="false" OperReset="false" ProgSuppress="false" OperSuppress="false" ProgUnsuppress="false" OperUnsuppress="false" ProgDisable="false" OperDisable="false" ProgEnable="false" OperEnable="false" AlarmCountReset="false"
+ UseProgTime="false"/>
+<AlarmConfig>
+<Messages/>
+</AlarmConfig>
+</Data>
+</Tag>
 <Tag Name="TestAlarmAck" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
 <![CDATA[0]]>

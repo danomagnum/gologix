@@ -7,7 +7,12 @@ import (
 )
 
 type TestConfig struct {
-	PLC_Address string `json:"PLC_Address"`
+	PlcAddress           string `json:"PLC_Address"`
+	ProductCode          uint16 `json:"ProductCode"`
+	SoftwareVersionMajor byte   `json:"SoftwareVersionMajor"`
+	SoftwareVersionMinor byte   `json:"SoftwareVersionMinor"`
+	SerialNumber         uint32 `json:"SerialNumber"`
+	ProductName          string `json:"ProductName"`
 }
 
 func getTestConfig() TestConfig {
