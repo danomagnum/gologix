@@ -10,182 +10,202 @@ import (
 )
 
 func TestReadArrNew(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.ReadDints[0]"
-	have := make([]int32, 5)
-	want := []int32{4351, 4352, 4353, 4354, 4355}
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadDints[0]"
+			have := make([]int32, 5)
+			want := []int32{4351, 4352, 4353, 4354, 4355}
 
-	err = client.Read(tag, have)
-	if err != nil {
-		t.Errorf("Problem reading %s. %v", tag, err)
-		return
-	}
-	for i := range want {
-		if have[i] != want[i] {
-			t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
-		}
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("Problem reading %s. %v", tag, err)
+				return
+			}
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
+				}
+			}
+		})
 	}
 }
 
 func TestReadNewUDT(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.ReadUDTs[0]"
-	have := TestUDT{}
-	want := TestUDT{Field1: 20, Field2: 19.0}
-	err = client.Read(tag, &have)
-	if err != nil {
-		t.Errorf("failed to read. %v", err)
-	}
-	if have != want {
-		log.Printf("have: %+v, want: %+v", have, want)
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadUDTs[0]"
+			have := TestUDT{}
+			want := TestUDT{Field1: 20, Field2: 19.0}
+			err = client.Read(tag, &have)
+			if err != nil {
+				t.Errorf("failed to read. %v", err)
+			}
+			if have != want {
+				log.Printf("have: %+v, want: %+v", have, want)
+			}
+		})
 	}
 }
 func TestReadNewUDTArr(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.ReadUDTs[0]"
-	have := make([]TestUDT, 5)
-	want := []TestUDT{
-		{Field1: 20, Field2: 19.0},
-		{Field1: 18, Field2: 17.0},
-		{Field1: 16, Field2: 15.0},
-		{Field1: 14, Field2: 13.0},
-		{Field1: 12, Field2: 11.0},
-	}
-	err = client.Read(tag, have)
-	if err != nil {
-		t.Errorf("failed to read. %v", err)
-	}
-	if len(have) != len(want) {
-		t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
-	}
-	for i := range want {
-		if have[i] != want[i] {
-			t.Errorf("have: %+v, want: %+v\n", have[i], want[i])
-		}
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadUDTs[0]"
+			have := make([]TestUDT, 5)
+			want := []TestUDT{
+				{Field1: 20, Field2: 19.0},
+				{Field1: 18, Field2: 17.0},
+				{Field1: 16, Field2: 15.0},
+				{Field1: 14, Field2: 13.0},
+				{Field1: 12, Field2: 11.0},
+			}
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("failed to read. %v", err)
+			}
+			if len(have) != len(want) {
+				t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
+			}
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("have: %+v, want: %+v\n", have[i], want[i])
+				}
+			}
+		})
 	}
 }
 
 func TestReadBoolPack(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
 
-	type udt2 struct {
-		Field1 int32
-		Flag1  bool
-		Flag2  bool
-		Field2 int32
-	}
+			type udt2 struct {
+				Field1 int32
+				Flag1  bool
+				Flag2  bool
+				Field2 int32
+			}
 
-	//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
-	var have udt2
-	err = client.Read("Program:gologix_tests.ReadUDT2", &have)
-	if err != nil {
-		t.Errorf("couldn't read. %v", err)
-	}
-	want := udt2{
-		Field1: 654321,
-		Flag1:  true,
-		Flag2:  false,
-		Field2: 123456,
-	}
-	if have != want {
-		t.Errorf("have %v want %v", have, want)
+			//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
+			var have udt2
+			err = client.Read("Program:gologix_tests.ReadUDT2", &have)
+			if err != nil {
+				t.Errorf("couldn't read. %v", err)
+			}
+			want := udt2{
+				Field1: 654321,
+				Flag1:  true,
+				Flag2:  false,
+				Field2: 123456,
+			}
+			if have != want {
+				t.Errorf("have %v want %v", have, want)
+			}
+		})
 	}
 
 }
 
 func TestReadNew(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
+			testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
+			testReadNew(t, client, "Program:gologix_tests.ReadBool", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDint.0", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDint.2", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadReal", float32(93.45))
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0]", int32(4351))
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].0", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].1", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].2", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].3", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].4", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].5", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].6", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].7", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].8", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].9", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].10", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].11", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].12", true)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].13", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].14", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[0].15", false)
+			testReadNew(t, client, "Program:gologix_tests.ReadDints[2]", int32(4353))
+			testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field1", int32(85456))
+			testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field2", float32(123.456))
+			testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field1", int32(16))
+			testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field2", float32(15.0))
+			testReadNew(t, client, "Program:gologix_tests.ReadString", "Something")
+
+		})
 	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-
-	testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
-	testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
-	testReadNew(t, client, "Program:gologix_tests.ReadBool", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDint.0", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDint.2", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadReal", float32(93.45))
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0]", int32(4351))
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].0", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].1", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].2", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].3", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].4", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].5", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].6", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].7", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].8", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].9", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].10", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].11", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].12", true)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].13", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].14", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[0].15", false)
-	testReadNew(t, client, "Program:gologix_tests.ReadDints[2]", int32(4353))
-	testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field1", int32(85456))
-	testReadNew(t, client, "Program:gologix_tests.ReadUDT.Field2", float32(123.456))
-	testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field1", int32(16))
-	testReadNew(t, client, "Program:gologix_tests.ReadUDTs[2].Field2", float32(15.0))
-	testReadNew(t, client, "Program:gologix_tests.ReadString", "Something")
-
 }
 
 func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, tag string, want T) {
@@ -237,121 +257,132 @@ func TestReadMulti(t *testing.T) {
 		TestUDTArr2Field2: 15.0,
 	}
 
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
 
-	err = client.ReadMulti(&read)
-	if err != nil {
-		t.Errorf("Problem reading. %v", err)
-		return
-	}
-	if read != wants {
-		t.Errorf("wanted %v got %v", wants, read)
+			err = client.ReadMulti(&read)
+			if err != nil {
+				t.Errorf("Problem reading. %v", err)
+				return
+			}
+			if read != wants {
+				t.Errorf("wanted %v got %v", wants, read)
+			}
+		})
 	}
 }
 
 func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
 
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	client.SocketTimeout = time.Minute
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
+			client := gologix.NewClient(tc.PlcAddress)
+			client.SocketTimeout = time.Minute
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			log.Println("sleeping for 2 minutes. to let the comms timeout")
+			for t := 0; t < 24; t++ {
+				log.Printf("%d\n", t*5)
+				time.Sleep(time.Second * 5)
+			}
+			//client.Conn.Close()
+			//log.Println("\nsleep complete")
+			var value int16
+			err = client.Read("Program:gologix_tests.Readint", &value)
+			if err != nil {
+				t.Errorf("problem reading after timeout. %v", err)
+			}
+			log.Printf("value: %v\n", value)
+		})
 	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	log.Println("sleeping for 2 minutes. to let the comms timeout")
-	for t := 0; t < 24; t++ {
-		log.Printf("%d\n", t*5)
-		time.Sleep(time.Second * 5)
-	}
-	//client.Conn.Close()
-	//log.Println("\nsleep complete")
-	var value int16
-	err = client.Read("Program:gologix_tests.Readint", &value)
-	if err != nil {
-		t.Errorf("problem reading after timeout. %v", err)
-	}
-	log.Printf("value: %v\n", value)
 }
 
 // this tests reading more tags than one single EIP message can hold.  It can hold about 90 of the tags in one message
 // so we check around that value for magic numbers in the array.
 func TestReadTooManyTags(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.LongDints"
+
+			tags := make([]string, 0)
+			types := make([]gologix.CIPType, 0)
+			elements := make([]int, 0)
+
+			tagcount := 100
+
+			for i := 0; i < tagcount; i++ {
+				tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
+				types = append(types, gologix.CIPTypeDINT)
+				elements = append(elements, 1)
+			}
+
+			vals, err := client.ReadList(tags, types, elements)
+			if err != nil {
+				t.Errorf("shouldn't have failed but did. %v", err)
+				return
+			}
+
+			type arraySpotCheck struct {
+				Index int
+				Value int32
+			}
+
+			checks := []arraySpotCheck{
+				{0, 5556},
+				{89, 2329},
+				{90, 888884},
+				{99, 232058},
+			}
+
+			for i := range checks {
+				index := checks[i].Index
+				want := checks[i].Value
+				val, ok := vals[index].(int32)
+				if !ok {
+					t.Errorf("Not a dint!")
+					return
+				}
+				if val != want {
+					t.Errorf("Element %d incorrect value. Expected %d got %d", index, want, val)
+				}
+			}
+		})
 	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.LongDints"
-
-	tags := make([]string, 0)
-	types := make([]gologix.CIPType, 0)
-	elements := make([]int, 0)
-
-	tagcount := 100
-
-	for i := 0; i < tagcount; i++ {
-		tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
-		types = append(types, gologix.CIPTypeDINT)
-		elements = append(elements, 1)
-	}
-
-	vals, err := client.ReadList(tags, types, elements)
-	if err != nil {
-		t.Errorf("shouldn't have failed but did. %v", err)
-		return
-	}
-
-	type arraySpotCheck struct {
-		Index int
-		Value int32
-	}
-
-	checks := []arraySpotCheck{
-		{0, 5556},
-		{89, 2329},
-		{90, 888884},
-		{99, 232058},
-	}
-
-	for i := range checks {
-		index := checks[i].Index
-		want := checks[i].Value
-		val, ok := vals[index].(int32)
-		if !ok {
-			t.Errorf("Not a dint!")
-			return
-		}
-		if val != want {
-			t.Errorf("Element %d incorrect value. Expected %d got %d", index, want, val)
-		}
-	}
-
 }

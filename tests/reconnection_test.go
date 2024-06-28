@@ -7,105 +7,112 @@ import (
 )
 
 func TestReconnection(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	client.KeepAliveAutoStart = false
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.ReadDints[0]"
-	have := make([]int32, 5)
-	want := []int32{4351, 4352, 4353, 4354, 4355}
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			client.KeepAliveAutoStart = false
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadDints[0]"
+			have := make([]int32, 5)
+			want := []int32{4351, 4352, 4353, 4354, 4355}
 
-	// first we'll do a read which should succeed
-	err = client.Read(tag, have)
-	if err != nil {
-		t.Errorf("Problem reading %s. %v", tag, err)
-		return
-	}
-	for i := range want {
-		if have[i] != want[i] {
-			t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
-		}
-	}
+			// first we'll do a read which should succeed
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("Problem reading %s. %v", tag, err)
+				return
+			}
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
+				}
+			}
 
-	// then we'll close the socket.
-	client.DebugCloseConn()
+			// then we'll close the socket.
+			client.DebugCloseConn()
 
-	// then read again.  This should fail, but cause a "proper" disconnect.
-	err = client.Read(tag, have)
-	if err == nil {
-		t.Errorf("read should have failed but didn't.")
-		return
-	}
+			// then read again.  This should fail, but cause a "proper" disconnect.
+			err = client.Read(tag, have)
+			if err == nil {
+				t.Errorf("read should have failed but didn't.")
+				return
+			}
 
-	// now read should work again because AutoConnect = true on the client.
-	err = client.Read(tag, have)
-	if err != nil {
-		t.Errorf("Problem reading after reconnect %s. %v", tag, err)
-		return
-	}
-	for i := range want {
-		if have[i] != want[i] {
-			t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
-		}
+			// now read should work again because AutoConnect = true on the client.
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("Problem reading after reconnect %s. %v", tag, err)
+				return
+			}
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
+				}
+			}
+		})
 	}
 }
 
 func TestNoReconnection(t *testing.T) {
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	client.AutoConnect = false
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
-	tag := "Program:gologix_tests.ReadDints[0]"
-	have := make([]int32, 5)
-	want := []int32{4351, 4352, 4353, 4354, 4355}
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			client.AutoConnect = false
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadDints[0]"
+			have := make([]int32, 5)
+			want := []int32{4351, 4352, 4353, 4354, 4355}
 
-	// first we'll do a read which should succeed
-	err = client.Read(tag, have)
-	if err != nil {
-		t.Errorf("Problem reading %s. %v", tag, err)
-		return
-	}
-	for i := range want {
-		if have[i] != want[i] {
-			t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
-		}
-	}
+			// first we'll do a read which should succeed
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("Problem reading %s. %v", tag, err)
+				return
+			}
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i, want[i], have[i])
+				}
+			}
 
-	// then we'll close the socket.
-	client.DebugCloseConn()
+			// then we'll close the socket.
+			client.DebugCloseConn()
 
-	// then read again.  This should fail, but cause a "proper" disconnect.
-	err = client.Read(tag, have)
-	if err == nil {
-		t.Errorf("read should have failed but didn't.")
-		return
+			// then read again.  This should fail, but cause a "proper" disconnect.
+			err = client.Read(tag, have)
+			if err == nil {
+				t.Errorf("read should have failed but didn't.")
+				return
+			}
+
+			// now read should not work again because AutoConnect = false on the client.
+			err = client.Read(tag, have)
+			if err == nil {
+				t.Errorf("read should have failed again but didn't.")
+				return
+			}
+		})
 	}
-
-	// now read should not work again because AutoConnect = false on the client.
-	err = client.Read(tag, have)
-	if err == nil {
-		t.Errorf("read should have failed again but didn't.")
-		return
-	}
-
 }

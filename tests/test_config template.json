@@ -1,9 +1,15 @@
 {
-  "README": "rename this file to 'test_config.json' and set up the parameters to match your setup.",
-  "PLC_Address": "192.168.2.241",
-  "ProductCode": 65,
-  "SoftwareVersionMajor": 20,
-  "SoftwareVersionMinor": 19,
-  "SerialNumber": 1615551361,
-  "ProductName": "1769-L35E/B LOGIX5335E"
+  "README_0": "rename this file to 'test_config.json' and set up the parameters to match your setup.",
+  "README_1": "you can add as many PLCs as you want to the list. The program will cycle through them and test each one against all the tests.",
+  "PlcList": [
+    {
+    "PLC_Address": "192.168.2.241",
+    "ProductCode": 65,
+    "SoftwareVersionMajor": 20,
+    "SoftwareVersionMinor": 19,
+    "SerialNumber": 1615551361,
+    "ProductName": "1769-L35E/B LOGIX5335E"
+    }
+  ]
+
 }

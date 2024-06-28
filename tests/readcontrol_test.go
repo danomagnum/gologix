@@ -12,53 +12,57 @@ import (
 func TestControl(t *testing.T) {
 	var ctrl lgxtypes.CONTROL
 
-	tc := getTestConfig()
-	client := gologix.NewClient(tc.PlcAddress)
-	err := client.Connect()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer func() {
-		err := client.Disconnect()
-		if err != nil {
-			t.Errorf("problem disconnecting. %v", err)
-		}
-	}()
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
 
-	wants := []lgxtypes.CONTROL{
-		{LEN: 8563, POS: 3324, EN: true, EU: false, DN: false, EM: false, ER: false, UL: false, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: true, DN: false, EM: false, ER: false, UL: false, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: true, EM: false, ER: false, UL: false, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: true, ER: false, UL: false, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: true, UL: false, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: true, IN: false, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: false, IN: true, FD: false},
-		{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: false, IN: false, FD: true},
-	}
+			wants := []lgxtypes.CONTROL{
+				{LEN: 8563, POS: 3324, EN: true, EU: false, DN: false, EM: false, ER: false, UL: false, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: true, DN: false, EM: false, ER: false, UL: false, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: true, EM: false, ER: false, UL: false, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: true, ER: false, UL: false, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: true, UL: false, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: true, IN: false, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: false, IN: true, FD: false},
+				{LEN: 0, POS: 0, EN: false, EU: false, DN: false, EM: false, ER: false, UL: false, IN: false, FD: true},
+			}
 
-	for i := range wants {
-		//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
-		err = client.Read(fmt.Sprintf("Program:gologix_tests.TestControl[%d]", i), &ctrl)
-		if err != nil {
-			t.Errorf("problem reading %d. %v", i, err)
-			return
-		}
+			for i := range wants {
+				//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
+				err = client.Read(fmt.Sprintf("Program:gologix_tests.TestControl[%d]", i), &ctrl)
+				if err != nil {
+					t.Errorf("problem reading %d. %v", i, err)
+					return
+				}
 
-		compareControl(fmt.Sprintf("test %d", i), wants[i], ctrl, t)
+				compareControl(fmt.Sprintf("test %d", i), wants[i], ctrl, t)
 
-		b := bytes.Buffer{}
-		_, err = gologix.Pack(&b, ctrl)
-		if err != nil {
-			t.Errorf("problem packing data: %v", err)
-		}
-		var ctrl2 lgxtypes.CONTROL
-		_, err = gologix.Unpack(&b, &ctrl2)
-		if err != nil {
-			t.Errorf("problem unpacking %d: %v", i, err)
-		}
+				b := bytes.Buffer{}
+				_, err = gologix.Pack(&b, ctrl)
+				if err != nil {
+					t.Errorf("problem packing data: %v", err)
+				}
+				var ctrl2 lgxtypes.CONTROL
+				_, err = gologix.Unpack(&b, &ctrl2)
+				if err != nil {
+					t.Errorf("problem unpacking %d: %v", i, err)
+				}
 
-		compareControl(fmt.Sprintf("rebuild test %d", i), ctrl, ctrl2, t)
+				compareControl(fmt.Sprintf("rebuild test %d", i), ctrl, ctrl2, t)
+			}
+		})
 	}
 
 }
