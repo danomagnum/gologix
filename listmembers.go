@@ -140,6 +140,9 @@ func (m msgMemberInfo) CIPType() CIPType {
 	return CIPType(m.Type & 0x00FF)
 }
 
+// Per my testing, this only works after a certain firmware version.  I don't know which one
+// exactly, but V32 it works and V20 it does not.  I suspect v24 or v28 since they were pretty substantial
+// changes, but v21 could also be the version since that is the swap from rslogix to studio
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	if verbose {
 		client.Logger.Printf("list members for %v", str_instance)
