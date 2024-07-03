@@ -96,7 +96,8 @@ type Client struct {
 	cancel_keepalive chan struct{}
 
 	// this just lets us not have to re-process tag strings.
-	ioi_cache map[string]*tagIOI
+	ioi_cache      map[string]*tagIOI
+	ioi_cache_lock sync.Mutex
 
 	// Replace this to capture logs
 	Logger  Logger
