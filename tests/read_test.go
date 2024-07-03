@@ -3,6 +3,7 @@ package gologix_tests
 import (
 	"fmt"
 	"log"
+	"sync"
 	"testing"
 	"time"
 
@@ -383,6 +384,53 @@ func TestReadTooManyTags(t *testing.T) {
 					t.Errorf("Element %d incorrect value. Expected %d got %d", index, want, val)
 				}
 			}
+		})
+	}
+}
+
+func TestReadParallel(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+			tag := "Program:gologix_tests.ReadDints[%d]"
+			var wg sync.WaitGroup
+			start := make(chan struct{})
+
+			want := []int32{4351, 4352, 4353, 4354, 4355}
+			for i := 0; i < 5; i++ {
+				myid := i
+				mytag := fmt.Sprintf(tag, myid)
+				var result int32
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					<-start
+					err := client.Read(mytag, &result)
+					if err != nil {
+						t.Errorf("problem reading %s. %v", mytag, err)
+						return
+					}
+					if result != want[myid] {
+						t.Errorf("wanted %d got %d", want[myid], result)
+					}
+				}()
+			}
+
+			close(start)
+			wg.Wait()
+
 		})
 	}
 }
