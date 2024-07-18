@@ -28,16 +28,16 @@ func TestRealHardware(t *testing.T) {
 			//client.ReadAll(1)
 			//client.read_single("program:Shed.Temp1", CIPTypeREAL, 1)
 			//ReadAndPrint[float32](client, "program:Shed.Temp1")
-			read[int32](t, client, "Program:gologix_tests.ReadDint") // 36
+			read[int32](t, client, "program:gologix_tests.ReadDint") // 36
 
 			// these two tests don't work yet
-			read[bool](t, client, "Program:gologix_tests.ReadDint.0") // should be false
-			read[bool](t, client, "Program:gologix_tests.ReadDint.2") // should be true
+			read[bool](t, client, "program:gologix_tests.ReadDint.0") // should be false
+			read[bool](t, client, "program:gologix_tests.ReadDint.2") // should be true
 
-			read[int32](t, client, "Program:gologix_tests.ReadDints[0]")
-			read[int32](t, client, "Program:gologix_tests.ReadDints[2]")
-			read[int32](t, client, "Program:gologix_tests.ReadUDT.Field1")
-			read[int16](t, client, "Program:gologix_tests.ReadInt")
+			read[int32](t, client, "program:gologix_tests.ReadDints[0]")
+			read[int32](t, client, "program:gologix_tests.ReadDints[2]")
+			read[int32](t, client, "program:gologix_tests.ReadUDT.Field1")
+			read[int16](t, client, "program:gologix_tests.ReadInt")
 			//v, err := client.read_single("Program:gologix_tests.ReadDintArr[1]", CIPTypeDINT, 2)
 			//if err != nil {
 			//log.Printf("Problem with reading two elements of array. %v\n", err)
@@ -84,10 +84,10 @@ func TestRealHardware(t *testing.T) {
 
 			//ReadAndPrint[bool](client, "Program:gologix_tests.ReadBool")
 			//ReadAndPrint[float32](client, "Program:gologix_tests.ReadReal")
-			read[string](t, client, "Program:gologix_tests.ReadString")
+			read[string](t, client, "program:gologix_tests.ReadString")
 
 			var ut TestUDT
-			err = client.Read("Program:gologix_tests.ReadUDT", &ut)
+			err = client.Read("program:gologix_tests.ReadUDT", &ut)
 			if err != nil {
 				t.Errorf("Problem reading udt. %v\n", err)
 			}

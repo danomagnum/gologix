@@ -78,7 +78,12 @@ type Client struct {
 	// it maps tag names to a struct which has, among other things, the instance ID and class
 	// which can be used to read the tag more efficiently than sending the ascii tag name to the
 	// controller.  If you don't want to use this, set SocketTimeout to 0 and never call ListAllTags
-	KnownTags map[string]KnownTag
+	KnownTags     map[string]KnownTag
+	KnownPrograms map[string]*KnownProgram
+
+	// used for optimization.  v20 and before vs v21 and after have different
+	// tag reading functionality.
+	knownFirmware int
 
 	mutex                  sync.Mutex
 	conn                   net.Conn
@@ -141,6 +146,18 @@ func NewClient(ip string) *Client {
 
 }
 
+type KnownProgram struct {
+	Name string
+	ID   CIPInstance
+}
+
+func (kp KnownProgram) Bytes() []byte {
+	b := bytes.Buffer{}
+	b.Write(CipObject_Programs.Bytes()) // 0x20 0x6B
+	b.Write(kp.ID.Bytes())
+	return b.Bytes()
+}
+
 // This type documents a tag once it is returned with a list call.
 type KnownTag struct {
 	Name        string
@@ -148,7 +165,8 @@ type KnownTag struct {
 	Instance    CIPInstance
 	Array_Order []int
 	UDT         *UDTDescriptor
-	Parent      *KnownTag
+	Parent      *KnownProgram
+	DataTableID uint32
 }
 
 func (t KnownTag) Bytes() []byte {
@@ -170,4 +188,24 @@ func (t KnownTag) Bytes() []byte {
 
 func (t KnownTag) Len() int {
 	return len(t.Bytes())
+}
+
+func (client *Client) firmware() int {
+
+	if client.knownFirmware != 0 {
+		return client.knownFirmware
+	}
+
+	i, err := client.GetAttrSingle(CipObject_Identity, 1, 4)
+	if err != nil {
+		return 0
+	}
+	major, err := i.Byte()
+	if err != nil {
+		return 0
+	}
+	client.Logger.Printf("controller firmware major version: %d", major)
+	client.knownFirmware = int(major)
+	return client.knownFirmware
+
 }

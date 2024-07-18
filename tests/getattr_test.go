@@ -80,12 +80,12 @@ func TestGetAttrSingle(t *testing.T) {
 			}
 			major, err := i.Byte()
 			if err != nil {
-				t.Errorf("problem reading attr 3 major version: %v", err)
+				t.Errorf("problem reading attr 4 major version: %v", err)
 				return
 			}
 			minor, err := i.Byte()
 			if err != nil {
-				t.Errorf("problem reading attr 3 minor version: %v", err)
+				t.Errorf("problem reading attr 4 minor version: %v", err)
 				return
 			}
 			log.Printf("Version:%d.%d", major, minor)

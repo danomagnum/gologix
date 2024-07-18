@@ -116,19 +116,24 @@ func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 	// the encodings shown in 1756-PM020H-EN-P
 	tagpath = strings.ToLower(tagpath)
 
-	/*
+	// on firmwares greater than 20, we can do some optimizations.
+	if client.firmware() > 20 {
 		tag_info, ok := client.KnownTags[tagpath]
 		if ok {
 			// we'll assume the user knows what they're doing if they're dumping data into a struct.
-			if tag_info.Info.Type != datatype && (datatype != CIPTypeUnknown && datatype != CIPTypeStruct) {
-				err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
-				return
-			}
-			if tag_info.Info.TypeInfo != 0 {
+			/*
+				if tag_info.Info.Type != datatype && (datatype != CIPTypeUnknown && datatype != CIPTypeStruct) {
+					err = fmt.Errorf("data type mismatch for IOI. %v was specified, but I have reason to believe that it's really %v", datatype, tag_info.Info.Type)
+					return
+				}
+			*/
+			if tag_info.Info.Type != 0 && datatype != CIPTypeStruct && datatype != CIPTypeUnknown && datatype != CIPTypeSTRING {
 				ioi.Buffer = tag_info.Bytes()
 				return
 			}
-	*/
+		}
+	}
+
 	extant, exists := client.ioi_cache[tagpath]
 	if exists {
 		ioi = extant

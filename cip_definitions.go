@@ -119,13 +119,14 @@ type cipInstanceSize byte
 const (
 	cipInstance_8bit  cipInstanceSize = 0x24
 	cipInstance_16bit cipInstanceSize = 0x25
+	cipInstance_32bit cipInstanceSize = 0x26
 )
 
 // Represents a CIP class instance id - that is a specific instance of a given class.
 //
 // If you're going to serialize this class to bytes for transimssion be sure to use one of the gologix
 // serialization functions or call Bytes() to get the properly formatted data.
-type CIPInstance uint16
+type CIPInstance uint32
 
 func (p CIPInstance) Bytes() []byte {
 	if p < 256 {
@@ -133,14 +134,19 @@ func (p CIPInstance) Bytes() []byte {
 		b[0] = byte(cipInstance_8bit)
 		b[1] = byte(p)
 		return b
-	} else {
+	} else if p <= 0xFFFF {
 
 		b := make([]byte, 4)
 		b[0] = byte(cipInstance_16bit)
 		binary.LittleEndian.PutUint16(b[2:], uint16(p))
 		return b
 	}
+	b := make([]byte, 6)
+	b[0] = byte(cipInstance_32bit)
+	binary.LittleEndian.PutUint32(b[2:], uint32(p))
+	return b
 }
+
 func (p *CIPInstance) Read(r io.Reader) error {
 	var size cipInstanceSize
 	binary.Read(r, binary.LittleEndian, &size)
@@ -151,6 +157,11 @@ func (p *CIPInstance) Read(r io.Reader) error {
 		*p = CIPInstance(val)
 		return nil
 	case cipInstance_16bit:
+		var val uint16
+		binary.Read(r, binary.LittleEndian, &val)
+		*p = CIPInstance(val)
+		return nil
+	case cipInstance_32bit:
 		binary.Read(r, binary.LittleEndian, p)
 		return nil
 	default:
@@ -160,8 +171,10 @@ func (p *CIPInstance) Read(r io.Reader) error {
 func (p CIPInstance) Len() int {
 	if p < 256 {
 		return 2
+	} else if p <= 0xFFFF {
+		return 4
 	}
-	return 4
+	return 6
 }
 
 // Represents a CIP class / object type.
@@ -311,6 +324,7 @@ const (
 	CipObject_RSTPPort                     CIPClass = 0x55
 	CipObject_TCPIP                        CIPClass = 0xF5
 	CipObject_PCCC                         CIPClass = 0x67
+	CipObject_Programs                     CIPClass = 0x68
 	CipObject_TIME                         CIPClass = 0x8B
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
 	CipObject_RunMode                      CIPClass = 0x8E

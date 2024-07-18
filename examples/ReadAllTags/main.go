@@ -11,12 +11,13 @@ func main() {
 	var err error
 
 	// setup the client.  If you need a different path you'll have to set that.
-	client := gologix.NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.245")
 
 	// for example, to have a controller on slot 1 instead of 0 you could do this
 	//client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
 	// or this
 	// client.Path, err = gologix.ParsePath("1,1")
+	client.KeepAliveAutoStart = false
 
 	// connect using parameters in the client struct
 	err = client.Connect()
@@ -29,9 +30,21 @@ func main() {
 
 	// update the client's list of tags.
 	err = client.ListAllTags(0)
-
 	if err != nil {
 		log.Printf("Error getting tag list. %v", err)
+		return
+	}
+
+	var y int32
+	err = client.Read("Program:gologix_tests.ReadDint", &y)
+	if err != nil {
+		log.Printf("Error reading tag. %v", err)
+		return
+	}
+	var x float32
+	err = client.Read("Program:gologix_tests.ReadReal", &x)
+	if err != nil {
+		log.Printf("Error reading tag. %v", err)
 		return
 	}
 

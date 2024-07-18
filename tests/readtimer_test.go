@@ -34,6 +34,7 @@ func TestTimerRead(t *testing.T) {
 				t.Errorf("failed to turn off the timer before starting: %v", err)
 				return
 			}
+			time.Sleep(time.Millisecond * 100) // delay to make sure the timer off bit was picked up by the program in the PLC
 			//have, err := gologix.ReadPacked[udt2](client, "Program:gologix_tests.ReadUDT2")
 			err = client.Read("Program:gologix_tests.TestTimer", &tmr)
 			log.Printf("timer 1: %+v", tmr)

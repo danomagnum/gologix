@@ -69,7 +69,7 @@ func TestList(t *testing.T) {
 			}
 
 			for k := range client.KnownTags {
-				if client.KnownTags[k].Instance == 0x21 {
+				if client.KnownTags[k].Name == "program:gologix_tests" {
 					log.Printf("found %+v", client.KnownTags[k])
 				}
 			}

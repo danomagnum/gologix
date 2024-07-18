@@ -229,18 +229,18 @@ func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, t
 
 func TestReadMulti(t *testing.T) {
 	type test_str struct {
-		TestSint          byte    `gologix:"Program:gologix_tests.ReadSint"`
-		TestInt           int16   `gologix:"Program:gologix_tests.ReadInt"`
-		TestDint          int32   `gologix:"Program:gologix_tests.ReadDint"`
-		TestReal          float32 `gologix:"Program:gologix_tests.ReadReal"`
-		TestDintArr0      int32   `gologix:"Program:gologix_tests.Readdints[0]"`
-		TestDintArr0_0    bool    `gologix:"Program:gologix_tests.Readdints[0].0"`
-		TestDintArr0_9    bool    `gologix:"Program:gologix_tests.Readdints[0].9"`
-		TestDintArr2      int32   `gologix:"Program:gologix_tests.Readdints[2]"`
-		TestUDTField1     int32   `gologix:"Program:gologix_tests.Readudt.field1"`
-		TestUDTField2     float32 `gologix:"Program:gologix_tests.Readudt.field2"`
-		TestUDTArr2Field1 int32   `gologix:"Program:gologix_tests.Readudts[2].field1"`
-		TestUDTArr2Field2 float32 `gologix:"Program:gologix_tests.Readudts[2].field2"`
+		TestSint          byte    `gologix:"program:gologix_tests.readsint"`
+		TestInt           int16   `gologix:"program:gologix_tests.readint"`
+		TestDint          int32   `gologix:"program:gologix_tests.readdint"`
+		TestReal          float32 `gologix:"program:gologix_tests.readreal"`
+		TestDintArr0      int32   `gologix:"program:gologix_tests.readdints[0]"`
+		TestDintArr0_0    bool    `gologix:"program:gologix_tests.readdints[0].0"`
+		TestDintArr0_9    bool    `gologix:"program:gologix_tests.readdints[0].9"`
+		TestDintArr2      int32   `gologix:"program:gologix_tests.readdints[2]"`
+		TestUDTField1     int32   `gologix:"program:gologix_tests.readudt.field1"`
+		TestUDTField2     float32 `gologix:"program:gologix_tests.readudt.field2"`
+		TestUDTArr2Field1 int32   `gologix:"program:gologix_tests.readudts[2].field1"`
+		TestUDTArr2Field2 float32 `gologix:"program:gologix_tests.readudts[2].field2"`
 	}
 	read := test_str{}
 	wants := test_str{
@@ -274,6 +274,7 @@ func TestReadMulti(t *testing.T) {
 				}
 			}()
 
+			time.Sleep(time.Second * 2)
 			err = client.ReadMulti(&read)
 			if err != nil {
 				t.Errorf("Problem reading. %v", err)
@@ -340,6 +341,13 @@ func TestReadTooManyTags(t *testing.T) {
 					t.Errorf("problem disconnecting. %v", err)
 				}
 			}()
+
+			err = client.ListAllTags(1)
+			if err != nil {
+				t.Errorf("problem reading all tags: %v", err)
+				return
+			}
+
 			tag := "Program:gologix_tests.LongDints"
 
 			tags := make([]string, 0)

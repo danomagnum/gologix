@@ -13,7 +13,7 @@ import (
 //
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
-func (client *Client) ListSubTags(roottag string, start_instance uint32, rootInstance *KnownTag) ([]KnownTag, error) {
+func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) ([]KnownTag, error) {
 
 	new_kts := make([]KnownTag, 0, 100)
 	if verbose {
@@ -25,17 +25,12 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		start_instance = 1
 	}
 
-	ioi, err := client.newIOI(roottag, 16)
-	if err != nil {
-		return new_kts, fmt.Errorf("bad IOI gen. %w", err)
-	}
-
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
 	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
 	p, err := Serialize(
-		ioi.Buffer,
+		Program.Bytes(),
 		CipObject_Symbol, CIPInstance(start_instance),
 	)
 	if err != nil {
@@ -101,7 +96,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		if err != nil {
 			return nil, fmt.Errorf("problem reading tag header. %w", err)
 		}
-		newtag_name := fmt.Sprintf("%s.%s", roottag, string(newtag_bytes))
+		newtag_name := fmt.Sprintf("program:%s.%s", Program.Name, string(newtag_bytes))
 
 		// the end of the tagname has to be aligned on a 16 bit word
 		//tagname_alignment := tag_hdr.NameLength % 2
@@ -121,7 +116,7 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 			Name:     newtag_name,
 			Info:     *tag_ftr,
 			Instance: CIPInstance(tag_hdr.InstanceID),
-			Parent:   rootInstance,
+			Parent:   Program,
 		}
 		if tag_ftr.Dimension3 != 0 {
 			kt.Array_Order = make([]int, 3)
@@ -162,8 +157,8 @@ func (client *Client) ListSubTags(roottag string, start_instance uint32, rootIns
 		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
-	if data_hdr.Status == 6 && start_instance < 200 {
-		_, err = client.ListSubTags(roottag, start_instance, rootInstance)
+	if data_hdr.Status == 6 {
+		_, err = client.ListSubTags(Program, start_instance)
 		if err != nil {
 			return new_kts, fmt.Errorf("problem listing subtags. %w", err)
 		}

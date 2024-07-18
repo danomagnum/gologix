@@ -78,6 +78,15 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = minimumTagValue
 	}
 
+	// if we are starting from scratch, we should list all the programs first so we have
+	// their instance IDs when we come across program scoped tags.
+	if start_instance == 1 {
+		client.ListAllPrograms()
+		for _, p := range client.KnownPrograms {
+			client.ListSubTags(p, 1)
+		}
+	}
+
 	reqItems := make([]CIPItem, 2)
 	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
@@ -103,7 +112,12 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
 	attr8_arrayDims := 8
-	reqItems[1].Serialize([4]uint16{uint16(number_of_attr_to_receive), uint16(attr1_symbol_name), uint16(attr2_symbol_type), uint16(attr8_arrayDims)})
+	reqItems[1].Serialize([4]uint16{
+		uint16(number_of_attr_to_receive),
+		uint16(attr1_symbol_name),
+		uint16(attr2_symbol_type),
+		uint16(attr8_arrayDims),
+	})
 
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
@@ -191,10 +205,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		if len(tag_string) > 8 {
 			if strings.HasPrefix(tag_string, "Program:") {
-				_, err = client.ListSubTags(tag_string, 1, &kt)
-				if err != nil {
-					return err
-				}
+				// we have a program scoped tag.  These are read separately.
 				continue
 			}
 		}
