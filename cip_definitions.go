@@ -328,6 +328,7 @@ const (
 	CipObject_TIME                         CIPClass = 0x8B
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
 	CipObject_RunMode                      CIPClass = 0x8E
+	CipObject_Messages                     CIPClass = 0x8D
 )
 
 // from https://rockwellautomation.custhelp.com/ci/okcsFattach/get/114390_5

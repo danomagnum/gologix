@@ -158,6 +158,10 @@ func (kp KnownProgram) Bytes() []byte {
 	return b.Bytes()
 }
 
+func (t KnownProgram) Len() int {
+	return len(t.Bytes())
+}
+
 // This type documents a tag once it is returned with a list call.
 type KnownTag struct {
 	Name        string
