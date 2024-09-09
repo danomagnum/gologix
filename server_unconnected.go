@@ -103,7 +103,6 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	}
 	// TODO: read structs gracefully.
 	if typ == CIPTypeStruct {
-		h.server.Logger.Printf("read %s as %s * %v = %v", tag, typ, qty, item.Data[item.Pos:])
 		return h.sendUnconnectedRRDataReply(CIPService_Write)
 	}
 	results := make([]any, qty)
@@ -123,7 +122,6 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
-	h.server.Logger.Printf("Got Unconn Write from %v. Tag: %s Path:%v Type:%s Qty:%v Value:%v", h.conn.RemoteAddr(), tag, path, typ, qty, results)
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
@@ -214,8 +212,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get path. %w", err)
 	}
-	h.server.Logger.Printf("Path read: %v\n", path)
-	h.server.Logger.Printf("read %s to %v elements: %v", tag, path, qty)
+	h.server.Logger.Debug("read", "tag", tag, "path", path, "qty", qty)
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
@@ -226,7 +223,7 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem getting data from provider. %w", err)
 	}
-	h.server.Logger.Printf("read %s to %v elements: %v. Value = %v\n", tag, path, qty, result)
+	h.server.Logger.Debug("Read", "tag", tag, "path", path, "qty", qty, "results", result)
 	typ, _ := GoVarToCIPType(result)
 
 	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)

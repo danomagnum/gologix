@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -18,15 +19,15 @@ type serverConnection struct {
 type serverConnectionManager struct {
 	Connections []*serverConnection
 	Lock        sync.RWMutex
-	Logger      Logger
+	Logger      *slog.Logger
 }
 
-func (cm *serverConnectionManager) Init(logger Logger) {
+func (cm *serverConnectionManager) Init(logger *slog.Logger) {
 	cm.Connections = make([]*serverConnection, 0, 32)
 	cm.Logger = logger
 }
 func (cm *serverConnectionManager) Add(conn *serverConnection) {
-	cm.Logger.Printf("New Managed Connection. %+v", *conn)
+	cm.Logger.Info("New Managed Connection.", "conn", *conn)
 	cm.Lock.Lock()
 	defer cm.Lock.Unlock()
 	cm.Connections = append(cm.Connections, conn)

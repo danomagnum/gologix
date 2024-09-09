@@ -5,14 +5,12 @@ import (
 )
 
 func (client *Client) ListAllPrograms() error {
-	if verbose {
-		client.Logger.Printf("listing all programs")
-	}
+	client.Logger.Debug("listing all programs")
 
 	// for generic messages we need to create the cip path ourselves.  The serialize function can be used to do this.
 	path, err := Serialize(CipObject_Programs, CIPInstance(0))
 	if err != nil {
-		client.Logger.Printf("could not serialize path: %v", err)
+		client.Logger.Warn("could not serialize path", "error", err)
 		return err
 	}
 
@@ -20,13 +18,13 @@ func (client *Client) ListAllPrograms() error {
 	attr_28_program_name := 28
 	msg_data, err := Serialize(uint16(number_of_attr_to_receive), uint16(attr_28_program_name))
 	if err != nil {
-		client.Logger.Printf("could not serialize message data: %v", err)
+		client.Logger.Warn("could not serialize message data", "error", err)
 		return err
 	}
 
 	resp, err := client.GenericCIPMessage(CIPService_GetInstanceAttributeList, path.Bytes(), msg_data.Bytes())
 	if err != nil {
-		client.Logger.Printf("problem reading programs: %v", err)
+		client.Logger.Warn("problem reading programs", "error", err)
 		return err
 	}
 
@@ -36,7 +34,7 @@ func (client *Client) ListAllPrograms() error {
 		var hdr listprograms_resp_header
 		err = resp.DeSerialize(&hdr)
 		if err != nil {
-			client.Logger.Printf("got last item")
+			client.Logger.Debug("got last item")
 			break
 		}
 
@@ -44,7 +42,7 @@ func (client *Client) ListAllPrograms() error {
 		name := make([]byte, hdr.NameLen)
 		err = resp.DeSerialize(&name)
 		if err != nil {
-			client.Logger.Printf("could not read name: %v", err)
+			client.Logger.Warn("could not read name", "error", err)
 			return err
 		}
 

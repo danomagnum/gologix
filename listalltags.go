@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -211,42 +210,30 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		}
 
 		if tag_ftr.Template_ID() != 0 {
-			client.Logger.Printf("found UDT of some sort %s", kt.Name)
+			client.Logger.Debug("found UDT of some sort", "name", kt.Name)
 		}
 
 		if tag_ftr.Template_ID() != 0 && !tag_ftr.PreDefined() {
-			if verbose {
-				client.Logger.Printf("Looking up template for Tag: '%s' ", tag_string)
-			}
+			client.Logger.Debug("Looking up template", "tag name", tag_string)
 			u, err := client.ListMembers(uint32(tag_ftr.Template_ID()))
 			if err != nil {
-				client.Logger.Printf("problem reading member list for %v, %+v, %+v, %v, %v", tag_string, tag_hdr, tag_ftr, tag_ftr.Template_ID(), tag_ftr.PreDefined())
+				client.Logger.Error("problem reading member list",
+					"string", tag_string,
+					"header", tag_hdr,
+					"footer", tag_ftr,
+					"template ID", tag_ftr.Template_ID(),
+					"predefined", tag_ftr.PreDefined())
 				//return err
 			} else {
 				kt.UDT = &u
-				client.Logger.Printf("Successful member read for %s", kt.Name)
+				client.Logger.Error("Successful member read for %s", "name", kt.Name)
 			}
 		}
 
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt
 
-		if verbose {
-			client.Logger.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d].  Template %d",
-				tag_name,
-				tag_hdr.InstanceID,
-				tag_ftr.Type,
-				tag_ftr.TypeInfo,
-				tag_ftr.Dimension1,
-				tag_ftr.Dimension2,
-				tag_ftr.Dimension3,
-				tag_ftr.Template_ID(),
-			)
-		}
 		start_instance = tag_hdr.InstanceID
 
-	}
-	if verbose {
-		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
 	if data_hdr.Status == 6 { //} && start_instance < 200 {
@@ -262,29 +249,15 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 // per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
 // because they aren't valid for reading/writing.
 func isValidTag(tag_string string, tag_ftr TagInfo) bool {
-	if !tag_ftr.Atomic() && tag_ftr.PreDefined() && verbose {
-		log.Printf("Skipping Tag: '%s' Type: %s/%d[%d,%d,%d].  Template %d",
-			tag_string,
-			tag_ftr.Type,
-			tag_ftr.TypeInfo,
-			tag_ftr.Dimension1,
-			tag_ftr.Dimension2,
-			tag_ftr.Dimension3,
-			tag_ftr.Template_ID(),
-		)
-	}
 	if tag_string[:2] == "__" {
-		if verbose {
-			log.Printf("Skipping Tag: '%s' because it starts with '__'", tag_string)
-		}
 		return false
 	}
 	if strings.Contains(tag_string, ":") {
 		if !strings.HasPrefix(tag_string, "Program") {
-			log.Printf("Skipping Tag: '%s' because it has a : but doesn't start with 'program' ", tag_string)
 			return false
 		}
 
 	}
+	_ = tag_ftr
 	return true
 }

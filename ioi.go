@@ -162,7 +162,7 @@ func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 
 			t, err := parse_tag_name(tag_part)
 			if err != nil {
-				client.Logger.Printf("problem parsing path: %v", err)
+				client.Logger.Warn("problem parsing path", "error", err)
 			}
 
 			for _, order_size := range t.Array_Order {

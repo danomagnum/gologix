@@ -42,9 +42,7 @@ type msgGetTemplateAttrListResponse struct {
 }
 
 func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTemplateAttrListResponse, error) {
-	if verbose {
-		client.Logger.Printf("list members for %v", str_instance)
-	}
+	client.Logger.Debug("list members", "instance", str_instance)
 
 	// have to start at 1.
 	if str_instance == 0 {
@@ -117,9 +115,6 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	if err != nil {
 		return result, fmt.Errorf("problem reading result. %w", err)
 	}
-	if verbose {
-		client.Logger.Printf("Result: %+v\n\n", result)
-	}
 
 	return result, nil
 }
@@ -144,9 +139,7 @@ func (m msgMemberInfo) CIPType() CIPType {
 // exactly, but V32 it works and V20 it does not.  I suspect v24 or v28 since they were pretty substantial
 // changes, but v21 could also be the version since that is the swap from rslogix to studio
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
-	if verbose {
-		client.Logger.Printf("list members for %v", str_instance)
-	}
+	client.Logger.Debug("list members", "instance", str_instance)
 
 	template_info, err := client.GetTemplateInstanceAttr(str_instance)
 
@@ -217,9 +210,6 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	err = binary.Read(data2, binary.LittleEndian, &memberInfos)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read memberinfos. %w", err)
-	}
-	if verbose {
-		client.Logger.Printf("Hdr: %+v\nResult: %+v\n\n", mihdr, memberInfos)
 	}
 
 	descriptor := UDTDescriptor{}

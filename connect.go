@@ -23,7 +23,7 @@ const (
 // Connect to the PLC.
 func (client *Client) Connect() error {
 	if client.disconnecting {
-		client.SLogger.Debug("waiting for client to finish disconnecting before connecting")
+		client.Logger.Debug("waiting for client to finish disconnecting before connecting")
 		for client.disconnecting {
 			time.Sleep(time.Millisecond * 10)
 		}
@@ -33,8 +33,8 @@ func (client *Client) Connect() error {
 	}
 	client.connecting = true
 	defer func() { client.connecting = false }()
-	if client.SLogger != nil {
-		client.SLogger = client.SLogger.With(slog.String("controllerIp", client.Controller.IpAddress))
+	if client.Logger != nil {
+		client.Logger = client.Logger.With(slog.String("controllerIp", client.Controller.IpAddress))
 	}
 	if client.ConnectionSize == 0 {
 		client.ConnectionSize = connSizeLargeDefault
@@ -60,7 +60,7 @@ func (client *Client) Connect() error {
 		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
 		if err != nil {
 			msg := "cannot setup default path"
-			client.SLogger.Error(msg, slog.Any("err", err))
+			client.Logger.Error(msg, slog.Any("err", err))
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 	}
@@ -73,7 +73,7 @@ func (client *Client) Connect() error {
 	client.conn, err = net.DialTimeout("tcp", address, client.SocketTimeout)
 	if err != nil {
 		msg := "cannot connect to controller"
-		client.SLogger.Error(msg, slog.Any("err", err))
+		client.Logger.Error(msg, slog.Any("err", err))
 		return fmt.Errorf("%s: %w", msg, err)
 	}
 
@@ -89,7 +89,7 @@ func (client *Client) Connect() error {
 		}
 		err = client.forwardOpen(item)
 		if err != nil {
-			client.SLogger.Warn("large forward open failed. falling back to standard forward open", slog.Any("err", err))
+			client.Logger.Warn("large forward open failed. falling back to standard forward open", slog.Any("err", err))
 			client.ConnectionSize = connSizeStandardDefault
 		}
 	}
@@ -100,7 +100,7 @@ func (client *Client) Connect() error {
 		}
 		err = client.forwardOpen(item)
 		if err != nil {
-			client.SLogger.Error("unable to open connection", slog.Any("err", err))
+			client.Logger.Error("unable to open connection", slog.Any("err", err))
 			return err
 		}
 	}
@@ -125,11 +125,11 @@ func (client *Client) registerSession() error {
 	header, _, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
 	if err != nil {
 		msg := "cannot get connect response"
-		client.SLogger.Error(msg, slog.Any("err", err))
+		client.Logger.Error(msg, slog.Any("err", err))
 		return fmt.Errorf("%s: %w", msg, err)
 	}
 	client.SessionHandle = header.SessionHandle
-	client.SLogger.Info("Session connected", slog.Any("sessionHandle", client.SessionHandle))
+	client.Logger.Info("Session connected", slog.Any("sessionHandle", client.SessionHandle))
 	return nil
 }
 
@@ -139,17 +139,16 @@ func (client *Client) KeepAlive() {
 	}
 	if client.keepAliveRunning {
 		err := errors.New("keepalive already running")
-		client.SLogger.Warn(err.Error())
+		client.Logger.Warn(err.Error())
 	}
-	client.SLogger.Debug("starting keep alive")
+	client.Logger.Debug("starting keep alive")
 	client.cancel_keepalive = make(chan struct{})
 	client.keepAliveRunning = true
 	defer func() { client.keepAliveRunning = false }()
 
 	originalProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 	if err != nil {
-		client.Logger.Printf("keepalive prop list failed. %w", err)
-		client.SLogger.Error(
+		client.Logger.Error(
 			"initial keep alive property get failed",
 			slog.Any("client.KeepAliveProps", client.KeepAliveProps),
 			slog.Any("err", err),
@@ -159,8 +158,7 @@ func (client *Client) KeepAlive() {
 
 	err = client.ListAllTags(0)
 	if err != nil {
-		client.Logger.Printf("keepalive list tags failed. %w", err)
-		client.SLogger.Error("keepalive list tags failed", slog.Any("err", err))
+		client.Logger.Error("keepalive list tags failed", slog.Any("err", err))
 		return
 	}
 
@@ -170,27 +168,25 @@ func (client *Client) KeepAlive() {
 		select {
 		case <-t.C:
 			if !client.connected {
-				client.SLogger.Warn("keepalive failed. not connected")
+				client.Logger.Warn("keepalive failed. not connected")
 				return
 			}
 
 			newProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 			if err != nil {
-				client.Logger.Printf("keepalive failed. %w", err)
-				client.SLogger.Error("keepalive failed", slog.Any("err", err))
+				client.Logger.Error("keepalive failed", slog.Any("err", err))
 				client.Disconnect()
 				return
 			}
 			if newProps != originalProps {
-				client.Logger.Printf("controller change detected. re-analyzing types.\n Was: %+v\n  Is: %+v", originalProps, newProps)
-				client.SLogger.Info(
+				client.Logger.Info(
 					"controller change detected. re-analyzing types",
 					slog.Any("originalProps", originalProps),
 					slog.Any("newProps", newProps),
 				)
 				err := client.ListAllTags(0)
 				if err != nil {
-					client.Logger.Printf("keepalive list tags failed. %v", err)
+					client.Logger.Warn("keepalive list tags failed.", "error", err)
 					return
 				}
 				originalProps = newProps
@@ -263,7 +259,7 @@ func (client *Client) newForwardOpenLarge() (CIPItem, error) {
 		client.ConnectionSize = connSizeLargeDefault
 	}
 	if client.ConnectionSize <= connSizeStandardMax {
-		client.SLogger.Info(
+		client.Logger.Info(
 			"The size could be a standard connection",
 			slog.Any("standardMaxSize", connSizeStandardMax),
 			slog.Any("size", client.ConnectionSize),
@@ -333,7 +329,7 @@ func (client *Client) newForwardOpenStandard() (CIPItem, error) {
 		client.ConnectionSize = connSizeStandardDefault
 	}
 	if client.ConnectionSize > connSizeStandardMax {
-		client.SLogger.Warn(
+		client.Logger.Warn(
 			"connection size too large. resetting to max size",
 			slog.Any("oldConnectionSize", client.ConnectionSize),
 			slog.Any("newConnectionSize", connSizeStandardMax),
@@ -401,32 +397,32 @@ func (client *Client) forwardOpen(forwardOpenMsg CIPItem) error {
 	reqItems[1] = forwardOpenMsg
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
-		client.SLogger.Error("error serializing items", slog.Any("err", err))
+		client.Logger.Error("error serializing items", slog.Any("err", err))
 		return err
 	}
 
 	header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
 	if err != nil {
-		client.SLogger.Error("error sending data", slog.Any("err", err))
+		client.Logger.Error("error sending data", slog.Any("err", err))
 		return err
 	}
 
 	items, err := client.parseResponse(&header, data)
 	if err != nil {
-		client.SLogger.Error("error parsing response", slog.Any("err", err))
+		client.Logger.Error("error parsing response", slog.Any("err", err))
 		return err
 	}
 
 	respContent := msgCipForwardOpenReply{}
 	err = items[1].DeSerialize(&respContent)
 	if err != nil {
-		client.SLogger.Error("error deserializing forward open response", slog.Any("err", err))
+		client.Logger.Error("error deserializing forward open response", slog.Any("err", err))
 		return fmt.Errorf("error deserializing forward open response content. %w", err)
 	}
 
 	client.OTNetworkConnectionID = respContent.OtNetworkConnectionId
 
-	client.SLogger.Info(
+	client.Logger.Info(
 		"successfully opened connection",
 		slog.Any("ConnectionSize", uint32(client.ConnectionSize)),
 		slog.Any("OTNetworkConnectionId", respContent.OtNetworkConnectionId),
@@ -508,7 +504,7 @@ func (client *Client) parseResponse(header *eipHeader, data *bytes.Buffer) ([]CI
 	}
 	if respHeader.Status != 0 {
 		errMsg := "bad status on response"
-		client.SLogger.Error(errMsg,
+		client.Logger.Error(errMsg,
 			slog.Any("status", respHeader.Status),
 			slog.String("statusDesc", respHeader.Status.String()),
 		)

@@ -10,7 +10,7 @@ import (
 // to disconnect we send two items - a null item and an unconnected data item for the unregister service
 func (client *Client) Disconnect() error {
 	if client.connecting {
-		client.SLogger.Debug("waiting for client to finish connecting before disconnecting")
+		client.Logger.Debug("waiting for client to finish connecting before disconnecting")
 		for client.connecting {
 			time.Sleep(time.Millisecond * 10)
 		}
@@ -22,7 +22,7 @@ func (client *Client) Disconnect() error {
 	defer func() { client.disconnecting = false }()
 	client.connected = false
 	var err error
-	client.SLogger.Info("starting disconnection")
+	client.Logger.Info("starting disconnection")
 
 	if client.keepAliveRunning {
 		close(client.cancel_keepalive)
@@ -38,7 +38,7 @@ func (client *Client) Disconnect() error {
 		CIPInstance(1),
 	)
 	if err != nil {
-		client.SLogger.Error("Error serializing path", slog.Any("err", err))
+		client.Logger.Error("Error serializing path", slog.Any("err", err))
 		return fmt.Errorf("error serializing path: %w", err)
 	}
 
@@ -63,21 +63,21 @@ func (client *Client) Disconnect() error {
 
 	itemData, err := serializeItems(items)
 	if err != nil {
-		client.SLogger.Error(
+		client.Logger.Error(
 			"unable to serialize itemData. Forcing connection closed",
 			slog.Any("err", err),
 		)
 	} else {
 		header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
 		if err != nil {
-			client.SLogger.Error(
+			client.Logger.Error(
 				"error sending disconnect request",
 				slog.Any("err", err),
 			)
 		} else {
 			_, err = client.parseResponse(&header, data)
 			if err != nil {
-				client.SLogger.Error(
+				client.Logger.Error(
 					"error parsing disconnect response",
 					slog.Any("err", err),
 				)
@@ -87,10 +87,10 @@ func (client *Client) Disconnect() error {
 
 	err = client.conn.Close()
 	if err != nil {
-		client.SLogger.Error("error closing connection", slog.Any("err", err))
+		client.Logger.Error("error closing connection", slog.Any("err", err))
 	}
 
-	client.SLogger.Info("successfully disconnected from controller")
+	client.Logger.Info("successfully disconnected from controller")
 	return nil
 }
 
