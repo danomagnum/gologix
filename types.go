@@ -295,7 +295,7 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Problem reading %s as one unit of %T. %w", t, value, err)
+		return nil, fmt.Errorf("problem reading %s as one unit of %T. %w", t, value, err)
 	}
 	return value, nil
 }

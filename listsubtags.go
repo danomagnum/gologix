@@ -16,9 +16,7 @@ import (
 func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) ([]KnownTag, error) {
 
 	new_kts := make([]KnownTag, 0, 100)
-	if verbose {
-		client.Logger.Printf("readall for %v", start_instance)
-	}
+	client.Logger.Debug("readall", "start id", start_instance)
 
 	// have to start at 1.
 	if start_instance == 0 {
@@ -139,22 +137,8 @@ func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) 
 		client.KnownTags[strings.ToLower(newtag_name)] = kt
 		new_kts = append(new_kts, kt)
 
-		if verbose {
-			client.Logger.Printf("Tag: '%s' Instance: %d Type: %s/%d[%d,%d,%d]",
-				newtag_name,
-				tag_hdr.InstanceID,
-				tag_ftr.Type,
-				tag_ftr.TypeInfo,
-				tag_ftr.Dimension1,
-				tag_ftr.Dimension2,
-				tag_ftr.Dimension3,
-			)
-		}
 		start_instance = tag_hdr.InstanceID
 
-	}
-	if verbose {
-		client.Logger.Printf("Status: %v", hdr.Status)
 	}
 
 	if data_hdr.Status == 6 {

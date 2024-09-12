@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/rand"
 	"net"
 	"strings"
@@ -21,7 +21,7 @@ type Server struct {
 	ConnMgr     serverConnectionManager
 	Router      *PathRouter
 	Attributes  map[CIPAttribute]any
-	Logger      Logger
+	Logger      *slog.Logger
 }
 
 // an instance of serverTCPHandler will be created for every incoming connection to the EIP tcp port.
@@ -43,7 +43,7 @@ type serverTCPHandler struct {
 // After setting up the server use the Serve() method to listen on the appropriate TCP and UDP ports
 func NewServer(r *PathRouter) *Server {
 	srv := Server{}
-	srv.Logger = log.Default()
+	srv.Logger = slog.Default()
 	srv.ConnMgr.Init(srv.Logger)
 	srv.Router = r
 	srv.Attributes = make(map[CIPAttribute]any)
@@ -65,13 +65,13 @@ func (srv *Server) Serve() error {
 
 	var err error
 	srv.TCPListener, err = net.Listen("tcp", "0.0.0.0:44818")
-	srv.Logger.Printf("Listening on TCP port 44818")
+	srv.Logger.Info("Listening on TCP port 44818")
 	if err != nil {
 		return fmt.Errorf("couldn't open tcp listener. %w", err)
 	}
 
 	srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
-	srv.Logger.Printf("Listening on UDP port 2222")
+	srv.Logger.Info("Listening on UDP port 2222")
 	if err != nil {
 		return fmt.Errorf("couldn't open udp listener. %v", err)
 	}
@@ -117,7 +117,7 @@ func (srv *Server) serveTCP() error {
 	for {
 		conn, err := srv.TCPListener.Accept()
 		if err != nil {
-			srv.Logger.Printf("problem with tcp accept. %v", err)
+			srv.Logger.Error("problem with tcp accept", "error", err)
 			continue
 		}
 		// create a new handler and kick off its serve method to handle the connection
@@ -125,7 +125,7 @@ func (srv *Server) serveTCP() error {
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
-				srv.Logger.Printf("Error on connection %v. %v", h.conn.RemoteAddr().String(), err)
+				srv.Logger.Warn("Error on connection %v. %v", h.conn.RemoteAddr().String(), err)
 			}
 		}()
 	}
@@ -146,15 +146,15 @@ func (srv *Server) serveUDP() error {
 		buf := bytes.NewBuffer(b)
 		n, addr, err := srv.UDPListener.ReadFrom(b)
 		if n == 0 {
-			srv.Logger.Printf("Read 0 bytes on udp listener.")
+			srv.Logger.Debug("Read 0 bytes on udp listener.")
 			continue
 		}
 		if n == bufSize {
-			srv.Logger.Printf("udp buffer size not big enough!")
+			srv.Logger.Debug("udp buffer size not big enough!")
 			continue
 		}
 		if err != nil {
-			srv.Logger.Printf("problem with udp accept. %v", err)
+			srv.Logger.Debug("problem with udp accept", "error", err)
 			continue
 		}
 		_ = addr // don't need this yet.
@@ -162,11 +162,11 @@ func (srv *Server) serveUDP() error {
 
 		items, err := readItems(buf)
 		if err != nil {
-			srv.Logger.Printf("problem reading udp items. %v", err)
+			srv.Logger.Debug("problem reading udp items", "error", err)
 			continue
 		}
 		if len(items) != 2 {
-			srv.Logger.Printf("expected 2 items but got %v", len(items))
+			srv.Logger.Debug("expected 2 items", "got", len(items))
 			continue
 		}
 		if items[0].Header.ID == cipItem_SequenceAddress {
@@ -174,23 +174,23 @@ func (srv *Server) serveUDP() error {
 			io_info := cipIOSeqAccessData{}
 			err := items[0].DeSerialize(&io_info)
 			if err != nil {
-				srv.Logger.Printf("problem reading sequence address info.")
+				srv.Logger.Debug("problem reading sequence address info.")
 				continue
 			}
 			h, err := srv.ConnMgr.GetByOT(io_info.ConnectionID)
 			if err != nil {
-				srv.Logger.Printf("couldn't find handler for connection %v to handle IO message", io_info.ConnectionID)
+				srv.Logger.Debug("couldn't find handler to handle IO message", "connection", io_info.ConnectionID)
 				continue
 			}
 
 			tp, err := srv.Router.Resolve(h.Path)
 			if err != nil {
-				srv.Logger.Printf("couldn't find tag provider for connection %v at path %v to handle IO message", io_info.ConnectionID, h.Path)
+				srv.Logger.Debug("couldn't find tag provider to handle IO message", "connection", io_info.ConnectionID, "path", h.Path)
 				continue
 			}
 			err = tp.IOWrite(items)
 			if err != nil {
-				srv.Logger.Printf("Problem writing IO to tag provider. %v", err)
+				srv.Logger.Debug("Problem writing IO to tag provider", "error", err)
 				continue
 			}
 
@@ -200,7 +200,7 @@ func (srv *Server) serveUDP() error {
 }
 
 func (h *serverTCPHandler) serve(srv *Server) error {
-	h.server.Logger.Printf("new connection from %v", h.conn.RemoteAddr().String())
+	srv.Logger.Info("new connection", "remote addr", h.conn.RemoteAddr().String())
 	// if this function ends, close and remove ourselves from the server's open connection list.
 	defer func() {
 		h.conn.Close()
@@ -213,7 +213,7 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			return fmt.Errorf("problem reading eip header. %w", err)
 		}
 		h.context = eipHdr.Context
-		h.server.Logger.Printf("context: %v\n", h.context)
+		h.server.Logger.Debug("New Context", "context", h.context)
 		switch eipHdr.Command {
 		case cipCommandRegisterSession:
 			err = h.registerSession(eipHdr)
@@ -254,7 +254,6 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 	if err != nil {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
-	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := readItems(h.conn)
 	if err != nil {
 		return fmt.Errorf("problem reading items for rrData %w", err)
@@ -308,9 +307,9 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 			return fmt.Errorf("problem handling getAttrSingle %w", err)
 		}
 	default:
-		h.server.Logger.Printf("Got unknown service at send unit data handler %d", service)
+		h.server.Logger.Warn("Got unknown service at send unit data handler", "service", service)
 	}
-	h.server.Logger.Printf("send unit data service requested: %v", service)
+	h.server.Logger.Debug("send unit data service requested", "service", service)
 	return nil
 }
 
@@ -341,12 +340,10 @@ func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 	if err != nil {
 		return fmt.Errorf("problem reading timeout %w", err)
 	}
-	h.server.Logger.Printf("ih: %x. timeout: %x", interface_handle, timeout)
 	items, err := readItems(h.conn)
 	if err != nil {
 		return fmt.Errorf("problem reading items for rrData %w", err)
 	}
-	h.server.Logger.Printf("items: %+v", items)
 	if len(items) != 2 {
 		return fmt.Errorf("expected 2 items. got %v", len(items))
 	}
@@ -365,24 +362,21 @@ func (h *serverTCPHandler) sendRRData(hdr eipHeader) error {
 }
 
 func (h *serverTCPHandler) forwardClose(i CIPItem) error {
-	h.server.Logger.Printf("got forward close from %v", h.conn.RemoteAddr())
+	h.server.Logger.Info("got forward close", "remote", h.conn.RemoteAddr())
 	var fwd_close msgEIPForwardClose // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_close)
 	if err != nil {
-		h.server.Logger.Printf("problem parsing forward close. %v", err)
 		return fmt.Errorf("problem parsing forward close %w", err)
 	}
-	h.server.Logger.Printf("Closing connection %v", fwd_close.ConnectionSerialNumber)
+	h.server.Logger.Info("Closing connection", "serial", fwd_close.ConnectionSerialNumber)
 	err = h.server.ConnMgr.CloseByID(fwd_close.ConnectionSerialNumber)
 	if err != nil {
-		h.server.Logger.Printf("couldn't close open connection with ID %v. %v", fwd_close.ConnectionSerialNumber, err)
 		return fmt.Errorf("couldn't close open connection with ID %v. %v", fwd_close.ConnectionSerialNumber, err)
 	}
 
 	path := make([]byte, fwd_close.PathSize*2)
 	err = i.DeSerialize(&path)
 	if err != nil {
-		h.server.Logger.Printf("problem parsing forward close path. %v", err)
 		return fmt.Errorf("problem parsing forward close path %w", err)
 	}
 	return nil
@@ -441,7 +435,7 @@ type msgEIPForwardOpen_Large struct {
 }
 
 func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
-	h.server.Logger.Printf("got large forward open from %v", h.conn.RemoteAddr())
+	h.server.Logger.Info("got large forward open", "remote", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Large // TODO: Transition this to the new ForwardOpen
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
@@ -452,7 +446,7 @@ func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
-	h.server.Logger.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
+	h.server.Logger.Debug("forward open msg", "open", fwd_open, "path", fwd_path)
 	path := fwd_path[:2]
 
 	//preItem := msgPreItemData{Handle: 0, Timeout: 0}
@@ -506,14 +500,14 @@ func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
 	h.server.ConnMgr.Add(cipConnection)
 
 	if fwd_open.TransportTrigger == 1 {
-		h.server.Logger.Printf("Large Forward Open IO Connections Not Yet Supported")
+		h.server.Logger.Warn("Large Forward Open IO Connections Not Yet Supported")
 	}
 
 	return nil
 }
 
 func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
-	h.server.Logger.Printf("got small forward open from %v", h.conn.RemoteAddr())
+	h.server.Logger.Info("got small forward open", "remote", h.conn.RemoteAddr())
 	var fwd_open msgEIPForwardOpen_Standard // TODO: Transition this to the new forward open
 	err := i.DeSerialize(&fwd_open)
 	if err != nil {
@@ -524,7 +518,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
-	h.server.Logger.Printf("forward open msg: %v @ %v", fwd_open, fwd_path)
+	h.server.Logger.Debug("forward open msg", "open", fwd_open, "path", fwd_path)
 	path := fwd_path[:2]
 
 	//preItem := msgPreItemData{Handle: 0, Timeout: 0}
@@ -581,7 +575,6 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 		// this is a cyclic IO connection
 		tp, err := h.server.Router.Resolve(path)
 		if err != nil {
-			h.server.Logger.Printf("No tag provider for path %v", path)
 			return fmt.Errorf("no tag provider for path %v", path)
 		}
 		go h.ioConnection(fwd_open, tp, cipConnection)
@@ -592,7 +585,7 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 
 func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp CIPEndpoint, conn *serverConnection) {
 	rpi := time.Duration(fwd_open.TORPI) * time.Microsecond
-	h.server.Logger.Printf("IO RPI of %v", rpi)
+	h.server.Logger.Info("IO Connection", "rpi", rpi)
 	t := time.NewTicker(rpi)
 	seq := uint32(0)
 
@@ -604,7 +597,7 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 
 	udpConn, err := net.Dial("udp", addr)
 	if err != nil {
-		h.server.Logger.Printf("[ERROR] problem connecting UDP. %v", err)
+		h.server.Logger.Error("Problem connecting UDP", "error", err)
 		return
 	}
 	defer udpConn.Close()
@@ -613,14 +606,14 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		seq++
 		<-t.C
 		if !conn.Open {
-			h.server.Logger.Printf("connection %+v closed. no longer sending IO messages", *conn)
+			h.server.Logger.Warn("connection closed. no longer sending IO messages", "conn", *conn)
 			return
 
 		}
 
 		dat, err := tp.IORead()
 		if err != nil {
-			h.server.Logger.Printf("problem getting IO data from provider %v", err)
+			h.server.Logger.Warn("problem getting IO data from provider", "error", err)
 			continue
 		}
 
@@ -635,13 +628,13 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 
 		p, err := serializeItems(items)
 		if err != nil {
-			h.server.Logger.Printf("could not serialize items: %v", err)
+			h.server.Logger.Warn("could not serialize items", "error", err)
 		}
 		payload := *p
 		payload = payload[6:]
 		_, err = udpConn.Write(payload)
 		if err != nil {
-			h.server.Logger.Printf("problem writing %v", err)
+			h.server.Logger.Warn("problem writing", "error", err)
 		}
 
 	}
@@ -654,7 +647,7 @@ func (h *serverTCPHandler) registerSession(hdr eipHeader) error {
 	if err != nil {
 		return fmt.Errorf("problem reading register session message. %w", err)
 	}
-	h.server.Logger.Printf("register message: %+v", reg_msg)
+	h.server.Logger.Debug("register message", "msg", reg_msg)
 	h.handle = hdr.SessionHandle
 	if h.handle == 0 {
 		h.handle = rand.Uint32()

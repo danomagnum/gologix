@@ -52,11 +52,11 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		client.Logger.Printf("Problem reading read result header. %v", err)
+		client.Logger.Warn("Problem reading read result header.", "error", err)
 	}
 	items, err := readItems(data)
 	if err != nil {
-		client.Logger.Printf("Problem reading items. %v", err)
+		client.Logger.Warn("Problem reading items.", "error", err)
 		return nil, err
 	}
 
@@ -125,9 +125,7 @@ func (client *Client) GetControllerPropList() (msgGetControllerPropList, error) 
 	if err != nil {
 		return msgGetControllerPropList{}, fmt.Errorf("couldn't read data. %w", err)
 	}
-	if verbose {
-		client.Logger.Printf("Result: %+v", result)
-	}
+	client.Logger.Debug("Controller Prop", "result", result)
 
 	return result, nil
 }
@@ -186,12 +184,12 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		client.Logger.Printf("Problem reading read result header. %v", err)
+		client.Logger.Warn("Problem reading read result header.", "error", err)
 		return nil, err
 	}
 	items, err := readItems(data)
 	if err != nil {
-		client.Logger.Printf("Problem reading items. %v", err)
+		client.Logger.Warn("Problem reading items.", "error", err)
 		return nil, err
 	}
 

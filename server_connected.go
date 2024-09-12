@@ -36,14 +36,13 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 	}
 
 	results := make([]any, qty)
-	h.server.Logger.Printf("tag: %s", tag)
 	for i := 0; i < int(qty); i++ {
 		results[i], err = typ.readValue(&item)
 		if err != nil {
 			return fmt.Errorf("problem reading element %d: %w", i, err)
 		}
 	}
-	h.server.Logger.Printf("value: %v", results)
+	h.server.Logger.Debug("write", "tag", tag, "value", results)
 
 	if items[0].Header.ID != cipItem_ConnectionAddress {
 		return fmt.Errorf("expected a connection address item in item 0. got %v", items[0].Header.ID)
@@ -92,7 +91,6 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	path := connection.Path
 
@@ -230,14 +228,13 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 			}
 
 			writeTags := make([]any, qty)
-			h.server.Logger.Printf("write tag: %s", tag)
 			for i := 0; i < int(qty); i++ {
 				writeTags[i], err = typ.readValue(&item)
 				if err != nil {
 					return fmt.Errorf("problem getting write element %d: %w", i, err)
 				}
 			}
-			h.server.Logger.Printf("value: %v", writeTags)
+			h.server.Logger.Debug("Write", "tag", tag, "value", writeTags)
 
 			if qty > 1 {
 				err = p.TagWrite(tag, writeTags)
@@ -287,7 +284,6 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 		err2 := h.sendConnectedError(CIPService_FragRead, 0, 0, CIPStatus_ConnectionLost, 0)
 		return fmt.Errorf("couldn't get connection with ID %v: %w /%v", connID, err, err2)
 	}
-	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	items[1].Reset()
 	item := items[1]
@@ -330,7 +326,6 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 		return fmt.Errorf("problem getting data from provider. %w / %v", err, err2)
 	}
 	typ, _ := GoVarToCIPType(result)
-	h.server.Logger.Printf("read %s to %v elements: %v %v. Value = %v\n", tag, path, qty, typ, result)
 
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
@@ -407,7 +402,6 @@ func (h *serverTCPHandler) connectedGetAttr(items []CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get connection with ID %v: %w", connID, err)
 	}
-	h.server.Logger.Printf("got connection id %v = %+v", connID, connection)
 
 	items[1].Reset()
 	return h.getAttrSingle(connection, items[1])

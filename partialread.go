@@ -44,10 +44,7 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 
 	}
 
-	sl, ok := (client.Logger).(sLogger)
-	if ok {
-		sl.Debug("Took %d messages to read %d tags", msgs, n)
-	}
+	client.Logger.Debug("Multi Read", "messages", msgs, "tags", n)
 	return results, nil
 }
 
@@ -119,10 +116,7 @@ func (client *Client) countIOIsThatFit(tags []tagDesc) (int, error) {
 		n = i + 1
 	}
 
-	sl, ok := (client.Logger).(sLogger)
-	if ok {
-		sl.Debug("Fit %d tags into %d bytes.  ", n, client.ConnectionSize)
-	}
+	client.Logger.Debug("Packed Efficiency", "tags", n, "bytes", client.ConnectionSize)
 
 	return n, nil
 

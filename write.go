@@ -91,7 +91,7 @@ func (client *Client) write_single(tag string, value any) error {
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		client.Logger.Printf("Problem reading read result header. %v", err)
+		client.Logger.Warn("Problem reading read result header", "error", err)
 	}
 	items, err := readItems(data)
 	if err != nil {

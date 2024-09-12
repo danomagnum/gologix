@@ -337,11 +337,11 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		client.Logger.Printf("Problem reading read result header. %v", err)
+		client.Logger.Warn("Problem reading read result header", "error", err)
 	}
 	items, err := readItems(data)
 	if err != nil {
-		client.Logger.Printf("Problem reading items. %v", err)
+		client.Logger.Warn("Problem reading items", "error", err)
 		return 0, err
 	}
 	if len(items) != 2 {
@@ -649,7 +649,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
 	if err != nil {
-		client.Logger.Printf("Problem reading read result header. %v", err)
+		client.Logger.Warn("Problem reading read result header", "error", err)
 	}
 	items, err := readItems(data)
 	if err != nil {
@@ -665,11 +665,13 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header sequence count. %w", err)
 	}
+	_ = reply_hdr.SequenceCount
 	byt, err := rItem.Byte()
 	reply_hdr.Service = CIPService(byt)
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header service code. %w", err)
 	}
+	_ = reply_hdr.Service
 	_, err = rItem.Byte()
 	if err != nil {
 		return nil, fmt.Errorf("problem reading reply header padding byte. %w", err)
@@ -722,7 +724,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				}
 				val, err := getBit(rHdr.Type, value, iois[i].BitPosition)
 				if err != nil {
-					client.Logger.Printf("problem reading value for this guy")
+					client.Logger.Warn("problem reading value for this guy")
 					continue
 				}
 				result_values[i] = val
@@ -745,9 +747,6 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				}
 			}
 
-			if verbose {
-				client.Logger.Printf("Result %d @ %d. %+v. value: %v.\n", i, offset, rHdr, result_values[i])
-			}
 		} else {
 			// multi-element type.
 			val := make([]any, tags[i].Elements)

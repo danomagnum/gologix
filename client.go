@@ -11,18 +11,6 @@ import (
 	"time"
 )
 
-// this is an interface that matches the parts of the default go library log.Logger
-// that are used in this library.  You can pass an instance of it to a Client to redirect the
-// logs.  Or you can set it to nil to not log
-type Logger interface {
-	Printf(format string, v ...any)
-}
-
-type sLogger interface {
-	Printf(format string, v ...any)
-	Debug(format string, v ...any)
-}
-
 // you have to change this read sequencer every time you make a new tag request.  If you don't, you
 // won't get an error but it will return the last value you requested again.
 // You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
@@ -105,8 +93,7 @@ type Client struct {
 	ioi_cache_lock sync.Mutex
 
 	// Replace this to capture logs
-	Logger  Logger
-	SLogger *slog.Logger
+	Logger *slog.Logger
 }
 
 // Create a client with reasonable defaults for the given ip address.
@@ -140,8 +127,7 @@ func NewClient(ip string) *Client {
 		SocketTimeout:      socketTimeoutDefault,
 		KnownTags:          make(map[string]KnownTag),
 		ioi_cache:          make(map[string]*tagIOI),
-		Logger:             log.Default(),
-		SLogger:            slog.Default(),
+		Logger:             slog.Default(),
 	}
 
 }
@@ -208,7 +194,7 @@ func (client *Client) firmware() int {
 	if err != nil {
 		return 0
 	}
-	client.Logger.Printf("controller firmware major version: %d", major)
+	client.Logger.Debug("controller firmware major version: %d", "major", major)
 	client.knownFirmware = int(major)
 	return client.knownFirmware
 
