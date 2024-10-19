@@ -120,7 +120,7 @@ func NewClient(ip string) *Client {
 		VendorId:           vendorIdDefault,
 		ConnectionSize:     connSizeLargeDefault,
 		AutoConnect:        true,
-		KeepAliveAutoStart: true,
+		KeepAliveAutoStart: false,
 		KeepAliveFrequency: time.Second * 30,
 		KeepAliveProps:     []CIPAttribute{1, 2, 3, 4, 10},
 		RPI:                rpiDefault,
