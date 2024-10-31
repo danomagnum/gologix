@@ -175,7 +175,7 @@ func TestReadNew(t *testing.T) {
 				}
 			}()
 
-			testReadNew(t, client, "Program:gologix_tests.ReadSint", byte(117))
+			testReadNew(t, client, "Program:gologix_tests.ReadSint", int8(117))
 			testReadNew(t, client, "Program:gologix_tests.ReadDint", int32(36))
 			testReadNew(t, client, "Program:gologix_tests.ReadBool", false)
 			testReadNew(t, client, "Program:gologix_tests.ReadDint.0", false)
@@ -229,7 +229,7 @@ func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, t
 
 func TestReadMulti(t *testing.T) {
 	type test_str struct {
-		TestSint          byte    `gologix:"program:gologix_tests.readsint"`
+		TestSint          int8    `gologix:"program:gologix_tests.readsint"`
 		TestInt           int16   `gologix:"program:gologix_tests.readint"`
 		TestDint          int32   `gologix:"program:gologix_tests.readdint"`
 		TestReal          float32 `gologix:"program:gologix_tests.readreal"`

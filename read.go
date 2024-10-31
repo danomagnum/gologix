@@ -35,6 +35,13 @@ func (client *Client) Read(tag string, data any) error {
 		}
 		*data = v
 		return nil
+	case *int8:
+		v, err := read[int8](client, tag)
+		if err != nil {
+			return err
+		}
+		*data = v
+		return nil
 	case *int16:
 		v, err := read[int16](client, tag)
 		if err != nil {
@@ -115,6 +122,19 @@ func (client *Client) Read(tag string, data any) error {
 	case []byte:
 		elements := len(data)
 		v, err := readArray[byte](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+	case []int8:
+		elements := len(data)
+		v, err := readArray[int8](client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}

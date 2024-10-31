@@ -14,7 +14,7 @@ type CIPType byte
 // On the one hand, we need to support composite types, but on the other this lets it accept anything
 // which doesn't seem right.
 type GoLogixTypes interface {
-	bool | byte | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64 | string
+	bool | byte | int8 | uint16 | int16 | uint32 | int32 | uint64 | int64 | float32 | float64 | string
 }
 
 // return the CIPType that corresponds to go type of variable T
@@ -25,6 +25,8 @@ func GoVarToCIPType(T any) (CIPType, int) {
 		return CIPTypeBOOL, 1
 	case byte:
 		return CIPTypeBYTE, 1
+	case int8:
+		return CIPTypeSINT, 1
 	case uint16:
 		return CIPTypeUINT, 1
 	case int16:
@@ -238,7 +240,7 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
 	case CIPTypeSINT:
-		var trueval byte
+		var trueval int8
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
 	case CIPTypeINT:
