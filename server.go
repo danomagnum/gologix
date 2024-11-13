@@ -518,6 +518,15 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("problem with fwd open path parsing %w", err)
 	}
+
+	// if this is a produce/consume, the fwd_path here will have a few segments in it.
+	// First is a "keying" segment.  It's 4 words of 0's in the wireshark samples I've got.
+	// Then there is a 8-bit class segment 0x69 which I've named "IO Class" until i know better.
+	// Then there is intance 1
+	// Then there is an ansii class 0x91 of the consumed tag name.
+	// then a "connection point" segment of 1
+	// then a "simple data segment" of some mystery data.
+
 	h.server.Logger.Debug("forward open msg", "open", fwd_open, "path", fwd_path)
 	path := fwd_path[:2]
 
