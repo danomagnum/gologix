@@ -93,7 +93,8 @@ type Client struct {
 	ioi_cache_lock sync.Mutex
 
 	// Replace this to capture logs
-	Logger *slog.Logger
+	Logger        *slog.Logger
+	logger_ip_set bool
 }
 
 // Create a client with reasonable defaults for the given ip address.

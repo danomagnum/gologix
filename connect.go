@@ -34,7 +34,10 @@ func (client *Client) Connect() error {
 	client.connecting = true
 	defer func() { client.connecting = false }()
 	if client.Logger != nil {
-		client.Logger = client.Logger.With(slog.String("controllerIp", client.Controller.IpAddress))
+		if !client.logger_ip_set {
+			client.Logger = client.Logger.With(slog.String("controllerIp", client.Controller.IpAddress))
+			client.logger_ip_set = true
+		}
 	}
 	if client.ConnectionSize == 0 {
 		client.ConnectionSize = connSizeLargeDefault
