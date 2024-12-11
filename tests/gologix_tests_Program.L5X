@@ -1,7 +1,19 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" ExportDate="Tue Jun 25 22:40:41 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Tue Dec 10 21:31:25 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
+<DataType Name="NestedUDT" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Field1" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SubStr" DataType="TestUDT" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SubStr2" DataType="TestUDT2" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Field2" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="TestUDT"/>
+<Dependency Type="DataType" Name="TestUDT2"/>
+</Dependencies>
+</DataType>
 <DataType Name="TestUDT" Family="NoFamily" Class="User">
 <Members>
 <Member Name="Field1" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
@@ -88,12 +100,12 @@
 </Tag>
 <Tag Name="gologix_Send_Test" TagType="Base" DataType="MESSAGE" ExternalAccess="Read/Write">
 <Data Format="Message">
-<MessageParameters MessageType="CIP Data Table Write" RemoteElement="gologix_msg_write_tag_b" RequestedLength="1" ConnectedFlag="2" ConnectionPath="gologix, 1, 0" CommTypeCode="0" LocalIndex="0" LocalElement="WriteDint2"/>
+<MessageParameters MessageType="CIP Data Table Write" RemoteElement="gologix_msg_write_tag_b" RequestedLength="1" ConnectedFlag="2" ConnectionPath="2, 192.168.2.3, 1, 0" CommTypeCode="0" LocalIndex="0" LocalElement="WriteDint2"/>
 </Data>
 </Tag>
 <Tag Name="gologix_Send_Test2" TagType="Base" DataType="MESSAGE" ExternalAccess="Read/Write">
 <Data Format="Message">
-<MessageParameters MessageType="CIP Data Table Read" RemoteElement="gologix_msg_write_tag_b" RequestedLength="1" ConnectedFlag="2" ConnectionPath="gologix, 1, 0" CommTypeCode="0" LocalIndex="0" LocalElement="WriteDint3"/>
+<MessageParameters MessageType="CIP Data Table Read" RemoteElement="gologix_msg_write_tag_b" RequestedLength="1" ConnectedFlag="2" ConnectionPath="2, 192.168.2.3, 1, 0" CommTypeCode="0" LocalIndex="0" LocalElement="WriteDint3"/>
 </Data>
 </Tag>
 <Tag Name="TestDint" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
@@ -123,25 +135,9 @@
 </Array>
 </Data>
 </Tag>
-<Tag Name="TestInt" TagType="Base" DataType="INT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write" Max="5555" Min="-543">
-<Description>
-<![CDATA[MyDescr]]>
-</Description>
-<EngineeringUnits>
-<EngineeringUnit>
-<![CDATA[counts]]>
-</EngineeringUnit>
-</EngineeringUnits>
-<Data Format="L5K">
-<![CDATA[999]]>
-</Data>
-<Data Format="Decorated">
-<DataValue DataType="INT" Radix="Decimal" Value="999"/>
-</Data>
-</Tag>
 <Tag Name="Testmsg2" TagType="Base" DataType="MESSAGE" ExternalAccess="Read/Write">
 <Data Format="Message">
-<MessageParameters MessageType="CIP Generic" RequestedLength="0" ConnectedFlag="2" ConnectionPath="gologix, 1, 0" CommTypeCode="0" ServiceCode="16#000e" ObjectType="16#0006" TargetObject="1" AttributeNumber="16#0023" LocalIndex="0" DestinationTag="GetPropResult[0]"
+<MessageParameters MessageType="CIP Generic" RequestedLength="0" ConnectedFlag="2" ConnectionPath="2, 192.168.2.3, 1, 0" CommTypeCode="0" ServiceCode="16#000e" ObjectType="16#0006" TargetObject="1" AttributeNumber="16#0023" LocalIndex="0" DestinationTag="GetPropResult[0]"
  LargePacketUsage="false"/>
 </Data>
 </Tag>
@@ -183,7 +179,7 @@
 <Tags>
 <Tag Name="CounterBytes" TagType="Base" DataType="SINT" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,4,0,0,0,10,0,0,-128,12,0,0,-128,-100,75,57,-15,12,24,0,0]]]>
+<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,0,0,0,0,10,0,0,-128,12,0,0,-128,-92,114,57,-15,44,24,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="32" Radix="Decimal">
@@ -199,7 +195,7 @@
 <Element Index="[9]" Value="2"/>
 <Element Index="[10]" Value="0"/>
 <Element Index="[11]" Value="0"/>
-<Element Index="[12]" Value="4"/>
+<Element Index="[12]" Value="0"/>
 <Element Index="[13]" Value="0"/>
 <Element Index="[14]" Value="0"/>
 <Element Index="[15]" Value="0"/>
@@ -211,11 +207,11 @@
 <Element Index="[21]" Value="0"/>
 <Element Index="[22]" Value="0"/>
 <Element Index="[23]" Value="-128"/>
-<Element Index="[24]" Value="-100"/>
-<Element Index="[25]" Value="75"/>
+<Element Index="[24]" Value="-92"/>
+<Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="12"/>
+<Element Index="[28]" Value="44"/>
 <Element Index="[29]" Value="24"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
@@ -711,12 +707,10 @@
 </Tag>
 <Tag Name="TestAlarm" TagType="Base" DataType="ALARM_DIGITAL" ExternalAccess="Read/Write">
 <Data Format="Alarm">
-<AlarmDigitalParameters Severity="500" MinDurationPRE="0" ProgTime="DT#1970-01-01-00:00:00.000000Z" EnableIn="false" In="false" InFault="false" Condition="true" AckRequired="true" Latched="false" ProgAck="false" OperAck="false"
- ProgReset="false" OperReset="false" ProgSuppress="false" OperSuppress="false" ProgUnsuppress="false" OperUnsuppress="false" ProgDisable="false" OperDisable="false" ProgEnable="false" OperEnable="false" AlarmCountReset="false"
- UseProgTime="false"/>
-<AlarmConfig>
-<Messages/>
-</AlarmConfig>
+<AlarmDigitalParameters Severity="500" MinDurationPRE="5000" ShelveDuration="0" MaxShelveDuration="0" ProgTime="DT#1970-01-01-00:00:00.000_000Z" EnableIn="false" In="false" InFault="false" Condition="true" AckRequired="true" Latched="false"
+ ProgAck="false" OperAck="false" ProgReset="false" OperReset="false" ProgSuppress="false" OperSuppress="false" ProgUnsuppress="false" OperUnsuppress="false" OperShelve="false" ProgUnshelve="false" OperUnshelve="false"
+ ProgDisable="false" OperDisable="false" ProgEnable="false" OperEnable="false" AlarmCountReset="false" UseProgTime="false"/>
+<AlarmConfig/>
 </Data>
 </Tag>
 <Tag Name="TestAlarmAck" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
@@ -1236,7 +1230,7 @@
 </Tag>
 <Tag Name="TestTimer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[4051024,2345,0]]]>
+<![CDATA[[3765093,2345,0]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -1286,14 +1280,14 @@
 </Tag>
 <Tag Name="TimerBytes" TagType="Base" DataType="SINT" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[80,-48,61,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-100,75,57,-15,-60,24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		,0,0,0,0,0]]]>
+<![CDATA[[101,115,57,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-28,24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		,0,0,0,0,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="64" Radix="Decimal">
-<Element Index="[0]" Value="80"/>
-<Element Index="[1]" Value="-48"/>
-<Element Index="[2]" Value="61"/>
+<Element Index="[0]" Value="101"/>
+<Element Index="[1]" Value="115"/>
+<Element Index="[2]" Value="57"/>
 <Element Index="[3]" Value="0"/>
 <Element Index="[4]" Value="41"/>
 <Element Index="[5]" Value="9"/>
@@ -1315,11 +1309,11 @@
 <Element Index="[21]" Value="0"/>
 <Element Index="[22]" Value="0"/>
 <Element Index="[23]" Value="-128"/>
-<Element Index="[24]" Value="-100"/>
-<Element Index="[25]" Value="75"/>
+<Element Index="[24]" Value="-92"/>
+<Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="-60"/>
+<Element Index="[28]" Value="-28"/>
 <Element Index="[29]" Value="24"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
@@ -1501,12 +1495,46 @@
 </Tag>
 <Tag Name="WriteUDT" TagType="Base" DataType="TestUDT" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[46,4.00000000e+000]]]>
+<![CDATA[[321,7.65399981e+000]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TestUDT">
-<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="46"/>
-<DataValueMember Name="Field2" DataType="REAL" Radix="Float" Value="4.0"/>
+<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="321"/>
+<DataValueMember Name="Field2" DataType="REAL" Radix="Float" Value="7.654"/>
+</Structure>
+</Data>
+</Tag>
+<Tag Name="WriteUDT2" TagType="Base" DataType="TestUDT2" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[321,2,765]]]>
+</Data>
+<Data Format="Decorated">
+<Structure DataType="TestUDT2">
+<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="321"/>
+<DataValueMember Name="Flag1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Flag2" DataType="BOOL" Value="1"/>
+<DataValueMember Name="Field2" DataType="DINT" Radix="Decimal" Value="765"/>
+</Structure>
+</Data>
+</Tag>
+<Tag Name="WriteUDT3" TagType="Base" DataType="NestedUDT" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[321,[54,2.09999990e+000],[22,2,987],65]]]>
+</Data>
+<Data Format="Decorated">
+<Structure DataType="NestedUDT">
+<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="321"/>
+<StructureMember Name="SubStr" DataType="TestUDT">
+<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="54"/>
+<DataValueMember Name="Field2" DataType="REAL" Radix="Float" Value="2.1"/>
+</StructureMember>
+<StructureMember Name="SubStr2" DataType="TestUDT2">
+<DataValueMember Name="Field1" DataType="DINT" Radix="Decimal" Value="22"/>
+<DataValueMember Name="Flag1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Flag2" DataType="BOOL" Value="1"/>
+<DataValueMember Name="Field2" DataType="DINT" Radix="Decimal" Value="987"/>
+</StructureMember>
+<DataValueMember Name="Field2" DataType="DINT" Radix="Decimal" Value="65"/>
 </Structure>
 </Data>
 </Tag>
@@ -1627,13 +1655,7 @@
 <![CDATA[]]>
 </Line>
 <Line Number="14">
-<![CDATA[Temp := TestDint;]]>
-</Line>
-<Line Number="15">
 <![CDATA[]]>
-</Line>
-<Line Number="16">
-<![CDATA[Temp := TestInt;]]>
 </Line>
 </STContent>
 </Routine>
