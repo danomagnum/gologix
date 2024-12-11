@@ -182,3 +182,194 @@ func TestMultiWrite(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteUdt1(t *testing.T) {
+
+	type TestUDT struct {
+		Field1 int32
+		Field2 float32
+	}
+
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+		})
+	}
+}
+
+func TestWriteUdt(t *testing.T) {
+
+	type TestUDT struct {
+		Field1 int32
+		Field2 float32
+	}
+
+	type TestUDT2 struct {
+		Field1 int32
+		Flag1  bool
+		Flag2  bool
+		Field2 int32
+	}
+
+	type NestedUDT struct {
+		Field1  int32
+		SubStr1 TestUDT
+		SubStr2 TestUDT2
+		Field2  int32
+	}
+
+	tcs := getTestConfig()
+	for _, tc := range tcs.PlcList {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			var t1 TestUDT
+			var t1_readback TestUDT
+
+			t1.Field1 = 123
+			t1.Field2 = 456.7
+
+			err = client.Write("program:gologix_tests.writeudt", t1)
+			if err != nil {
+				t.Errorf("problem writing first time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt", &t1_readback)
+			if err != nil {
+				t.Errorf("problem reading first time: %v", err)
+			}
+			if t1_readback != t1 {
+				t.Errorf("want %v. have %v", t1, t1_readback)
+			}
+
+			t1.Field1 = 321
+			t1.Field2 = 7.654
+
+			err = client.Write("program:gologix_tests.writeudt", t1)
+			if err != nil {
+				t.Errorf("problem writing second time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt", &t1_readback)
+			if err != nil {
+				t.Errorf("problem reading second time: %v", err)
+			}
+			if t1_readback != t1 {
+				t.Errorf("want %v. have %v", t1, t1_readback)
+			}
+
+			var t2 TestUDT2
+			var t2_readback TestUDT2
+
+			t2.Field1 = 123
+			t2.Flag1 = true
+			t2.Flag2 = false
+			t2.Field2 = 456
+
+			err = client.Write("program:gologix_tests.writeudt2", t2)
+			if err != nil {
+				t.Errorf("problem writing first time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt2", &t2_readback)
+			if err != nil {
+				t.Errorf("problem reading first time: %v", err)
+			}
+			if t2_readback != t2 {
+				t.Errorf("want %v. have %v", t2, t2_readback)
+			}
+
+			t2.Field1 = 321
+			t2.Flag1 = false
+			t2.Flag2 = true
+			t2.Field2 = 765
+
+			err = client.Write("program:gologix_tests.writeudt2", t2)
+			if err != nil {
+				t.Errorf("problem writing second time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt2", &t2_readback)
+			if err != nil {
+				t.Errorf("problem reading second time: %v", err)
+			}
+			if t2_readback != t2 {
+				t.Errorf("want %v. have %v", t2, t2_readback)
+			}
+
+			var t3 NestedUDT
+			var t3_readback NestedUDT
+
+			t3.Field1 = 123
+			t3.SubStr1.Field1 = 456
+			t3.SubStr1.Field2 = 1.2
+			t3.SubStr2.Field1 = 5
+			t3.SubStr2.Flag1 = true
+			t3.SubStr2.Flag2 = false
+			t3.SubStr2.Field2 = 789
+			t3.Field2 = 8
+
+			err = client.Write("program:gologix_tests.writeudt3", t3)
+			if err != nil {
+				t.Errorf("problem writing first time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt3", &t3_readback)
+			if err != nil {
+				t.Errorf("problem reading first time: %v", err)
+			}
+			if t3_readback != t3 {
+				t.Errorf("want %v. have %v", t3, t3_readback)
+			}
+
+			t3.Field1 = 321
+			t3.SubStr1.Field1 = 54
+			t3.SubStr1.Field2 = 2.1
+			t3.SubStr2.Field1 = 22
+			t3.SubStr2.Flag1 = false
+			t3.SubStr2.Flag2 = true
+			t3.SubStr2.Field2 = 987
+			t3.Field2 = 65
+
+			err = client.Write("program:gologix_tests.writeudt3", t3)
+			if err != nil {
+				t.Errorf("problem writing second time: %v", err)
+			}
+
+			err = client.Read("program:gologix_tests.writeudt3", &t3_readback)
+			if err != nil {
+				t.Errorf("problem reading second time: %v", err)
+			}
+			if t3_readback != t3 {
+				t.Errorf("want %v. have %v", t3, t3_readback)
+			}
+
+		})
+	}
+}

@@ -6,7 +6,7 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for readng a UDT tag named "TestUDT" in the controller.
 func main() {
 	var err error
 
@@ -29,8 +29,12 @@ func main() {
 	// if that happens (about a minute)
 	defer client.Disconnect()
 
-	// define a variable with a type that matches the tag you want to read.  In this case it is a UDT so
-	// we define a struct that matches.
+	// define a struct that matches the tag you want to read.
+	// the struct must have the same fields and types as the UDT in the controller.
+	// the name of the struct MUST match the name of the UDT in the controller.
+	// the name of any sub-structures must also match the name of the UDT in the controller.
+	// field names don't matter and don't have to match.  They do have to be exported though so the
+	// reflect package can access them to set the values.
 	type myUDT struct {
 		Field1 int32
 		Field2 float32
@@ -38,13 +42,23 @@ func main() {
 	var tag1 myUDT
 	// call the read function.
 	// note that tag names are case insensitive.
-	// also note that for atomic types and structs you need to use a pointer.
-	// for slices you don't use a pointer.
+	// also note that you need to use a pointer.
 	err = client.Read("TestUDT", &tag1)
 	if err != nil {
-		log.Printf("error reading testint. %v", err)
+		log.Printf("error reading testudt. %v", err)
 	}
 	// do whatever you want with the value
 	log.Printf("tag1 has value %+v", tag1)
+
+	//
+	// Writing example.
+	//
+	tag1.Field1 = 5
+	tag1.Field2 = 12.4
+
+	err = client.Write("TestUDT", tag1)
+	if err != nil {
+		log.Printf("error writing testudt. %v", err)
+	}
 
 }
