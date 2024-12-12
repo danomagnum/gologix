@@ -370,6 +370,12 @@ func TestWriteUdt(t *testing.T) {
 				t.Errorf("want %v. have %v", t3, t3_readback)
 			}
 
+			// write the wrong udt type. this should error.
+			err = client.Write("program:gologix_tests.writeudt2", t3)
+			if err == nil {
+				t.Errorf("success writing wrong udt: %v", err)
+			}
+
 		})
 	}
 }
