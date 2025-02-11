@@ -59,6 +59,7 @@ type Client struct {
 	KeepAliveProps     []CIPAttribute // properties monitored during keep alive
 	KeepAliveFrequency time.Duration
 	keepAliveRunning   bool
+	KeepAlivePollTags  bool
 
 	RPI time.Duration // Request Packet Interval
 
