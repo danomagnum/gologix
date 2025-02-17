@@ -73,3 +73,7 @@ func (t *TIMER) Unpack(r io.Reader) (int, error) {
 
 	return 12, nil
 }
+
+func (TIMER) TypeAbbr() (string, uint16) {
+	return "TIMER", 0x0F83
+}

@@ -381,10 +381,20 @@ func ReadPacked[T any](client *Client, tag string) (T, error) {
 
 }
 
+type KnownType interface {
+	TypeAbbr() (string, uint16)
+}
+
 // perform type encoding per TypeEncode_CIPRW.pdf from the rockwell site.  Also returns the abbreviated type ID
 func TypeEncode(data any) (string, uint16, error) {
 	// TODO: does this whole thing break if we have a struct with bools, what with their ZZZZZZ prefixed values and all?
 	//       I suspect it does.  The UDT type definitions won gold at the bad idea olympics.
+
+	Abbreviable, ok := data.(KnownType)
+	if ok {
+		s, t := Abbreviable.TypeAbbr()
+		return s, t, nil
+	}
 
 	encoded := ""
 	// bitpos and bitpack are for packing bits into bytes.  bitpos is the position in the byte and bitpack is the packed bits that

@@ -76,3 +76,7 @@ func (t *COUNTER) Unpack(r io.Reader) (int, error) {
 
 	return 12, nil
 }
+
+func (COUNTER) TypeAbbr() (string, uint16) {
+	return "COUNTER", 0x0F82
+}

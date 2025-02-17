@@ -91,3 +91,7 @@ func (t *CONTROL) Unpack(r io.Reader) (int, error) {
 
 	return 12, nil
 }
+
+func (CONTROL) TypeAbbr() (string, uint16) {
+	return "CONTROL", 0x0F81
+}

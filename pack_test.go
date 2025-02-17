@@ -3,6 +3,8 @@ package gologix
 import (
 	"bytes"
 	"testing"
+
+	"github.com/danomagnum/gologix/lgxtypes"
 )
 
 func TestPack(t *testing.T) {
@@ -167,20 +169,20 @@ func TestPack2(t *testing.T) {
 func TestEncodeUDT(t *testing.T) {
 
 	type UDT3 struct {
-		U3A byte
-		U3B [4]byte
+		U3A int8
+		U3B [4]int8
 	}
 
 	type UDT2 struct {
 		U2A int32
-		U2B [3]byte
+		U2B [3]int8
 		U2C UDT3
 		U2D [2]UDT3
 	}
 
 	type UDT1 struct {
-		U1A byte
-		U1B [2]byte
+		U1A int8
+		U1B [2]int8
 		U1C UDT2
 		U1D [4]UDT3
 	}
@@ -198,6 +200,26 @@ func TestEncodeUDT(t *testing.T) {
 	want_crc := uint16(0x5F58)
 	if crc != want_crc {
 		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+
+}
+
+func TestEncodeString(t *testing.T) {
+
+	encoding, crc, err := TypeEncode(lgxtypes.STRING{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+
+	want := "ASCIISTRING82,DINT,SINT[82]"
+	if encoding != want {
+		t.Errorf("encoding mismatch. Got %v want %v", encoding, want)
+	}
+
+	crc_want := uint16(0x0FCE)
+	if crc != crc_want {
+		t.Errorf("CRC mismatch. Got 0x%04x want 0x%04x", crc, crc_want)
 	}
 
 }
