@@ -107,7 +107,7 @@ func (client *Client) write_udt(tag string, value any) error {
 	if err != nil {
 		return fmt.Errorf("problem deserializing write response header, %w", err)
 	}
-	if hdr2.Status != 0 {
+	if hdr2.Status != CIPStatus_OK {
 		extended := uint16(0)
 		if hdr2.StatusExtended == 1 {
 			err = items[1].DeSerialize(&extended)
@@ -181,7 +181,7 @@ func (client *Client) write_single(tag string, value any) error {
 	if err != nil {
 		return fmt.Errorf("problem deserializing write response header, %w", err)
 	}
-	if hdr2.Status != 0 {
+	if hdr2.Status != CIPStatus_OK {
 		extended := uint16(0)
 		if hdr2.StatusExtended == 1 {
 			err = items[1].DeSerialize(&extended)

@@ -159,10 +159,12 @@ func (client *Client) KeepAlive() {
 		return
 	}
 
-	err = client.ListAllTags(0)
-	if err != nil {
-		client.Logger.Error("keepalive list tags failed", slog.Any("err", err))
-		return
+	if client.KeepAlivePollTags {
+		err = client.ListAllTags(0)
+		if err != nil {
+			client.Logger.Error("keepalive list tags failed", slog.Any("err", err))
+			return
+		}
 	}
 
 	t := time.NewTicker(client.KeepAliveFrequency)
@@ -182,15 +184,23 @@ func (client *Client) KeepAlive() {
 				return
 			}
 			if newProps != originalProps {
-				client.Logger.Info(
-					"controller change detected. re-analyzing types",
-					slog.Any("originalProps", originalProps),
-					slog.Any("newProps", newProps),
-				)
-				err := client.ListAllTags(0)
-				if err != nil {
-					client.Logger.Warn("keepalive list tags failed.", "error", err)
-					return
+				if client.KeepAlivePollTags {
+					client.Logger.Info(
+						"controller change detected. re-analyzing types",
+						slog.Any("originalProps", originalProps),
+						slog.Any("newProps", newProps),
+					)
+					err := client.ListAllTags(0)
+					if err != nil {
+						client.Logger.Warn("keepalive list tags failed.", "error", err)
+						return
+					}
+				} else {
+					client.Logger.Info(
+						"controller change detected.",
+						slog.Any("originalProps", originalProps),
+						slog.Any("newProps", newProps),
+					)
 				}
 				originalProps = newProps
 			}
@@ -505,7 +515,7 @@ func (client *Client) parseResponse(header *eipHeader, data *bytes.Buffer) ([]CI
 			return nil, fmt.Errorf("error deserializing forward open response header extended status. %w", err)
 		}
 	}
-	if respHeader.Status != 0 {
+	if respHeader.Status != CIPStatus_OK {
 		errMsg := "bad status on response"
 		client.Logger.Error(errMsg,
 			slog.Any("status", respHeader.Status),

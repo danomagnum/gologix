@@ -141,7 +141,7 @@ func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) 
 
 	}
 
-	if data_hdr.Status == 6 {
+	if data_hdr.Status == uint16(CIPStatus_PartialTransfer) {
 		_, err = client.ListSubTags(Program, start_instance)
 		if err != nil {
 			return new_kts, fmt.Errorf("problem listing subtags. %w", err)
