@@ -13,7 +13,7 @@ package main
 
 import (
 	"fmt"
-	"gologix"
+	"github.com/danomagnum/gologix"
 )
 
 func main() {
@@ -45,7 +45,7 @@ package main
 
 import (
 	"fmt"
-	"gologix"
+	"github.com/danomagnum/gologix"
 	"os"
 
 )
