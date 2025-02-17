@@ -732,7 +732,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 			return nil, fmt.Errorf("wasn't a response service. Got %v", rHdr.Service)
 		}
 		rHdr.Service = rHdr.Service.UnResponse()
-		if rHdr.Status != 0 {
+		if rHdr.Status != uint16(CIPStatus_OK) {
 			return nil, fmt.Errorf("problem reading %v. Status %v", tags[i], rHdr.Status)
 		}
 		if tags[i].Elements == 1 {
