@@ -515,7 +515,7 @@ func (client *Client) parseResponse(header *eipHeader, data *bytes.Buffer) ([]CI
 			return nil, fmt.Errorf("error deserializing forward open response header extended status. %w", err)
 		}
 	}
-	if respHeader.Status != 0 {
+	if respHeader.Status != CIPStatus_OK {
 		errMsg := "bad status on response"
 		client.Logger.Error(errMsg,
 			slog.Any("status", respHeader.Status),

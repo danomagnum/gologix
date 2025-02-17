@@ -389,23 +389,23 @@ func (s CIPStatus) String() string {
 	case CIPStatus_OK:
 		return "OK"
 	case CIPStatus_ConnectionFailure:
-		return "ConnectionFailure"
+		return "Connection failure - A connection related service failed along the connection path."
 	case CIPStatus_ResourceUnavailable:
-		return "ResourceUnavailable"
+		return "Resource unavailable - Resources needed for the object to perform the requested service were unavailable"
 	case CIPStatus_InvalidParameterValue:
 		return "InvalidParameterValue"
 	case CIPStatus_PathSegmentError:
-		return "PathSegmentError"
+		return "Path segment error - The path segment identifier or the segment syntax was not understood by the processing node."
 	case CIPStatus_PathDestinationUnknown:
-		return "PathDestinationUnknown"
+		return "Path destination unknown - The path is referencing an object class, instance or structure element that is not known or is not contained in the processing node. Path processing shall stop when a path destination unknown error is encountered"
 	case CIPStatus_PartialTransfer:
 		return "PartialTransfer"
 	case CIPStatus_ConnectionLost:
 		return "ConnectionLost"
 	case CIPStatus_ServiceNotSupported:
-		return "ServiceNotSupported"
+		return "Service not supported - The requested service was not implemented or was not defined for this Object Class/Instance"
 	case CIPStatus_InvalidAttributeValue:
-		return "InvalidAttributeValue"
+		return "Invalid attribute value - Invalid attribute data detected"
 	case CIPStatus_AttributeListError:
 		return "AttributeListError"
 	case CIPStatus_AlreadyInRequestedMode:
@@ -415,7 +415,7 @@ func (s CIPStatus) String() string {
 	case CIPStatus_ObjectAlreadyExists:
 		return "ObjectAlreadyExists"
 	case CIPStatus_AttributeNotSettable:
-		return "AttributeNotSettable"
+		return "Attribute not settable - A request to modify a non-modifiable attribute was received."
 	case CIPStatus_PrivilegeViolation:
 		return "PrivilegeViolation"
 	case CIPStatus_DeviceStateConflict:
@@ -425,13 +425,13 @@ func (s CIPStatus) String() string {
 	case CIPStatus_FragmentationOfMessage:
 		return "FragmentationOfMessage"
 	case CIPStatus_NotEnoughData:
-		return "NotEnoughData"
+		return "Not enough data - The service did not supply enough data to perform the specified operation"
 	case CIPStatus_AttributeNotSupported:
-		return "AttributeNotSupported"
+		return "Attribute not supported - The attribute specified in the request is not supported"
 	case CIPStatus_TooMuchData:
-		return "TooMuchData"
+		return "Too much data - The service supplied more data than was expected"
 	case CIPStatus_ObjectDoesNotExist:
-		return "ObjectDoesNotExist"
+		return "Object does not exist - The object specified does not exist in the device."
 	case CIPStatus_ServiceFragmentation:
 		return "ServiceFragmentation"
 	case CIPStatus_NoStoredAttributeData:
@@ -451,7 +451,7 @@ func (s CIPStatus) String() string {
 	case CIPStatus_VendorSpecificError:
 		return "VendorSpecificError"
 	case CIPStatus_InvalidParameter:
-		return "InvalidParameter"
+		return "Invalid parameter - A parameter associated with the request was invalid. This code is used when a parameter does not meet the requirements of this specification and/or the requirements defined in an Application Object Specification"
 	case CIPStatus_WriteOnceValueOrMedium:
 		return "WriteOnceValueOrMedium"
 	case CIPStatus_InvalidReplyReceived:
@@ -463,7 +463,7 @@ func (s CIPStatus) String() string {
 	case CIPStatus_KeyFailure:
 		return "KeyFailure"
 	case CIPStatus_PathSizeInvalid:
-		return "PathSizeInvalid"
+		return "Path size invalid - The size of the path which was sent with the Service Request is either not large enough to allow the Request to be routed to an object or too much routing data was included"
 	case CIPStatus_UnexpectedAttribInList:
 		return "UnexpectedAttribInList"
 	case CIPStatus_InvalidMemberID:

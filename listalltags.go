@@ -236,7 +236,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 	}
 
-	if data_hdr.Status == 6 { //} && start_instance < 200 {
+	if data_hdr.Status == uint16(CIPStatus_PartialTransfer) { //} && start_instance < 200 {
 		err = client.ListAllTags(start_instance)
 		if err != nil {
 			return err
