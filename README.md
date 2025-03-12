@@ -100,9 +100,7 @@ You cannot write multiple items from an array at once yet, but you can do them p
 
 You can write to BOOL tags but NOT to bits of integers yet (ex: "MyBool" is OK, but "MyDint.3" is NOT).  You can read from either just fine.  I think there is a "write with mask" that I'll need to implement to do this.
 
-If the UDT you're reading has bools packed in it, you'll need to use the ReadPacked() function instead of client.Read().  The plan is to eventually migrate this functionality to client.Read automatically.
-
-No UDTs or arrays in the server yet.  This will eventually be implemented and that will greatly improve functionality.
+No UDTs or arrays in the server yet.
 
 ## License
 
