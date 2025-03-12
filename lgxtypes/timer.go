@@ -8,12 +8,15 @@ import (
 type TIMER struct {
 	PRE int32
 	ACC int32
-	EN  bool // bit 31
-	TT  bool // bit 30
-	DN  bool // bit 29
+	// the control bits are actually in a DINT called "Control" and they
+	// don't end up in the TypeAbbr string.
+	EN bool // bit 31
+	TT bool // bit 30
+	DN bool // bit 29
 
 	// These bits were added in anticipation of using timers with SFCs (Sequential Function Charts).
 	// However, at this time SFCs do not use timer structures, so these bits are not used and are currently undefined.
+	// -- I don't remember where I saw the above quote.
 	FS bool // bit 28 Unused
 	LS bool // bit 27 Unused
 	OV bool // bit 26 Unused
@@ -75,5 +78,5 @@ func (t *TIMER) Unpack(r io.Reader) (int, error) {
 }
 
 func (TIMER) TypeAbbr() (string, uint16) {
-	return "TIMER", 0x0F83
+	return "TIMER,DINT,DINT,DINT", 0x0F83
 }

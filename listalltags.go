@@ -42,7 +42,7 @@ func (f TagInfo) Atomic() bool {
 // see page 42 of 1756-PM020H-EN-P
 func (f TagInfo) Template_ID() uint16 {
 	val := binary.LittleEndian.Uint16([]byte{byte(f.Type), f.TypeInfo})
-	template_mask := uint16(0b0000_0111_1111_1111)
+	template_mask := uint16(0b0000_1111_1111_1111) // spec says first 11 bits, but built-in types use 12th.
 	bit12 := uint16(1 << 12)
 	bit15 := uint16(1 << 15)
 	b12_set := val&bit12 != 0
