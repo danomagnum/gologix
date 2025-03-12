@@ -229,6 +229,13 @@ func TestEncodeBuiltinTypes(t *testing.T) {
 	type TimerWrapper struct {
 		TON lgxtypes.TIMER
 	}
+	type TypeWithTimer struct {
+		Field0 int32
+		Flag1  bool
+		Flag2  bool
+		Timer  lgxtypes.TIMER
+		Field1 int32
+	}
 
 	encoding, crc, err := TypeEncode(TimerWrapper{})
 	if err != nil {
@@ -256,6 +263,20 @@ func TestEncodeBuiltinTypes(t *testing.T) {
 	}
 
 	want_crc = uint16(0x0F83)
+	if crc != want_crc {
+		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+	encoding, crc, err = TypeEncode(TypeWithTimer{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+	want = "TypeWithTimer,DINT,SINT,TIMER,DINT,DINT,DINT,DINT"
+	if encoding != want {
+		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", encoding, want)
+	}
+
+	want_crc = uint16(0x9a39)
 	if crc != want_crc {
 		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
 	}
