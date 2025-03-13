@@ -68,6 +68,7 @@ type Client struct {
 	// which can be used to read the tag more efficiently than sending the ascii tag name to the
 	// controller.  If you don't want to use this, set SocketTimeout to 0 and never call ListAllTags
 	KnownTags     map[string]KnownTag
+	KnownTypes    map[string]UDTDescriptor
 	KnownPrograms map[string]*KnownProgram
 
 	// used for optimization.  v20 and before vs v21 and after have different
@@ -128,6 +129,7 @@ func NewClient(ip string) *Client {
 		RPI:                rpiDefault,
 		SocketTimeout:      socketTimeoutDefault,
 		KnownTags:          make(map[string]KnownTag),
+		KnownTypes:         make(map[string]UDTDescriptor),
 		ioi_cache:          make(map[string]*tagIOI),
 		Logger:             slog.Default(),
 	}

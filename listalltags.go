@@ -213,7 +213,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			client.Logger.Debug("found UDT of some sort", "name", kt.Name)
 		}
 
-		if tag_ftr.Template_ID() != 0 && !tag_ftr.PreDefined() {
+		if tag_ftr.Template_ID() != 0 { //&& !tag_ftr.PreDefined() {
 			client.Logger.Debug("Looking up template", "tag name", tag_string)
 			u, err := client.ListMembers(uint32(tag_ftr.Template_ID()))
 			if err != nil {
@@ -227,6 +227,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			} else {
 				kt.UDT = &u
 				client.Logger.Error("Successful member read for %s", "name", kt.Name)
+				client.KnownTypes[u.Name] = u
 			}
 		}
 
