@@ -6,5 +6,5 @@ type STRING struct {
 }
 
 func (STRING) TypeAbbr() (string, uint16) {
-	return "ASCIISTRING82,DINT,SINT[82]", 0x0FCE
+	return "STRING,DINT,SINT[82]", 0x0FCE
 }

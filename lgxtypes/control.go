@@ -93,5 +93,5 @@ func (t *CONTROL) Unpack(r io.Reader) (int, error) {
 }
 
 func (CONTROL) TypeAbbr() (string, uint16) {
-	return "CONTROL", 0x0F81
+	return "CONTROL,DINT,DINT,DINT", 0x0F81
 }

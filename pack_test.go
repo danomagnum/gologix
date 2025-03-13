@@ -229,6 +229,15 @@ func TestEncodeBuiltinTypes(t *testing.T) {
 	type TimerWrapper struct {
 		TON lgxtypes.TIMER
 	}
+	type ControlWrapper struct {
+		Control lgxtypes.CONTROL
+	}
+	type CounterWrapper struct {
+		Counter lgxtypes.COUNTER
+	}
+	type StringWrapper struct {
+		String lgxtypes.STRING
+	}
 	type TypeWithTimer struct {
 		Field0 int32
 		Flag1  bool
@@ -277,6 +286,51 @@ func TestEncodeBuiltinTypes(t *testing.T) {
 	}
 
 	want_crc = uint16(0x9a39)
+	if crc != want_crc {
+		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+
+	encoding, crc, err = TypeEncode(ControlWrapper{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+	want = "ControlWrapper,CONTROL,DINT,DINT,DINT"
+	if encoding != want {
+		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", encoding, want)
+	}
+
+	want_crc = uint16(0x6207)
+	if crc != want_crc {
+		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+
+	encoding, crc, err = TypeEncode(CounterWrapper{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+	want = "CounterWrapper,COUNTER,DINT,DINT,DINT"
+	if encoding != want {
+		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", encoding, want)
+	}
+
+	want_crc = uint16(0x8436)
+	if crc != want_crc {
+		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
+	}
+
+	encoding, crc, err = TypeEncode(StringWrapper{})
+	if err != nil {
+		t.Errorf("problem encoding UDT1. %v", err)
+		return
+	}
+	want = "StringWrapper,STRING,DINT,SINT[82]"
+	if encoding != want {
+		t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", encoding, want)
+	}
+
+	want_crc = uint16(0x45FD)
 	if crc != want_crc {
 		t.Errorf("CRC0 mismatch. Have %x Want %x", crc, want_crc)
 	}
