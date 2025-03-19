@@ -1,6 +1,6 @@
 package gologix
 
-type DeviceType uint8
+type DeviceType uint16
 
 func (v DeviceType) Name() string {
 	if name, ok := cipDeviceTypeNames[v]; ok {
