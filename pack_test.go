@@ -212,7 +212,7 @@ func TestEncodeString(t *testing.T) {
 		return
 	}
 
-	want := "ASCIISTRING82,DINT,SINT[82]"
+	want := "STRING,DINT,SINT[82]"
 	if encoding != want {
 		t.Errorf("encoding mismatch. Got %v want %v", encoding, want)
 	}
