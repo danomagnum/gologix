@@ -22,5 +22,17 @@
       "SerialNumber": 1615551361,
       "ProductName": "1769-L35E/B LOGIX5335E"
     }
+  ],
+  "README_4": "ListServices is used to identify the services on the devices.",
+  "ListServices": [
+    {
+      "Device_Address": "192.168.2.241",
+      "Services": [
+        {
+          "Name": "Communications",
+          "Capabilities": 288
+        }
+      ]
+    }
   ]
 }

@@ -15,6 +15,7 @@ type TestConfig struct {
 		SerialNumber         uint32 `json:"SerialNumber"`
 		ProductName          string `json:"ProductName"`
 	} `json:"PLC_List"`
+
 	ListIdentify []struct {
 		Address              string `json:"Device_Address"`
 		Vendor               uint16 `json:"Vendor"`
@@ -27,6 +28,14 @@ type TestConfig struct {
 		ProductName          string `json:"ProductName"`
 		State                uint8  `json:"State"`
 	} `json:"ListIdentify"`
+
+	ListServices []struct {
+		Address  string `json:"Device_Address"`
+		Services []struct {
+			Name         string `json:"Name"`
+			Capabilities uint16 `json:"Capabilities"`
+		} `json:"Services"`
+	} `json:"ListServices"`
 }
 
 func getTestConfig() TestConfig {
