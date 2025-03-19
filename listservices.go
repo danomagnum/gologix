@@ -30,12 +30,6 @@ func (client *Client) ListServices() ([]CIPListService, error) {
 	return services, nil
 }
 
-type CIPServiceTypeCode uint16
-
-const (
-	CIPServiceTypeCode_ListServices CIPServiceTypeCode = 0x0100
-)
-
 type CIPListService struct {
 	EncapProtocolVersion uint16
 	Capabilities         ServiceCapabilityFlags
