@@ -15,6 +15,18 @@ type TestConfig struct {
 		SerialNumber         uint32 `json:"SerialNumber"`
 		ProductName          string `json:"ProductName"`
 	} `json:"PLC_List"`
+	ListIdentify []struct {
+		Address              string `json:"Device_Address"`
+		Vendor               uint16 `json:"Vendor"`
+		DeviceType           uint16 `json:"DeviceType"`
+		ProductCode          uint16 `json:"ProductCode"`
+		SoftwareVersionMajor uint16 `json:"SoftwareVersionMajor"`
+		SoftwareVersionMinor uint16 `json:"SoftwareVersionMinor"`
+		Status               uint16 `json:"Status"`
+		SerialNumber         uint32 `json:"SerialNumber"`
+		ProductName          string `json:"ProductName"`
+		State                uint8  `json:"State"`
+	} `json:"ListIdentify"`
 }
 
 func getTestConfig() TestConfig {

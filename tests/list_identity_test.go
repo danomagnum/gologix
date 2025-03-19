@@ -9,9 +9,9 @@ import (
 func TestListIdentity(t *testing.T) {
 	// This test is a placeholder for the actual implementation
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
-		t.Run(tc.PlcAddress, func(t *testing.T) {
-			client := gologix.NewClient(tc.PlcAddress)
+	for _, tc := range tcs.ListIdentify {
+		t.Run(tc.Address, func(t *testing.T) {
+			client := gologix.NewClient(tc.Address)
 			err := client.Connect()
 			if err != nil {
 				t.Error(err)
