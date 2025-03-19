@@ -125,6 +125,8 @@ type msgMemberInfoHdr struct {
 	Reserved      byte
 	Status        uint16
 }
+
+// this is the response for a GetAttrList service on a template object with requested attributes of 4,5,2,1
 type msgMemberInfo struct {
 	Info   uint16
 	Type   uint16
@@ -167,6 +169,9 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	reqitems[1].Serialize(p.Bytes())
+
+	// TODO: if the template is larger than the message size (either ~4k for a large forward open
+	// or ~500 bytes for a small forward open) then we need to break this up into multiple messages
 	start_offset := uint32(0)
 	read_length := uint16(template_info.SizeWords*4 - 23)
 	reqitems[1].Serialize(start_offset)
@@ -217,25 +222,26 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	descriptor.Instance_ID = str_instance
 	descriptor.Members = make([]UDTMemberDescriptor, template_info.MemberCount)
 
-	struct_name, err := data2.ReadString(0x3B)
+	struct_name, err := data2.ReadString(0x3B) // struct name is semi-colon terminated
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read struct name. %w", err)
 	}
 	struct_name = struct_name[:len(struct_name)-1]
 	descriptor.Name = struct_name
 
+	// There is a section of unknown data here.  Don't know what it is yet, but it is null terminated.
 	_, err = data2.ReadString(0x00)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read unknown data. %w", err)
 	}
 
 	for i := 0; i < int(template_info.MemberCount); i++ {
-
+		// each field name is null terminated
 		fieldname, err := data2.ReadString(0x00)
 		if err != nil {
 			return UDTDescriptor{}, fmt.Errorf("couldn't read field name. %w", err)
 		}
-		fieldname = fieldname[:len(fieldname)-1]
+		fieldname = fieldname[:len(fieldname)-1] // remove null terminator
 
 		descriptor.Members[i].Name = fieldname
 		descriptor.Members[i].Info = memberInfos[i]
