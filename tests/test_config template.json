@@ -1,6 +1,8 @@
 {
   "README_0": "rename this file to 'test_config.json' and set up the parameters to match your setup.",
-  "README_1": "you can add as many PLCs as you want to the list. The program will cycle through them and test each one against all the tests.",
+  "README_1a": "you can add as many PLCs as you want to the list. The program will cycle through them and test each one against all the tests.",
+  "README_1b": "TagReadWriteTests contains the tests for reading and writing tags.  These should define known PLCs that have the ",
+  "README_1c": "gologix program imported into them.",
   "TagReadWriteTests": [
     {
     "PLC_Address": "192.168.2.241",
@@ -11,8 +13,8 @@
     "ProductName": "1769-L35E/B LOGIX5335E"
     }
   ],
-  "README_2": "The ListIdentify is used to identify the devices on the network.",
-  "Readme_3": "The program will cycle through them and test each one against the list identity tests.",
+  "README_2a": "The GenericCIPTests is used to identify the devices on the network to run a series of CIP tests against..",
+  "README_2b": "The program will cycle through them and test each one.",
   "GenericCIPTests": [
     {
       "Device_Address": "192.168.2.241",
