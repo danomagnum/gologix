@@ -7,16 +7,16 @@ import (
 )
 
 type TestConfig struct {
-	PlcList []struct {
+	TagReadWriteTests []struct {
 		PlcAddress           string `json:"PLC_Address"`
 		ProductCode          uint16 `json:"ProductCode"`
 		SoftwareVersionMajor byte   `json:"SoftwareVersionMajor"`
 		SoftwareVersionMinor byte   `json:"SoftwareVersionMinor"`
 		SerialNumber         uint32 `json:"SerialNumber"`
 		ProductName          string `json:"ProductName"`
-	} `json:"PLC_List"`
+	} `json:"TagReadWriteTests"`
 
-	ListIdentify []struct {
+	GenericCIPTests []struct {
 		Address              string `json:"Device_Address"`
 		Vendor               uint16 `json:"Vendor"`
 		DeviceType           uint16 `json:"DeviceType"`
@@ -27,15 +27,11 @@ type TestConfig struct {
 		SerialNumber         uint32 `json:"SerialNumber"`
 		ProductName          string `json:"ProductName"`
 		State                uint8  `json:"State"`
-	} `json:"ListIdentify"`
-
-	ListServices []struct {
-		Address  string `json:"Device_Address"`
-		Services []struct {
+		Services             []struct {
 			Name         string `json:"Name"`
 			Capabilities uint16 `json:"Capabilities"`
 		} `json:"Services"`
-	} `json:"ListServices"`
+	} `json:"GenericCIPTests"`
 }
 
 func getTestConfig() TestConfig {

@@ -12,7 +12,7 @@ import (
 
 func TestReadArrNew(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -46,7 +46,7 @@ func TestReadArrNew(t *testing.T) {
 
 func TestReadNewUDT(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -75,7 +75,7 @@ func TestReadNewUDT(t *testing.T) {
 }
 func TestReadNewUDTArr(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -116,7 +116,7 @@ func TestReadNewUDTArr(t *testing.T) {
 
 func TestReadBoolPack(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -160,7 +160,7 @@ func TestReadBoolPack(t *testing.T) {
 
 func TestReadNew(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -259,7 +259,7 @@ func TestReadMulti(t *testing.T) {
 	}
 
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -290,7 +290,7 @@ func TestReadMulti(t *testing.T) {
 func TestReadTimeout(t *testing.T) {
 	t.Skip("requires timeout that is too long")
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 
 			client := gologix.NewClient(tc.PlcAddress)
@@ -327,7 +327,7 @@ func TestReadTimeout(t *testing.T) {
 // so we check around that value for magic numbers in the array.
 func TestReadTooManyTags(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
@@ -398,7 +398,7 @@ func TestReadTooManyTags(t *testing.T) {
 
 func TestReadParallel(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()

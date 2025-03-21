@@ -9,7 +9,7 @@ import (
 func TestListIdentity(t *testing.T) {
 	// This test is a placeholder for the actual implementation
 	tcs := getTestConfig()
-	for _, tc := range tcs.ListIdentify {
+	for _, tc := range tcs.GenericCIPTests {
 		t.Run(tc.Address, func(t *testing.T) {
 			client := gologix.NewClient(tc.Address)
 			err := client.Connect()

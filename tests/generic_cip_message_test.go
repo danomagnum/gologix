@@ -12,7 +12,7 @@ import (
 // the time object's usec since the unix epoch.
 func TestGenericCIPMessage1(t *testing.T) {
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()

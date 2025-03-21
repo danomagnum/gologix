@@ -9,7 +9,7 @@ import (
 func TestSubList(t *testing.T) {
 
 	tcs := getTestConfig()
-	for _, tc := range tcs.PlcList {
+	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
 			client := gologix.NewClient(tc.PlcAddress)
 			err := client.Connect()
