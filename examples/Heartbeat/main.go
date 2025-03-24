@@ -7,7 +7,9 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for monitoring a heartbeat tag named "TestHeartBeat" in the controller.
+// This example demonstrates how to detect when a value stops changing, which can be used
+// to determine if a remote process is still running.
 func main() {
 	var err error
 

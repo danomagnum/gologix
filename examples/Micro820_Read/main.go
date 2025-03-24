@@ -7,7 +7,12 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for reading various tag types from a Micro820 controller.
+// This example shows how to read:
+// - An array of integers from "inputs" tag
+// - A boolean value from "MyVar1" tag
+// - An integer value from "MyVar2" tag
+// - And demonstrates that multi-reads are not supported on Micro8x0 series
 func main() {
 	var err error
 

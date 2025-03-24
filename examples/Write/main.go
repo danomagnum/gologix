@@ -6,7 +6,7 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for writing an INT value to a tag named "WriteUDTs[5].Field1" in the controller.
 func main() {
 	var err error
 

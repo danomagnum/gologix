@@ -6,11 +6,16 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for listing all tags in a controller and reading their values.
+// This example shows how to:
+// - Connect to an Allen Bradley PLC
+// - List all available tags in the controller
+// - Read specific tags by name
+// - Read all tags in a loop
 func main() {
 	var err error
 
-	// setup the client.  If you need a different path you'll have to set that.
+	// setup the client with the PLC's IP address
 	client := gologix.NewClient("192.168.2.241")
 
 	// for example, to have a controller on slot 1 instead of 0 you could do this
@@ -25,7 +30,7 @@ func main() {
 		log.Printf("Error opening client. %v", err)
 		return
 	}
-	// setup a deffered disconnect.
+	// setup a deferred disconnect.
 	defer client.Disconnect()
 
 	// update the client's list of tags.
@@ -35,6 +40,7 @@ func main() {
 		return
 	}
 
+	// Reading specific tags as examples
 	var y int32
 	err = client.Read("Program:gologix_tests.ReadDint", &y)
 	if err != nil {
@@ -49,12 +55,12 @@ func main() {
 	}
 
 	log.Printf("Found %d tags.", len(client.KnownTags))
-	// list through the tag list and read them all
+	// loop through the tag list and read all tags
 	for tagname := range client.KnownTags {
 		tag := client.KnownTags[tagname]
 		log.Printf("%s: %v", tag.Name, tag.Info.Type)
 
-		// TODO: in theory we should do more to read multi-dim arrays.
+		// Handle array tags by accessing first element
 		qty := uint16(1)
 		if tag.Info.Dimension1 != 0 {
 			tagname = tagname + "[0]"
@@ -70,6 +76,7 @@ func main() {
 			log.Printf("%s size = %d", tag.Name, tag.UDT.Size())
 		}
 
+		// Read and display the value of each tag
 		val, err := client.Read_single(tagname, tag.Info.Type, qty)
 		if err != nil {
 			log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
@@ -79,5 +86,4 @@ func main() {
 	}
 
 	log.Printf("Found %d tags.", len(client.KnownTags))
-
 }

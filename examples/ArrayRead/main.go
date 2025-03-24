@@ -6,7 +6,7 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller.
+// Demo program for reading elements from a DINT array named "TestDintArr" in the controller.
 func main() {
 	var err error
 
@@ -29,17 +29,18 @@ func main() {
 	// if that happens (about a minute)
 	defer client.Disconnect()
 
-	// define a variable with a type that matches the tag you want to read.  In this case it is a DINT array so
-	// an int32 slice of length 5 to read 5 items.
+	// define a variable with a type that matches the tag you want to read.
+	// In this case we're creating an int32 slice of length 5 to hold 5 elements from the DINT array.
 	tag1 := make([]int32, 5)
 
 	// call the read function.
+	// This reads 5 elements from TestDintArr starting at index 2.
 	// note that tag names are case insensitive.
 	// also note that for atomic types and structs you need to use a pointer.
 	// for slices you don't use a pointer.
 	err = client.Read("TestDintArr[2]", tag1)
 	if err != nil {
-		log.Printf("error reading testint. %v", err)
+		log.Printf("error reading TestDintArr. %v", err)
 	}
 	// do whatever you want with the value
 	log.Printf("tag1 has value %d", tag1)
