@@ -131,9 +131,15 @@ const (
 	_                                 CIPService = 0x1E // CIP Reserved
 	_                                 CIPService = 0x1F
 	_                                 CIPService = 0x31 // CIP Reserved
-	// cip object services -- do these change per CIP object?
+	CIPService_ScatteredRead          CIPService = 0x32
+	CIPService_ScatteredWrite         CIPService = 0x34
+
+	// cip object services -- these change per CIP object
 	CIPService_GetInstanceList          CIPService = 0x4B
+	CIPService_GetEnumString            CIPService = 0x4B
+	CIPService_ExecutePCCC              CIPService = 0x4B
 	CIPService_Read                     CIPService = 0x4C // in OpENer this is called "Eth Link Get And Clear" for some reason
+	CIPService_ExecuteDHPlus            CIPService = 0x4C
 	CIPService_Write                    CIPService = 0x4D
 	CIPService_ForwardClose             CIPService = 0x4E
 	cipService_ReadModWrite             CIPService = 0x4E

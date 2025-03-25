@@ -330,6 +330,9 @@ const (
 	CipObject_ControllerInfo               CIPClass = 0xAC // don't know the official name
 	CipObject_RunMode                      CIPClass = 0x8E
 	CipObject_Messages                     CIPClass = 0x8D
+	CipObject_DPIDevice                    CIPClass = 0x92
+	CipObject_DPIParams                    CIPClass = 0x93
+	CipObject_DPIFault                     CIPClass = 0x97
 )
 
 // from https://rockwellautomation.custhelp.com/ci/okcsFattach/get/114390_5
