@@ -3,7 +3,6 @@ package gologix
 import (
 	"bytes"
 	"log"
-	"log/slog"
 	"math/rand"
 	"net"
 	"sync"
@@ -95,7 +94,7 @@ type Client struct {
 	ioi_cache_lock sync.Mutex
 
 	// Replace this to capture logs
-	Logger        *slog.Logger
+	Logger        LoggerInterface
 	logger_ip_set bool
 }
 
@@ -131,7 +130,7 @@ func NewClient(ip string) *Client {
 		KnownTags:          make(map[string]KnownTag),
 		KnownTypes:         make(map[string]UDTDescriptor),
 		ioi_cache:          make(map[string]*tagIOI),
-		Logger:             slog.Default(),
+		Logger:             NewLogger(),
 	}
 
 }
