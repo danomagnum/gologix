@@ -226,7 +226,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 				//return err
 			} else {
 				kt.UDT = &u
-				client.Logger.Error("Successful member read for %s", "name", kt.Name)
+				client.Logger.Debug("Successful member read for %s", "name", kt.Name)
 				client.KnownTypes[u.Name] = u
 			}
 		}
