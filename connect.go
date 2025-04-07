@@ -35,7 +35,9 @@ func (client *Client) Connect() error {
 	defer func() { client.connecting = false }()
 	if client.Logger != nil {
 		if !client.logger_ip_set {
-			client.Logger = client.Logger.With(slog.String("controllerIp", client.Controller.IpAddress))
+			if cl, ok := client.Logger.(LoggerInterfaceWith); ok && cl != nil {
+				client.Logger = cl.With(slog.String("controllerIp", client.Controller.IpAddress))
+			}
 			client.logger_ip_set = true
 		}
 	}
