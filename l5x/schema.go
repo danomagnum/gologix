@@ -152,6 +152,11 @@ type DescriptionType struct {
 	UseAttr              string                          `xml:"Use,attr,omitempty"`
 	CustomProperties     *CustomPropertiesCollectionType `xml:"CustomProperties"`
 	LocalizedDescription []*DescriptionTextType          `xml:"LocalizedDescription"`
+	InnerValue           []byte                          `xml:",innerxml"`
+}
+
+func (d DescriptionType) CData() string {
+	return ParseCData(d.InnerValue)
 }
 
 // DescriptionTextType ...
@@ -1096,6 +1101,15 @@ type TagType struct {
 	Navigations        []*NavigationCollectionType             `xml:"Navigations"`
 	Data               []*DataWideType                         `xml:"Data"`
 	ForceData          []*ForceDataWideType                    `xml:"ForceData"`
+}
+
+func (t *TagType) Descriptions() string {
+	comment := ""
+	for d := range t.Description {
+		comment = comment + t.Description[d].CData()
+	}
+
+	return comment
 }
 
 // CommentCollectionType ...
@@ -3846,6 +3860,11 @@ type CommentWideType struct {
 	DecoratedDataElements []*DecoratedDataElements
 	Value                 []string                  `xml:"Value"`
 	LocalizedComment      []*CommentAdaptorTextType `xml:"LocalizedComment"`
+	InnerValue            []byte                    `xml:",innerxml"`
+}
+
+func (d CommentWideType) CData() string {
+	return ParseCData(d.InnerValue)
 }
 
 // LocalizedCommentWideType ...

@@ -95,3 +95,60 @@ func LoadTags(l5xData RSLogix5000Content) (map[string]any, error) {
 	return tags, nil
 
 }
+
+func LoadTagComments(l5xData RSLogix5000Content) (map[string]any, error) {
+
+	var err error
+	tags := make(map[string]any)
+
+	for _, tag := range l5xData.Controller.Tags.Tag {
+		if tag.Data != nil {
+			if len(tag.Description) > 0 {
+				tags[tag.NameAttr] = tag.Description[0].CData()
+			}
+		}
+	}
+
+	for _, program := range l5xData.Controller.Programs.Program {
+		progprefix := fmt.Sprintf("program:%s", program.NameAttr)
+		progtags := make(map[string]any)
+		for _, tag := range program.Tags.Tag {
+			tagname := tag.NameAttr
+			if len(tag.Description) > 1 {
+				comment := ""
+				for d := range tag.Description {
+					comment = comment + tag.Description[d].CData()
+				}
+				progtags[tagname] = comment
+				if err != nil {
+					return nil, fmt.Errorf("error converting %s.%s: %s", progprefix, tagname, err)
+				}
+				continue
+			}
+		}
+	}
+	return tags, nil
+
+}
+
+func LoadRungComments(l5xData RSLogix5000Content) (map[string]string, error) {
+	comments := make(map[string]string)
+
+	for _, program := range l5xData.Controller.Programs.Program {
+		for _, routine := range program.Routines.Routine {
+			for _, rungContent := range routine.RLLContent {
+				for _, rung := range rungContent.Rung {
+					for _, comment := range rung.Comment {
+						c := comment.CData()
+						if c == "" {
+							continue
+						}
+						location := fmt.Sprintf("program:%s.rung:%s", program.NameAttr, rung.NumberAttr)
+						comments[location] = c
+					}
+				}
+			}
+		}
+	}
+	return comments, nil
+}

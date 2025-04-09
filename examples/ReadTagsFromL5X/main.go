@@ -32,10 +32,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	result, err := l5x.LoadTags(l5xData)
+	tags, err := l5x.LoadTags(l5xData)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Print(result)
+	for k, v := range tags {
+		log.Printf("%s: %v\n", k, v)
+	}
+
+	tagComments, err := l5x.LoadTagComments(l5xData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for k, v := range tagComments {
+		log.Printf("%s: %v\n", k, v)
+	}
+
+	rungComments, err := l5x.LoadRungComments(l5xData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for k, v := range rungComments {
+		log.Printf("%s: %v\n", k, v)
+	}
 
 }
