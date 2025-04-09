@@ -101,6 +101,51 @@ func LoadTagComments(l5xData RSLogix5000Content) (map[string]any, error) {
 	var err error
 	tags := make(map[string]any)
 
+	for _, module := range l5xData.Controller.Modules.Module {
+		if module.Communications == nil {
+			continue
+		}
+		if module.Communications.Connections == nil {
+			continue
+		}
+		if module.Communications.Connections.Connection == nil {
+			continue
+		}
+		for _, connection := range module.Communications.Connections.Connection {
+			in := connection.InputTag
+			if in != nil {
+				if in.Comments != nil {
+					for _, commentGroup := range in.Comments {
+						for _, comment := range commentGroup.Comment {
+							name := fmt.Sprintf("%s:I%s", module.NameAttr, comment.OperandAttr)
+							c := comment.CData()
+							if c == "" {
+								continue
+							}
+							tags[name] = c
+						}
+					}
+				}
+			}
+			out := connection.OutputTag
+			if out != nil {
+				if out.Comments != nil {
+					for _, commentGroup := range out.Comments {
+						for _, comment := range commentGroup.Comment {
+							name := fmt.Sprintf("%s:O%s", module.NameAttr, comment.OperandAttr)
+							c := comment.CData()
+							if c == "" {
+								continue
+							}
+							tags[name] = c
+						}
+					}
+				}
+			}
+
+		}
+	}
+
 	for _, tag := range l5xData.Controller.Tags.Tag {
 		if tag.Data != nil {
 			if len(tag.Description) > 0 {

@@ -18,6 +18,8 @@ import (
 func main() {
 	var l5xData l5x.RSLogix5000Content
 
+	log.SetOutput(os.Stdout)
+
 	f, err := os.Open("gologix_tests_Program.L5X")
 	if err != nil {
 		log.Fatal(err)
