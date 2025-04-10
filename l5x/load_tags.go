@@ -179,6 +179,17 @@ func LoadTagComments(l5xData RSLogix5000Content) (map[string]any, error) {
 func LoadRungComments(l5xData RSLogix5000Content) (map[string]string, error) {
 	comments := make(map[string]string)
 
+	taskLookup := make(map[string]string)
+	tasks := l5xData.Controller.Tasks.Task
+	for _, task := range tasks {
+		if task.ScheduledPrograms == nil {
+			continue
+		}
+		for _, program := range task.ScheduledPrograms.ScheduledProgram {
+			taskLookup[program.NameAttr] = task.NameAttr
+		}
+	}
+
 	for _, program := range l5xData.Controller.Programs.Program {
 		for _, routine := range program.Routines.Routine {
 			for _, rungContent := range routine.RLLContent {
@@ -188,7 +199,8 @@ func LoadRungComments(l5xData RSLogix5000Content) (map[string]string, error) {
 						if c == "" {
 							continue
 						}
-						location := fmt.Sprintf("program:%s.rung:%s", program.NameAttr, rung.NumberAttr)
+						task := taskLookup[program.NameAttr]
+						location := fmt.Sprintf("%s/%s/%s[%s]", task, program.NameAttr, routine.NameAttr, rung.NumberAttr)
 						comments[location] = c
 					}
 				}
