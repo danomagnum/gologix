@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"slices"
 	"time"
 )
 
@@ -185,12 +186,12 @@ func (client *Client) KeepAlive() {
 				client.Disconnect()
 				return
 			}
-			if newProps != originalProps {
+			if !slices.Equal(newProps.Rest(), originalProps.Rest()) {
 				if client.KeepAlivePollTags {
 					client.Logger.Debug(
 						"controller change detected. re-analyzing types",
-						slog.Any("originalProps", originalProps),
-						slog.Any("newProps", newProps),
+						slog.Any("originalProps", originalProps.Rest()),
+						slog.Any("newProps", newProps.Rest()),
 					)
 					err := client.ListAllTags(0)
 					if err != nil {
@@ -200,8 +201,8 @@ func (client *Client) KeepAlive() {
 				} else {
 					client.Logger.Debug(
 						"controller change detected.",
-						slog.Any("originalProps", originalProps),
-						slog.Any("newProps", newProps),
+						slog.Any("originalProps", originalProps.Rest()),
+						slog.Any("newProps", newProps.Rest()),
 					)
 				}
 				originalProps = newProps
