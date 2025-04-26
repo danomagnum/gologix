@@ -187,7 +187,7 @@ func (client *Client) KeepAlive() {
 			}
 			if newProps != originalProps {
 				if client.KeepAlivePollTags {
-					client.Logger.Info(
+					client.Logger.Debug(
 						"controller change detected. re-analyzing types",
 						slog.Any("originalProps", originalProps),
 						slog.Any("newProps", newProps),
@@ -198,7 +198,7 @@ func (client *Client) KeepAlive() {
 						return
 					}
 				} else {
-					client.Logger.Info(
+					client.Logger.Debug(
 						"controller change detected.",
 						slog.Any("originalProps", originalProps),
 						slog.Any("newProps", newProps),
