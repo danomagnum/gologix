@@ -534,3 +534,60 @@ func TestReadBoolArray32(t *testing.T) {
 		})
 	}
 }
+
+func TestReadStringArray(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			// Check if the connection size is sufficient for the test.  Right now the library
+			// doesn't identify when a single array read is larger than the connection size.
+			if client.ConnectionSize < (82+10)*10 {
+				t.Skip("Skipping test for small connection size")
+				return
+			}
+
+			tag := "Program:gologix_tests.readstrings"
+			have := make([]string, 10)
+			want := []string{
+				"a",
+				"b",
+				"cd",
+				"efg",
+				"hijk",
+				"lmnop",
+				"qrstuvw",
+				"xyz123",
+				"0123456789",
+				"9876543210",
+			}
+
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("error reading array: %v", err)
+			}
+
+			if len(have) != len(want) {
+				t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
+			}
+
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i+1, want[i], have[i])
+				}
+			}
+		})
+	}
+}
