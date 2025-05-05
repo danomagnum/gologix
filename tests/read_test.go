@@ -442,3 +442,95 @@ func TestReadParallel(t *testing.T) {
 		})
 	}
 }
+
+func TestReadBoolArray64(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			tag := "Program:gologix_tests.boolarray64"
+			have := make([]bool, 64)
+			want := []bool{
+				true, false, false, false, false, false, false, false,
+				true, true, false, false, false, false, false, false,
+				true, true, true, false, false, false, false, false,
+				true, true, true, true, false, false, false, false,
+				true, true, true, true, true, false, false, false,
+				true, true, true, true, true, true, false, false,
+				true, true, true, true, true, true, true, false,
+				true, true, true, true, true, true, true, true,
+			}
+
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("error reading array: %v", err)
+			}
+
+			if len(have) != len(want) {
+				t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
+			}
+
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i+1, want[i], have[i])
+				}
+			}
+		})
+	}
+}
+
+func TestReadBoolArray32(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			tag := "Program:gologix_tests.boolarray"
+			have := make([]bool, 32)
+			want := []bool{
+				true, false, false, false, false, false, false, false,
+				true, true, false, false, false, false, false, false,
+				true, true, true, false, false, false, false, false,
+				true, true, true, true, false, false, false, false,
+			}
+
+			err = client.Read(tag, have)
+			if err != nil {
+				t.Errorf("error reading array: %v", err)
+			}
+
+			if len(have) != len(want) {
+				t.Errorf("didn't get the right number of elements. got %v wanted %v", len(have), len(want))
+			}
+
+			for i := range want {
+				if have[i] != want[i] {
+					t.Errorf("index %d wanted %v got %v", i+1, want[i], have[i])
+				}
+			}
+		})
+	}
+}
