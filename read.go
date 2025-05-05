@@ -266,6 +266,20 @@ func (client *Client) Read(tag string, data any) error {
 			data[i] = v[i]
 		}
 		return nil
+	case []string:
+		elements := len(data)
+		v, err := readArray[string](client, tag, uint16(elements))
+		if err != nil {
+			return err
+		}
+		if len(v) != elements {
+			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
+		}
+		for i := range data {
+			data[i] = v[i]
+		}
+		return nil
+
 	case []interface{}:
 		// a pointer to a struct.
 		val, err := client.Read_single(tag, CIPTypeStruct, 1)
@@ -392,17 +406,35 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 
 	if hdr2.Type == CIPTypeStruct {
 		if datatype == CIPTypeSTRING {
-			str_hdr := cipStringHeader{}
-			err = items[1].DeSerialize(&str_hdr)
-			if err != nil {
-				return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+			if elements == 1 {
+				str_hdr := cipStringHeader{}
+				err = items[1].DeSerialize(&str_hdr)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+				}
+				str := make([]byte, str_hdr.Length)
+				err = items[1].DeSerialize(&str)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+				}
+				return str, nil
 			}
-			str := make([]byte, str_hdr.Length)
-			err = items[1].DeSerialize(&str)
-			if err != nil {
-				return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+			response := make([]any, elements)
+
+			for i := 0; i < int(elements); i++ {
+				str_hdr := cipStringHeader{}
+				err = items[1].DeSerialize(&str_hdr)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+				}
+				str := make([]byte, 82)
+				err = items[1].DeSerialize(&str)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+				}
+				response[i] = str[:str_hdr.Length]
 			}
-			return str, nil
+			return response, nil
 		}
 		str_hdr := cipStructHeader{}
 		err = items[1].DeSerialize(&str_hdr)
@@ -474,6 +506,7 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 			if !ok {
 				return t, errors.New("couldn't convert to string")
 			}
+			continue
 		}
 		cast2, ok := v.(T)
 		if !ok {

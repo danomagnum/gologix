@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Tue Dec 10 21:31:25 2024" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Sun May 04 22:41:26 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
 <DataType Name="NestedUDT" Family="NoFamily" Class="User">
@@ -177,9 +177,126 @@
 <Programs Use="Context">
 <Program Use="Target" Name="gologix_tests" TestEdits="false" MainRoutineName="Main" Disabled="false" UseAsFolder="false">
 <Tags>
+<Tag Name="BoolArray" TagType="Base" DataType="BOOL" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1
+		,2#1,2#0,2#0,2#0,2#0]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="BOOL" Dimensions="32" Radix="Decimal">
+<Element Index="[0]" Value="1"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+<Element Index="[3]" Value="0"/>
+<Element Index="[4]" Value="0"/>
+<Element Index="[5]" Value="0"/>
+<Element Index="[6]" Value="0"/>
+<Element Index="[7]" Value="0"/>
+<Element Index="[8]" Value="1"/>
+<Element Index="[9]" Value="1"/>
+<Element Index="[10]" Value="0"/>
+<Element Index="[11]" Value="0"/>
+<Element Index="[12]" Value="0"/>
+<Element Index="[13]" Value="0"/>
+<Element Index="[14]" Value="0"/>
+<Element Index="[15]" Value="0"/>
+<Element Index="[16]" Value="1"/>
+<Element Index="[17]" Value="1"/>
+<Element Index="[18]" Value="1"/>
+<Element Index="[19]" Value="0"/>
+<Element Index="[20]" Value="0"/>
+<Element Index="[21]" Value="0"/>
+<Element Index="[22]" Value="0"/>
+<Element Index="[23]" Value="0"/>
+<Element Index="[24]" Value="1"/>
+<Element Index="[25]" Value="1"/>
+<Element Index="[26]" Value="1"/>
+<Element Index="[27]" Value="1"/>
+<Element Index="[28]" Value="0"/>
+<Element Index="[29]" Value="0"/>
+<Element Index="[30]" Value="0"/>
+<Element Index="[31]" Value="0"/>
+</Array>
+</Data>
+</Tag>
+<Tag Name="BoolArray64" TagType="Base" DataType="BOOL" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1
+		,2#1,2#0,2#0,2#0,2#0,2#1,2#1,2#1,2#1,2#1,2#0,2#0,2#0,2#1,2#1,2#1,2#1,2#1,2#1,2#0,2#0,2#1,2#1,2#1,2#1,2#1,2#1
+		,2#1,2#0,2#1,2#1,2#1,2#1,2#1,2#1,2#1,2#1]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="BOOL" Dimensions="64" Radix="Decimal">
+<Element Index="[0]" Value="1"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+<Element Index="[3]" Value="0"/>
+<Element Index="[4]" Value="0"/>
+<Element Index="[5]" Value="0"/>
+<Element Index="[6]" Value="0"/>
+<Element Index="[7]" Value="0"/>
+<Element Index="[8]" Value="1"/>
+<Element Index="[9]" Value="1"/>
+<Element Index="[10]" Value="0"/>
+<Element Index="[11]" Value="0"/>
+<Element Index="[12]" Value="0"/>
+<Element Index="[13]" Value="0"/>
+<Element Index="[14]" Value="0"/>
+<Element Index="[15]" Value="0"/>
+<Element Index="[16]" Value="1"/>
+<Element Index="[17]" Value="1"/>
+<Element Index="[18]" Value="1"/>
+<Element Index="[19]" Value="0"/>
+<Element Index="[20]" Value="0"/>
+<Element Index="[21]" Value="0"/>
+<Element Index="[22]" Value="0"/>
+<Element Index="[23]" Value="0"/>
+<Element Index="[24]" Value="1"/>
+<Element Index="[25]" Value="1"/>
+<Element Index="[26]" Value="1"/>
+<Element Index="[27]" Value="1"/>
+<Element Index="[28]" Value="0"/>
+<Element Index="[29]" Value="0"/>
+<Element Index="[30]" Value="0"/>
+<Element Index="[31]" Value="0"/>
+<Element Index="[32]" Value="1"/>
+<Element Index="[33]" Value="1"/>
+<Element Index="[34]" Value="1"/>
+<Element Index="[35]" Value="1"/>
+<Element Index="[36]" Value="1"/>
+<Element Index="[37]" Value="0"/>
+<Element Index="[38]" Value="0"/>
+<Element Index="[39]" Value="0"/>
+<Element Index="[40]" Value="1"/>
+<Element Index="[41]" Value="1"/>
+<Element Index="[42]" Value="1"/>
+<Element Index="[43]" Value="1"/>
+<Element Index="[44]" Value="1"/>
+<Element Index="[45]" Value="1"/>
+<Element Index="[46]" Value="0"/>
+<Element Index="[47]" Value="0"/>
+<Element Index="[48]" Value="1"/>
+<Element Index="[49]" Value="1"/>
+<Element Index="[50]" Value="1"/>
+<Element Index="[51]" Value="1"/>
+<Element Index="[52]" Value="1"/>
+<Element Index="[53]" Value="1"/>
+<Element Index="[54]" Value="1"/>
+<Element Index="[55]" Value="0"/>
+<Element Index="[56]" Value="1"/>
+<Element Index="[57]" Value="1"/>
+<Element Index="[58]" Value="1"/>
+<Element Index="[59]" Value="1"/>
+<Element Index="[60]" Value="1"/>
+<Element Index="[61]" Value="1"/>
+<Element Index="[62]" Value="1"/>
+<Element Index="[63]" Value="1"/>
+</Array>
+</Data>
+</Tag>
 <Tag Name="CounterBytes" TagType="Base" DataType="SINT" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,0,0,0,0,10,0,0,-128,12,0,0,-128,-92,114,57,-15,44,24,0,0]]]>
+<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,0,0,0,0,10,0,0,-128,12,0,0,-128,-92,114,57,-15,-4,28,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="32" Radix="Decimal">
@@ -211,8 +328,8 @@
 <Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="44"/>
-<Element Index="[29]" Value="24"/>
+<Element Index="[28]" Value="-4"/>
+<Element Index="[29]" Value="28"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 </Array>
@@ -505,97 +622,97 @@
 </Tag>
 <Tag Name="ReadStrings" TagType="Base" DataType="STRING" Dimensions="10" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
-		],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+<![CDATA[[[1,'a$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[1,'b$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[2,'cd$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'efg$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[4,'hijk$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[5,'lmnop$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[7,'qrstuvw$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[6,'xyz123$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[10,'0123456789$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[10,'9876543210$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
 		]]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="STRING" Dimensions="10">
 <Element Index="[0]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="1"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['a']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[1]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="1"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['b']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[2]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="2"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['cd']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[3]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['efg']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[4]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['hijk']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[5]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['lmnop']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[6]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="7"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['qrstuvw']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[7]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="6"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['xyz123']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[8]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="10"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['0123456789']]>
 </DataValueMember>
 </Structure>
 </Element>
 <Element Index="[9]">
 <Structure DataType="STRING">
-<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="10"/>
 <DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
-<![CDATA[]]>
+<![CDATA['9876543210']]>
 </DataValueMember>
 </Structure>
 </Element>
@@ -1230,7 +1347,7 @@
 </Tag>
 <Tag Name="TestTimer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[3765093,2345,0]]]>
+<![CDATA[[1703634,2345,0]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -1280,14 +1397,14 @@
 </Tag>
 <Tag Name="TimerBytes" TagType="Base" DataType="SINT" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[101,115,57,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-28,24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		,0,0,0,0,0,0]]]>
+<![CDATA[[-46,-2,25,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-76,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		,0,0,0,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="64" Radix="Decimal">
-<Element Index="[0]" Value="101"/>
-<Element Index="[1]" Value="115"/>
-<Element Index="[2]" Value="57"/>
+<Element Index="[0]" Value="-46"/>
+<Element Index="[1]" Value="-2"/>
+<Element Index="[2]" Value="25"/>
 <Element Index="[3]" Value="0"/>
 <Element Index="[4]" Value="41"/>
 <Element Index="[5]" Value="9"/>
@@ -1313,8 +1430,8 @@
 <Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="-28"/>
-<Element Index="[29]" Value="24"/>
+<Element Index="[28]" Value="-76"/>
+<Element Index="[29]" Value="29"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 <Element Index="[32]" Value="0"/>
@@ -1888,6 +2005,339 @@
 </Line>
 <Line Number="49">
 <![CDATA[LongDints[99] := 232058;]]>
+</Line>
+<Line Number="50">
+<![CDATA[]]>
+</Line>
+<Line Number="51">
+<![CDATA[]]>
+</Line>
+<Line Number="52">
+<![CDATA[// Set up bool array]]>
+</Line>
+<Line Number="53">
+<![CDATA[BoolArray[0] := 1;]]>
+</Line>
+<Line Number="54">
+<![CDATA[BoolArray[1] := 0;]]>
+</Line>
+<Line Number="55">
+<![CDATA[BoolArray[2] := 0;]]>
+</Line>
+<Line Number="56">
+<![CDATA[BoolArray[3] := 0;]]>
+</Line>
+<Line Number="57">
+<![CDATA[BoolArray[4] := 0;]]>
+</Line>
+<Line Number="58">
+<![CDATA[BoolArray[5] := 0;]]>
+</Line>
+<Line Number="59">
+<![CDATA[BoolArray[6] := 0;]]>
+</Line>
+<Line Number="60">
+<![CDATA[BoolArray[7] := 0;]]>
+</Line>
+<Line Number="61">
+<![CDATA[]]>
+</Line>
+<Line Number="62">
+<![CDATA[BoolArray[8] := 1;]]>
+</Line>
+<Line Number="63">
+<![CDATA[BoolArray[9] := 1;]]>
+</Line>
+<Line Number="64">
+<![CDATA[BoolArray[10] := 0;]]>
+</Line>
+<Line Number="65">
+<![CDATA[BoolArray[11] := 0;]]>
+</Line>
+<Line Number="66">
+<![CDATA[BoolArray[12] := 0;]]>
+</Line>
+<Line Number="67">
+<![CDATA[BoolArray[13] := 0;]]>
+</Line>
+<Line Number="68">
+<![CDATA[BoolArray[14] := 0;]]>
+</Line>
+<Line Number="69">
+<![CDATA[BoolArray[15] := 0;]]>
+</Line>
+<Line Number="70">
+<![CDATA[]]>
+</Line>
+<Line Number="71">
+<![CDATA[BoolArray[16] := 1;]]>
+</Line>
+<Line Number="72">
+<![CDATA[BoolArray[17] := 1;]]>
+</Line>
+<Line Number="73">
+<![CDATA[BoolArray[18] := 1;]]>
+</Line>
+<Line Number="74">
+<![CDATA[BoolArray[19] := 0;]]>
+</Line>
+<Line Number="75">
+<![CDATA[BoolArray[20] := 0;]]>
+</Line>
+<Line Number="76">
+<![CDATA[BoolArray[21] := 0;]]>
+</Line>
+<Line Number="77">
+<![CDATA[BoolArray[22] := 0;]]>
+</Line>
+<Line Number="78">
+<![CDATA[BoolArray[23] := 0;]]>
+</Line>
+<Line Number="79">
+<![CDATA[]]>
+</Line>
+<Line Number="80">
+<![CDATA[BoolArray[24] := 1;]]>
+</Line>
+<Line Number="81">
+<![CDATA[BoolArray[25] := 1;]]>
+</Line>
+<Line Number="82">
+<![CDATA[BoolArray[26] := 1;]]>
+</Line>
+<Line Number="83">
+<![CDATA[BoolArray[27] := 1;]]>
+</Line>
+<Line Number="84">
+<![CDATA[BoolArray[28] := 0;]]>
+</Line>
+<Line Number="85">
+<![CDATA[BoolArray[29] := 0;]]>
+</Line>
+<Line Number="86">
+<![CDATA[BoolArray[30] := 0;]]>
+</Line>
+<Line Number="87">
+<![CDATA[BoolArray[31] := 0;]]>
+</Line>
+<Line Number="88">
+<![CDATA[]]>
+</Line>
+<Line Number="89">
+<![CDATA[// Set up double bool array]]>
+</Line>
+<Line Number="90">
+<![CDATA[BoolArray64[0] := 1;]]>
+</Line>
+<Line Number="91">
+<![CDATA[BoolArray64[1] := 0;]]>
+</Line>
+<Line Number="92">
+<![CDATA[BoolArray64[2] := 0;]]>
+</Line>
+<Line Number="93">
+<![CDATA[BoolArray64[3] := 0;]]>
+</Line>
+<Line Number="94">
+<![CDATA[BoolArray64[4] := 0;]]>
+</Line>
+<Line Number="95">
+<![CDATA[BoolArray64[5] := 0;]]>
+</Line>
+<Line Number="96">
+<![CDATA[BoolArray64[6] := 0;]]>
+</Line>
+<Line Number="97">
+<![CDATA[BoolArray64[7] := 0;]]>
+</Line>
+<Line Number="98">
+<![CDATA[]]>
+</Line>
+<Line Number="99">
+<![CDATA[BoolArray64[8] := 1;]]>
+</Line>
+<Line Number="100">
+<![CDATA[BoolArray64[9] := 1;]]>
+</Line>
+<Line Number="101">
+<![CDATA[BoolArray64[10] := 0;]]>
+</Line>
+<Line Number="102">
+<![CDATA[BoolArray64[11] := 0;]]>
+</Line>
+<Line Number="103">
+<![CDATA[BoolArray64[12] := 0;]]>
+</Line>
+<Line Number="104">
+<![CDATA[BoolArray64[13] := 0;]]>
+</Line>
+<Line Number="105">
+<![CDATA[BoolArray64[14] := 0;]]>
+</Line>
+<Line Number="106">
+<![CDATA[BoolArray64[15] := 0;]]>
+</Line>
+<Line Number="107">
+<![CDATA[]]>
+</Line>
+<Line Number="108">
+<![CDATA[BoolArray64[16] := 1;]]>
+</Line>
+<Line Number="109">
+<![CDATA[BoolArray64[17] := 1;]]>
+</Line>
+<Line Number="110">
+<![CDATA[BoolArray64[18] := 1;]]>
+</Line>
+<Line Number="111">
+<![CDATA[BoolArray64[19] := 0;]]>
+</Line>
+<Line Number="112">
+<![CDATA[BoolArray64[20] := 0;]]>
+</Line>
+<Line Number="113">
+<![CDATA[BoolArray64[21] := 0;]]>
+</Line>
+<Line Number="114">
+<![CDATA[BoolArray64[22] := 0;]]>
+</Line>
+<Line Number="115">
+<![CDATA[BoolArray64[23] := 0;]]>
+</Line>
+<Line Number="116">
+<![CDATA[]]>
+</Line>
+<Line Number="117">
+<![CDATA[BoolArray64[24] := 1;]]>
+</Line>
+<Line Number="118">
+<![CDATA[BoolArray64[25] := 1;]]>
+</Line>
+<Line Number="119">
+<![CDATA[BoolArray64[26] := 1;]]>
+</Line>
+<Line Number="120">
+<![CDATA[BoolArray64[27] := 1;]]>
+</Line>
+<Line Number="121">
+<![CDATA[BoolArray64[28] := 0;]]>
+</Line>
+<Line Number="122">
+<![CDATA[BoolArray64[29] := 0;]]>
+</Line>
+<Line Number="123">
+<![CDATA[BoolArray64[30] := 0;]]>
+</Line>
+<Line Number="124">
+<![CDATA[BoolArray64[31] := 0;]]>
+</Line>
+<Line Number="125">
+<![CDATA[]]>
+</Line>
+<Line Number="126">
+<![CDATA[BoolArray64[32] := 1;]]>
+</Line>
+<Line Number="127">
+<![CDATA[BoolArray64[33] := 1;]]>
+</Line>
+<Line Number="128">
+<![CDATA[BoolArray64[34] := 1;]]>
+</Line>
+<Line Number="129">
+<![CDATA[BoolArray64[35] := 1;]]>
+</Line>
+<Line Number="130">
+<![CDATA[BoolArray64[36] := 1;]]>
+</Line>
+<Line Number="131">
+<![CDATA[BoolArray64[37] := 0;]]>
+</Line>
+<Line Number="132">
+<![CDATA[BoolArray64[38] := 0;]]>
+</Line>
+<Line Number="133">
+<![CDATA[BoolArray64[39] := 0;]]>
+</Line>
+<Line Number="134">
+<![CDATA[]]>
+</Line>
+<Line Number="135">
+<![CDATA[BoolArray64[40] := 1;]]>
+</Line>
+<Line Number="136">
+<![CDATA[BoolArray64[41] := 1;]]>
+</Line>
+<Line Number="137">
+<![CDATA[BoolArray64[42] := 1;]]>
+</Line>
+<Line Number="138">
+<![CDATA[BoolArray64[43] := 1;]]>
+</Line>
+<Line Number="139">
+<![CDATA[BoolArray64[44] := 1;]]>
+</Line>
+<Line Number="140">
+<![CDATA[BoolArray64[45] := 1;]]>
+</Line>
+<Line Number="141">
+<![CDATA[BoolArray64[46] := 0;]]>
+</Line>
+<Line Number="142">
+<![CDATA[BoolArray64[47] := 0;]]>
+</Line>
+<Line Number="143">
+<![CDATA[]]>
+</Line>
+<Line Number="144">
+<![CDATA[BoolArray64[48] := 1;]]>
+</Line>
+<Line Number="145">
+<![CDATA[BoolArray64[49] := 1;]]>
+</Line>
+<Line Number="146">
+<![CDATA[BoolArray64[50] := 1;]]>
+</Line>
+<Line Number="147">
+<![CDATA[BoolArray64[51] := 1;]]>
+</Line>
+<Line Number="148">
+<![CDATA[BoolArray64[52] := 1;]]>
+</Line>
+<Line Number="149">
+<![CDATA[BoolArray64[53] := 1;]]>
+</Line>
+<Line Number="150">
+<![CDATA[BoolArray64[54] := 1;]]>
+</Line>
+<Line Number="151">
+<![CDATA[BoolArray64[55] := 0;]]>
+</Line>
+<Line Number="152">
+<![CDATA[]]>
+</Line>
+<Line Number="153">
+<![CDATA[BoolArray64[56] := 1;]]>
+</Line>
+<Line Number="154">
+<![CDATA[BoolArray64[57] := 1;]]>
+</Line>
+<Line Number="155">
+<![CDATA[BoolArray64[58] := 1;]]>
+</Line>
+<Line Number="156">
+<![CDATA[BoolArray64[59] := 1;]]>
+</Line>
+<Line Number="157">
+<![CDATA[BoolArray64[60] := 1;]]>
+</Line>
+<Line Number="158">
+<![CDATA[BoolArray64[61] := 1;]]>
+</Line>
+<Line Number="159">
+<![CDATA[BoolArray64[62] := 1;]]>
+</Line>
+<Line Number="160">
+<![CDATA[BoolArray64[63] := 1;]]>
 </Line>
 </STContent>
 </Routine>
