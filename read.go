@@ -108,15 +108,32 @@ func (client *Client) Read(tag string, data any) error {
 
 	case []bool:
 		elements := len(data)
-		v, err := readArray[bool](client, tag, uint16(elements))
+		count := elements / 32
+		if count*32 != elements {
+			return fmt.Errorf("slice length must be a multiple of 32 for []bool, got %d", elements)
+		}
+		if count == 1 { // special case for 1 element slice - have to read it as an atomic uint32
+			v, err := read[uint32](client, tag)
+			if err != nil {
+				return err
+			}
+			for i := 0; i < 32; i++ {
+				data[i] = (v & (1 << i)) != 0
+			}
+			return nil
+		}
+		v, err := readArray[uint32](client, tag, uint16(count))
 		if err != nil {
 			return err
 		}
-		if len(v) != elements {
+		if len(v) != count {
 			return fmt.Errorf("got %d instead of %d elements", len(v), elements)
 		}
-		for i := range data {
-			data[i] = v[i]
+		for word := range v {
+			for i := 0; i < 32; i++ {
+				bit := word*32 + i
+				data[bit] = (v[word] & (1 << i)) != 0
+			}
 		}
 		return nil
 	case []byte:
