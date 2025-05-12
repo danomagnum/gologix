@@ -141,6 +141,11 @@ func (m msgMemberInfo) CIPType() CIPType {
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	client.Logger.Debug("list members", "instance", str_instance)
 
+	d, ok := client.KnownTypesByID[str_instance]
+	if ok {
+		return d, nil
+	}
+
 	template_info, err := client.GetTemplateInstanceAttr(str_instance)
 
 	if err != nil {
@@ -239,8 +244,19 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 
 		descriptor.Members[i].Name = fieldname
 		descriptor.Members[i].Info = memberInfos[i]
+		id := descriptor.Members[i].Template_ID()
+		if id != 0 {
+			// this is a UDT
+			d2, err := client.ListMembers(uint32(descriptor.Members[i].Template_ID()))
+			if err == nil {
+				descriptor.Members[i].UDT = &d2
+			} else {
+				client.Logger.Debug("couldn't get udt", "name", fieldname, "type", descriptor.Members[i].Info.Type)
+			}
+		}
 	}
 
+	client.KnownTypesByID[str_instance] = descriptor
 	return descriptor, nil
 }
 
@@ -270,4 +286,20 @@ func (u UDTDescriptor) Size() int {
 type UDTMemberDescriptor struct {
 	Name string
 	Info msgMemberInfo
+	UDT  *UDTDescriptor
+}
+
+func (u *UDTMemberDescriptor) Template_ID() uint16 {
+	val := u.Info.Type
+	template_mask := uint16(0b0000_1111_1111_1111) // spec says first 11 bits, but built-in types use 12th.
+	bit12 := uint16(1 << 12)
+	bit15 := uint16(1 << 15)
+	b12_set := val&bit12 != 0
+	b15_set := val&bit15 != 0
+	if !b15_set || b12_set {
+		// not a template
+		return 0
+	}
+
+	return val & template_mask
 }

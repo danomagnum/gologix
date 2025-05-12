@@ -160,6 +160,8 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		if err != nil {
 			return fmt.Errorf("problem reading tag header. %w", err)
 		}
+		start_instance = tag_hdr.InstanceID
+
 		tag_name := make([]byte, tag_hdr.NameLength)
 		err = binary.Read(data2, binary.LittleEndian, &tag_name)
 		if err != nil {
@@ -232,8 +234,6 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		}
 
 		client.KnownTags[strings.ToLower(string(tag_name))] = kt
-
-		start_instance = tag_hdr.InstanceID
 
 	}
 

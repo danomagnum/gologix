@@ -66,9 +66,10 @@ type Client struct {
 	// it maps tag names to a struct which has, among other things, the instance ID and class
 	// which can be used to read the tag more efficiently than sending the ascii tag name to the
 	// controller.  If you don't want to use this, set SocketTimeout to 0 and never call ListAllTags
-	KnownTags     map[string]KnownTag
-	KnownTypes    map[string]UDTDescriptor
-	KnownPrograms map[string]*KnownProgram
+	KnownTags      map[string]KnownTag
+	KnownTypes     map[string]UDTDescriptor
+	KnownTypesByID map[uint32]UDTDescriptor
+	KnownPrograms  map[string]*KnownProgram
 
 	// used for optimization.  v20 and before vs v21 and after have different
 	// tag reading functionality.
@@ -129,6 +130,7 @@ func NewClient(ip string) *Client {
 		SocketTimeout:      socketTimeoutDefault,
 		KnownTags:          make(map[string]KnownTag),
 		KnownTypes:         make(map[string]UDTDescriptor),
+		KnownTypesByID:     make(map[uint32]UDTDescriptor),
 		ioi_cache:          make(map[string]*tagIOI),
 		Logger:             NewLogger(),
 	}
