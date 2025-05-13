@@ -325,18 +325,40 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidMemberID, 0)
 		return fmt.Errorf("problem getting data from provider. %w / %v", err, err2)
 	}
-	typ, _ := GoVarToCIPType(result)
+	typ, len := GoVarToCIPType(result)
 
-	if typ == CIPTypeSTRING {
+	switch typ {
+	case CIPTypeBOOL:
+		if len == 1 {
+			return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+		}
+		// a bool array is always in 32 bit words.
+		newlen := (len / 32) + 1
+		outdat := make([]uint32, newlen)
+		barray, ok := result.([]bool)
+		if !ok {
+			err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
+			return fmt.Errorf("was expecting a bool array but didn't get one: %w", err2)
+		}
+		for i := range barray {
+			if barray[i] {
+				outdat[i/32] |= (1 << (i % 32))
+			}
+		}
+		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, CIPTypeDWORD, byte(0), outdat)
+
+	case CIPTypeSTRING:
 		res_str, ok := result.(string)
 		if !ok {
 			err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
 			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 		}
 		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, cipStringPacker(res_str))
-	} else {
+
+	default:
 		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
 	}
+
 }
 
 type cipStringPacker string

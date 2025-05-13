@@ -104,6 +104,18 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	t := reflect.ValueOf(val)
 
 	if t.Kind() == reflect.Slice {
+		if t.Type().Elem().Kind() == reflect.Bool {
+			// for bool slices, the array length is the number of 32 bit words, not the number of bits.
+			bools := int(qty * 32)
+			if bools > t.Len() {
+				bools = t.Len()
+			}
+			qty = int16(bools/32) + 1
+			values := reflect.Indirect(t)
+			v := values.Slice(0, int(bools))
+			return v.Interface(), nil
+
+		}
 		if int(qty) <= t.Len() {
 			values := reflect.Indirect(t)
 			v := values.Slice(0, int(qty))
