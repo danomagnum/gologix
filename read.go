@@ -818,13 +818,15 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 				}
-				dat := make([]byte, binary.Size(tags[i].Struct))
-				err = binary.Read(myBytes, binary.LittleEndian, dat)
+				//dat := make([]byte, binary.Size(tags[i].Struct))
+				x := reflect.New(reflect.TypeOf(tags[i].Struct)).Interface()
+				err = binary.Read(myBytes, binary.LittleEndian, x)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 				}
-
-				result_values[i] = dat
+				// depointer the result to the correct type.
+				y := reflect.ValueOf(x).Elem().Interface()
+				result_values[i] = y
 			} else {
 				result_values[i], err = rHdr.Type.readValue(myBytes)
 				if err != nil {
