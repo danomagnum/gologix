@@ -564,7 +564,7 @@ type cipStringHeader struct {
 	Length  uint32
 }
 type cipStructHeader struct {
-	Unknown uint16
+	StructTypeCRC uint16
 }
 
 // Tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
@@ -586,7 +586,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
-	types := make([]CIPType, 0)
+	types := make([]any, 0)
 	elements := make([]int, 0)
 	tag_map := make(map[string]int)
 	val := reflect.ValueOf(tag_str).Elem()
@@ -597,7 +597,8 @@ func (client *Client) ReadMulti(tag_str any) error {
 			continue
 		}
 		v := val.Field(i).Interface()
-		ct, elem := GoVarToCIPType(v)
+		ct := v
+		_, elem := GoVarToCIPType(v)
 		types = append(types, ct)
 		elements = append(elements, elem)
 		tags = append(tags, tagPath)
@@ -635,6 +636,7 @@ type tagDesc struct {
 	TagName  string
 	TagType  CIPType
 	Elements int
+	Struct   any
 }
 
 func (client *Client) readList(tags []tagDesc) ([]any, error) {
@@ -810,6 +812,19 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 				}
 				result_values[i] = string(str)
+			} else if rHdr.Type == CIPTypeStruct {
+				typehash := cipStructHeader{}
+				err := binary.Read(myBytes, binary.LittleEndian, &typehash)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+				}
+				dat := make([]byte, binary.Size(tags[i].Struct))
+				err = binary.Read(myBytes, binary.LittleEndian, dat)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+				}
+
+				result_values[i] = dat
 			} else {
 				result_values[i], err = rHdr.Type.readValue(myBytes)
 				if err != nil {
@@ -890,7 +905,12 @@ func (client *Client) ReadMap(m map[string]any) error {
 	for k := range m {
 		v := m[k]
 		ct, elem := GoVarToCIPType(v)
-		tags[i] = tagDesc{TagName: k, TagType: ct, Elements: elem}
+		tags[i] = tagDesc{
+			TagName:  k,
+			TagType:  ct,
+			Elements: elem,
+			Struct:   v,
+		}
 		indexes[i] = k
 		i++
 	}

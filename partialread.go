@@ -12,7 +12,7 @@ import (
 // interface{} so you'll need to type assert to get the values back out.
 //
 // To read multiple tags at once without type assertion you can use ReadMulti()
-func (client *Client) ReadList(tagnames []string, types []CIPType, elements []int) ([]any, error) {
+func (client *Client) ReadList(tagnames []string, types []any, elements []int) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not start list read: %w", err)
@@ -26,7 +26,13 @@ func (client *Client) ReadList(tagnames []string, types []CIPType, elements []in
 	tags := make([]tagDesc, total)
 
 	for i := range tagnames {
-		tags[i] = tagDesc{TagName: tagnames[i], TagType: types[i], Elements: elements[i]}
+		typ, _ := GoVarToCIPType(types[i])
+		tags[i] = tagDesc{
+			TagName:  tagnames[i],
+			TagType:  typ,
+			Elements: elements[i],
+			Struct:   types[i],
+		}
 	}
 
 	for n < total {
