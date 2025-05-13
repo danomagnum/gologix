@@ -45,6 +45,8 @@ func GoVarToCIPType(T any) (CIPType, int) {
 		return CIPTypeLREAL, 1
 	case string:
 		return CIPTypeSTRING, 1
+	case []bool:
+		return CIPTypeBOOL, len(x)
 	case []byte:
 		return CIPTypeBYTE, len(x)
 	case []int8:
