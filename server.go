@@ -638,25 +638,16 @@ func (h *serverTCPHandler) ioConnection(fwd_open msgEIPForwardOpen_Standard, tp 
 		// every RPI send the message.
 		items := make([]CIPItem, 2)
 		items[0] = newItem(cipItem_SequenceAddress, nil)
-		err = items[0].Serialize(fwd_open.TOConnectionID)
+		err = items[0].Serialize(fwd_open.TOConnectionID, seq)
 		if err != nil {
 			h.server.Logger.Warn("problem serializing connection ID", "error", err)
 			return
 		}
-		err = items[0].Serialize(seq)
-		if err != nil {
-			h.server.Logger.Warn("problem serializing seq number", "error", err)
-			return
-		}
+
 		items[1] = newItem(cipItem_ConnectedData, nil)
-		err = items[1].Serialize(uint16(seq))
+		err = items[1].Serialize(uint16(seq), dat)
 		if err != nil {
 			h.server.Logger.Warn("problem serializing seq number", "error", err)
-			return
-		}
-		err = items[1].Serialize(dat)
-		if err != nil {
-			h.server.Logger.Warn("problem serializing items", "error", err)
 			return
 		}
 

@@ -380,14 +380,9 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	// setup item
 	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
 	// add path
-	err = reqItems[1].Serialize(ioi.Bytes())
+	err = reqItems[1].Serialize(ioi, elements)
 	if err != nil {
 		return nil, fmt.Errorf("problem serializing ioi: %w", err)
-	}
-	// add service specific data
-	err = reqItems[1].Serialize(elements)
-	if err != nil {
-		return nil, fmt.Errorf("problem serializing item element count: %w", err)
 	}
 
 	itemData, err := serializeItems(reqItems)
@@ -715,17 +710,9 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqItems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	err := reqItems[1].Serialize(ioi_header)
+	err := reqItems[1].Serialize(ioi_header, jump_table, &b)
 	if err != nil {
 		return nil, fmt.Errorf("problem serializing item header: %w", err)
-	}
-	err = reqItems[1].Serialize(jump_table)
-	if err != nil {
-		return nil, fmt.Errorf("problem serializing item jump table: %w", err)
-	}
-	err = reqItems[1].Serialize(&b)
-	if err != nil {
-		return nil, fmt.Errorf("problem serializing item data: %w", err)
 	}
 
 	itemData, err := serializeItems(reqItems)

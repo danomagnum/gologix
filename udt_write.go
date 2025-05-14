@@ -159,17 +159,9 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	err := reqitems[1].Serialize(ioi_header)
+	err := reqitems[1].Serialize(ioi_header, jump_table, &b)
 	if err != nil {
 		return fmt.Errorf("problem serializing item header: %w", err)
-	}
-	err = reqitems[1].Serialize(jump_table)
-	if err != nil {
-		return fmt.Errorf("problem serializing item jump table: %w", err)
-	}
-	err = reqitems[1].Serialize(b.Bytes())
-	if err != nil {
-		return fmt.Errorf("problem serializing item data: %w", err)
 	}
 
 	itemdata, err := serializeItems(reqitems)
