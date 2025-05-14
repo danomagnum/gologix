@@ -51,5 +51,6 @@ func main() {
 	if err != nil {
 		log.Printf("error reading testint. %v", err)
 	}
+	log.Printf("dat has value %+v", dat)
 
 }
