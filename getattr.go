@@ -35,9 +35,18 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	// setup item
 	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
 	// add path
-	reqitems[1].Serialize(class)
-	reqitems[1].Serialize(instance)
-	reqitems[1].Serialize(attr)
+	err = reqitems[1].Serialize(class)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize class: %w", err)
+	}
+	err = reqitems[1].Serialize(instance)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize instance: %w", err)
+	}
+	err = reqitems[1].Serialize(attr)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize attribute: %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
@@ -61,7 +70,10 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	}
 
 	var resphdr cipAttributeResponseHdr
-	items[1].DeSerialize(&resphdr)
+	err = items[1].DeSerialize(&resphdr)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read response header. %w", err)
+	}
 	//dat := make([]byte, hdr.Length-26)
 	//items[1].DeSerialize(&dat)
 	return &items[1], nil
@@ -164,10 +176,19 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	}
 
 	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
-	reqItems[1].Serialize(path.Bytes())
-	reqItems[1].Serialize(uint16(len(attrs)))
+	err = reqItems[1].Serialize(path.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize path. %w", err)
+	}
+	err = reqItems[1].Serialize(uint16(len(attrs)))
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize attribute count. %w", err)
+	}
 	for i := range attrs {
-		reqItems[1].Serialize(uint16(attrs[i]))
+		err = reqItems[1].Serialize(uint16(attrs[i]))
+		if err != nil {
+			return nil, fmt.Errorf("could not serialize attribute %d. %w", i, err)
+		}
 	}
 
 	itemData, err := serializeItems(reqItems)
@@ -194,7 +215,10 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	}
 
 	var respHdr cipAttributeResponseHdr
-	items[1].DeSerialize(&respHdr)
+	err = items[1].DeSerialize(&respHdr)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read response header. %w", err)
+	}
 	if respHdr.Status != uint16(CIPStatus_OK) {
 		return &items[1], fmt.Errorf("response header has status 0x%X (%v)", respHdr.Status, CIPStatus(respHdr.Status))
 	}
@@ -234,8 +258,14 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 	}
 
 	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Serialize(path)
-	reqitems[1].Serialize(msg_data)
+	err := reqitems[1].Serialize(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize path: %w", err)
+	}
+	err = reqitems[1].Serialize(msg_data)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize msg data: %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {

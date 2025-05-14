@@ -363,9 +363,15 @@ func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID u
 	resp := msgUnconnWriteResultHeader{
 		Service: s.AsResponse(),
 	}
-	items[1].Serialize(resp)
+	err := items[1].Serialize(resp)
+	if err != nil {
+		return fmt.Errorf("couldn't serialize error response: %w", err)
+	}
 	for i := range payload {
-		items[1].Serialize(payload[i])
+		err = items[1].Serialize(payload[i])
+		if err != nil {
+			return fmt.Errorf("problem serializing unconnected data payload. %w", err)
+		}
 	}
 	itemdata, err := serializeItems(items)
 	if err != nil {
@@ -383,7 +389,10 @@ func (h *serverTCPHandler) sendConnectedError(s CIPService, seq uint16, connID u
 		Status:         status,
 		StatusExtended: statusExtended,
 	}
-	items[1].Serialize(resp)
+	err := items[1].Serialize(resp)
+	if err != nil {
+		return fmt.Errorf("couldn't serialize error response: %w", err)
+	}
 	itemdata, err := serializeItems(items)
 	if err != nil {
 		return fmt.Errorf("could not serialize items: %w", err)

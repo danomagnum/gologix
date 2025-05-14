@@ -97,6 +97,7 @@ func newItem(id CIPItemID, str any) CIPItem {
 	}
 	if str != nil {
 		c.Serialize(str)
+
 	}
 	return c
 }

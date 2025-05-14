@@ -237,9 +237,15 @@ func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...a
 	resp := msgUnconnWriteResultHeader{
 		Service: s.AsResponse(),
 	}
-	items[1].Serialize(resp)
+	err := items[1].Serialize(resp)
+	if err != nil {
+		return fmt.Errorf("problem serializing unconnected data header. %w", err)
+	}
 	for i := range payload {
-		items[1].Serialize(payload[i])
+		err = items[1].Serialize(payload[i])
+		if err != nil {
+			return fmt.Errorf("problem serializing unconnected data payload. %w", err)
+		}
 	}
 	itemdata, err := serializeItems(items)
 	if err != nil {
@@ -256,7 +262,10 @@ func (h *serverTCPHandler) sendUnconnectedUnitDataReply(s CIPService) error {
 		SequenceCount: h.UnitDataSequencer,
 		Service:       s.AsResponse(),
 	}
-	items[1].Serialize(resp)
+	err := items[1].Serialize(resp)
+	if err != nil {
+		return fmt.Errorf("problem serializing unconnected data header. %w", err)
+	}
 	itemdata, err := serializeItems(items)
 	if err != nil {
 		return err
