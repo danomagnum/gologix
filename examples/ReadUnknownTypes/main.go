@@ -6,7 +6,7 @@ import (
 	"github.com/danomagnum/gologix"
 )
 
-// Demo program for readng an INT tag named "TestInt" in the controller when you don't know the data type
+// Demo program for reading various tags from the controller when you don't know the data type
 func main() {
 	var err error
 
