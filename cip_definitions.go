@@ -47,15 +47,24 @@ func (p CIPAttribute) Bytes() []byte {
 }
 func (p *CIPAttribute) Read(r io.Reader) error {
 	var size cipAttributeType
-	binary.Read(r, binary.LittleEndian, &size)
+	err := binary.Read(r, binary.LittleEndian, &size)
+	if err != nil {
+		return fmt.Errorf("error reading attribute size: %w", err)
+	}
 	switch size {
 	case cipAttribute_8bit:
 		var val byte
-		binary.Read(r, binary.LittleEndian, &val)
+		err := binary.Read(r, binary.LittleEndian, &val)
+		if err != nil {
+			return fmt.Errorf("error reading 8 bit attribute: %w", err)
+		}
 		*p = CIPAttribute(val)
 		return nil
 	case cipAttribute_16bit:
-		binary.Read(r, binary.LittleEndian, p)
+		err := binary.Read(r, binary.LittleEndian, p)
+		if err != nil {
+			return fmt.Errorf("error reading 16 bit attribute: %w", err)
+		}
 		return nil
 	default:
 		return fmt.Errorf("expected 0x30 or 0x31 but got class size of %x", size)
@@ -149,20 +158,32 @@ func (p CIPInstance) Bytes() []byte {
 
 func (p *CIPInstance) Read(r io.Reader) error {
 	var size cipInstanceSize
-	binary.Read(r, binary.LittleEndian, &size)
+	err := binary.Read(r, binary.LittleEndian, &size)
+	if err != nil {
+		return fmt.Errorf("error reading instance size: %w", err)
+	}
 	switch size {
 	case cipInstance_8bit:
 		var val byte
-		binary.Read(r, binary.LittleEndian, &val)
+		err = binary.Read(r, binary.LittleEndian, &val)
+		if err != nil {
+			return fmt.Errorf("error reading 8 bit instance: %w", err)
+		}
 		*p = CIPInstance(val)
 		return nil
 	case cipInstance_16bit:
 		var val uint16
-		binary.Read(r, binary.LittleEndian, &val)
+		err = binary.Read(r, binary.LittleEndian, &val)
+		if err != nil {
+			return fmt.Errorf("error reading 16 bit instance: %w", err)
+		}
 		*p = CIPInstance(val)
 		return nil
 	case cipInstance_32bit:
-		binary.Read(r, binary.LittleEndian, p)
+		err = binary.Read(r, binary.LittleEndian, p)
+		if err != nil {
+			return fmt.Errorf("error reading 32 bit instance: %w", err)
+		}
 		return nil
 	default:
 		return fmt.Errorf("expected 0x24 or 0x25 but got class size of %x", size)
@@ -212,15 +233,24 @@ func (p CIPClass) Bytes() []byte {
 
 func (p *CIPClass) Read(r io.Reader) error {
 	var classSize cipClassSize
-	binary.Read(r, binary.LittleEndian, &classSize)
+	err := binary.Read(r, binary.LittleEndian, &classSize)
+	if err != nil {
+		return fmt.Errorf("error reading class size: %w", err)
+	}
 	switch classSize {
 	case cipClass_8bit:
 		var val byte
-		binary.Read(r, binary.LittleEndian, &val)
+		err = binary.Read(r, binary.LittleEndian, &val)
+		if err != nil {
+			return fmt.Errorf("error reading 8 bit class: %w", err)
+		}
 		*p = CIPClass(val)
 		return nil
 	case cipClass_16bit:
-		binary.Read(r, binary.LittleEndian, p)
+		err = binary.Read(r, binary.LittleEndian, p)
+		if err != nil {
+			return fmt.Errorf("error reading 16 bit class: %w", err)
+		}
 		return nil
 	default:
 		return fmt.Errorf("expected 0x20 or 0x21 but got class size of %x", classSize)

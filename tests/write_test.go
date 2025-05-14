@@ -97,7 +97,7 @@ func TestMultiWrite(t *testing.T) {
 				"program:gologix_tests.MultiWriteDint",
 				"program:gologix_tests.MultiWriteString",
 				"program:gologix_tests.MultiWriteBool"},
-				[]gologix.CIPType{gologix.CIPTypeINT, gologix.CIPTypeREAL, gologix.CIPTypeDINT, gologix.CIPTypeSTRING, gologix.CIPTypeBOOL},
+				[]any{int16(0), float32(0), int32(0), "", true},
 				[]int{1, 1, 1, 1, 1})
 
 			if err != nil {
@@ -147,7 +147,7 @@ func TestMultiWrite(t *testing.T) {
 				"program:gologix_tests.MultiWriteDint",
 				"program:gologix_tests.MultiWriteString",
 				"program:gologix_tests.MultiWriteBool"},
-				[]gologix.CIPType{gologix.CIPTypeINT, gologix.CIPTypeREAL, gologix.CIPTypeDINT, gologix.CIPTypeSTRING, gologix.CIPTypeBOOL}, []int{1, 1, 1, 1, 1})
+				[]any{int16(0), float32(0), int32(0), "", true}, []int{1, 1, 1, 1, 1})
 
 			if err != nil {
 				t.Errorf("problem reading tags back: %v", err)

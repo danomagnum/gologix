@@ -97,6 +97,7 @@ func newItem(id CIPItemID, str any) CIPItem {
 	}
 	if str != nil {
 		c.Serialize(str)
+
 	}
 	return c
 }
@@ -210,34 +211,36 @@ func (item *CIPItem) Float64() (float64, error) {
 // end of the item's data buffer.
 //
 // The data length in the item's header is updated to match.
-func (item *CIPItem) Serialize(str any) error {
-	switch x := str.(type) {
-	case string:
-		strLen := uint32(len(x))
-		err := binary.Write(item, binary.LittleEndian, strLen)
-		if err != nil {
-			return fmt.Errorf("problem writing string header: %v", err)
-		}
-		if strLen%2 == 1 {
-			strLen++
-		}
-		//b := make([]byte, strLen)
-		b := make([]byte, 84)
-		copy(b, x)
-		err = binary.Write(item, binary.LittleEndian, b)
-		if err != nil {
-			return fmt.Errorf("problem writing string payload: %v", err)
-		}
+func (item *CIPItem) Serialize(strs ...any) error {
+	for _, str := range strs {
+		switch x := str.(type) {
+		case string:
+			strLen := uint32(len(x))
+			err := binary.Write(item, binary.LittleEndian, strLen)
+			if err != nil {
+				return fmt.Errorf("problem writing string header: %v", err)
+			}
+			if strLen%2 == 1 {
+				strLen++
+			}
+			//b := make([]byte, strLen)
+			b := make([]byte, 84)
+			copy(b, x)
+			err = binary.Write(item, binary.LittleEndian, b)
+			if err != nil {
+				return fmt.Errorf("problem writing string payload: %v", err)
+			}
 
-	case Serializable:
-		err := binary.Write(item, binary.LittleEndian, x.Bytes())
-		if err != nil {
-			return fmt.Errorf("problem writing serializable item: %v", err)
-		}
-	default:
-		err := binary.Write(item, binary.LittleEndian, str)
-		if err != nil {
-			return fmt.Errorf("problem writing default item: %v", err)
+		case Serializable:
+			err := binary.Write(item, binary.LittleEndian, x.Bytes())
+			if err != nil {
+				return fmt.Errorf("problem writing serializable item: %v", err)
+			}
+		default:
+			err := binary.Write(item, binary.LittleEndian, str)
+			if err != nil {
+				return fmt.Errorf("problem writing default item: %v", err)
+			}
 		}
 	}
 	return nil

@@ -68,19 +68,25 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	}
 
 	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Serialize(p.Bytes())
+	err = reqitems[1].Serialize(p.Bytes())
+	if err != nil {
+		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing path: %w", err)
+	}
 	number_of_attr_to_receive := 4
 	attr_Size_32bitWords := 4
 	attr_Size_Bytes := 5
 	attr_MemberCount := 2
 	attr_symbol_type := 1
-	reqitems[1].Serialize([5]uint16{
+	err = reqitems[1].Serialize([5]uint16{
 		uint16(number_of_attr_to_receive),
 		uint16(attr_Size_32bitWords),
 		uint16(attr_Size_Bytes),
 		uint16(attr_MemberCount),
 		uint16(attr_symbol_type),
 	})
+	if err != nil {
+		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing item attribute list: %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
@@ -171,11 +177,20 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	}
 
 	reqitems[1] = newItem(cipItem_ConnectedData, readmsg)
-	reqitems[1].Serialize(p.Bytes())
+	err = reqitems[1].Serialize(p.Bytes())
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("problem serializing path: %w", err)
+	}
 	start_offset := uint32(0)
 	read_length := uint16(template_info.SizeWords*4 - 23)
-	reqitems[1].Serialize(start_offset)
-	reqitems[1].Serialize(read_length)
+	err = reqitems[1].Serialize(start_offset)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("problem serializing item start offset: %w", err)
+	}
+	err = reqitems[1].Serialize(read_length)
+	if err != nil {
+		return UDTDescriptor{}, fmt.Errorf("problem serializing item read length: %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {

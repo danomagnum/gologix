@@ -49,7 +49,10 @@ func TestPack(t *testing.T) {
 	b := bytes.Buffer{}
 	//binary.Write(&b, binary.LittleEndian, s)
 
-	Pack(&b, s)
+	_, err := Pack(&b, s)
+	if err != nil {
+		t.Errorf("problem packing bytes. %v", err)
+	}
 
 	have := b.Bytes()
 
@@ -72,7 +75,7 @@ func TestPack(t *testing.T) {
 	}
 
 	have2 := S{}
-	_, err := Unpack(bytes.NewBuffer(b.Bytes()), &have2)
+	_, err = Unpack(bytes.NewBuffer(b.Bytes()), &have2)
 	if err != nil {
 		t.Errorf("problem unpacking bytes. %v", err)
 	}
@@ -127,7 +130,10 @@ func TestPack2(t *testing.T) {
 	b := bytes.Buffer{}
 	//binary.Write(&b, binary.LittleEndian, s)
 
-	Pack(&b, s)
+	_, err := Pack(&b, s)
+	if err != nil {
+		t.Errorf("problem packing bytes. %v", err)
+	}
 
 	have := b.Bytes()
 
@@ -154,7 +160,7 @@ func TestPack2(t *testing.T) {
 	}
 
 	have2 := S{}
-	_, err := Unpack(bytes.NewBuffer(b.Bytes()), &have2)
+	_, err = Unpack(bytes.NewBuffer(b.Bytes()), &have2)
 	if err != nil {
 		t.Errorf("problem unpacking bytes. %v", err)
 	}

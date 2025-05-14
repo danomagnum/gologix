@@ -25,7 +25,7 @@ func TestReadListWithString(t *testing.T) {
 			}()
 
 			tags := make([]string, 5)
-			types := make([]gologix.CIPType, 5)
+			types := make([]any, 5)
 			elements := make([]int, 5)
 
 			tags[0] = "program:gologix_tests.ReadBool"     // false
@@ -34,11 +34,11 @@ func TestReadListWithString(t *testing.T) {
 			tags[3] = "program:gologix_tests.ReadReal"     // 93.45
 			tags[4] = "program:gologix_tests.ReadDints[0]" // 4351
 
-			types[0] = gologix.CIPTypeBOOL
-			types[1] = gologix.CIPTypeDINT
-			types[2] = gologix.CIPTypeSTRING
-			types[3] = gologix.CIPTypeREAL
-			types[4] = gologix.CIPTypeDINT
+			types[0] = true
+			types[1] = int32(0)
+			types[2] = ""
+			types[3] = float32(0)
+			types[4] = int32(0)
 
 			elements[0] = 1
 			elements[1] = 1

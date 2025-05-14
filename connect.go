@@ -183,7 +183,10 @@ func (client *Client) KeepAlive() {
 			newProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
 			if err != nil {
 				client.Logger.Error("keepalive failed", slog.Any("err", err))
-				client.Disconnect()
+				err = client.Disconnect()
+				if err != nil {
+					client.Logger.Warn("keepalive disconnect failed", slog.Any("err", err))
+				}
 				return
 			}
 			if !slices.Equal(newProps.Rest(), originalProps.Rest()) {
@@ -330,8 +333,15 @@ func (client *Client) newForwardOpenLarge() (CIPItem, error) {
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(path.Len() / 2)
 
-	item.Serialize(msg)
-	item.Serialize(path.Bytes())
+	err = item.Serialize(msg)
+	if err != nil {
+		return item, fmt.Errorf("error serializing forward open message. %w", err)
+	}
+
+	err = item.Serialize(path.Bytes())
+	if err != nil {
+		return item, fmt.Errorf("error serializing forward open path. %w", err)
+	}
 	return item, nil
 }
 
@@ -401,8 +411,14 @@ func (client *Client) newForwardOpenStandard() (CIPItem, error) {
 	msg.TONetworkConnParams = connectionParameters
 	msg.TransportTrigger = 0xA3
 	msg.ConnPathSize = byte(path.Len() / 2)
-	item.Serialize(msg)
-	item.Serialize(path.Bytes())
+	err = item.Serialize(msg)
+	if err != nil {
+		return item, fmt.Errorf("error serializing forward open message. %w", err)
+	}
+	err = item.Serialize(path.Bytes())
+	if err != nil {
+		return item, fmt.Errorf("error serializing forward open path. %w", err)
+	}
 
 	return item, nil
 }

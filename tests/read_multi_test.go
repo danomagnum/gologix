@@ -114,6 +114,51 @@ func TestReadMap(t *testing.T) {
 	}
 }
 
+// if you don't know the types of the tags, you can use the ReadMap function with nil values.
+// this will read the tags and fill in the values.  The types are determined by the tag type on the PLC.
+// Note that by specifying the type as in TestReadMap, you can read arrays and such.  In the case of
+// unknown types, we always read a length of 1.
+func TestReadMapAny(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			mr := make(map[string]any)
+			mr["TestInt"] = nil
+			mr["TestDint"] = nil
+			mr["TestDintArr[2]"] = nil
+
+			// call the read multi function with the structure passed in as a pointer.
+			err = client.ReadMap(mr)
+			if err != nil {
+				log.Printf("error reading testint. %v", err)
+			}
+
+			if mr["TestInt"].(int16) != 999 {
+				t.Errorf("TestInt expected 999 but got %d", mr["TestInt"])
+			}
+			if mr["TestDint"].(int32) != 36 {
+				t.Errorf("TestDint expected 36 but got %d", mr["TestDint"])
+			}
+			if mr["TestDintArr[2]"].(int32) != 4353 {
+				t.Errorf("TestArr[0] expected 4353 but got %d", mr["TestDintArr[2]"])
+			}
+		})
+	}
+}
+
 func TestReadMultiWithGaps(t *testing.T) {
 	tcs := getTestConfig()
 	for _, tc := range tcs.TagReadWriteTests {

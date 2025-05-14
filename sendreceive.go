@@ -55,9 +55,15 @@ func (client *Client) sendData(b []byte) error {
 	written := 0
 	for written < len(b) {
 		if client.SocketTimeout != 0 {
-			client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
+			err := client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
+			if err != nil {
+				return fmt.Errorf("problem setting write deadline: %w", err)
+			}
 		} else {
-			client.conn.SetWriteDeadline(time.Now().Add(time.Second))
+			err := client.conn.SetWriteDeadline(time.Now().Add(time.Second))
+			if err != nil {
+				return fmt.Errorf("problem setting write deadline: %w", err)
+			}
 		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
@@ -105,18 +111,30 @@ func (client *Client) recvData() (eipHeader, *bytes.Buffer, error) {
 	hdr := eipHeader{}
 	var err error
 	if client.SocketTimeout != 0 {
-		client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+		err = client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+		if err != nil {
+			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
+		}
 	} else {
-		client.conn.SetReadDeadline(time.Now().Add(time.Second))
+		err = client.conn.SetReadDeadline(time.Now().Add(time.Second))
+		if err != nil {
+			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
+		}
 	}
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w", err)
 	}
 	if client.SocketTimeout != 0 {
-		client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+		err = client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
+		if err != nil {
+			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
+		}
 	} else {
-		client.conn.SetReadDeadline(time.Now().Add(time.Second))
+		err = client.conn.SetReadDeadline(time.Now().Add(time.Second))
+		if err != nil {
+			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
+		}
 	}
 	data_size := hdr.Length
 	data := make([]byte, data_size)

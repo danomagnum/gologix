@@ -58,8 +58,14 @@ func (client *Client) Disconnect() error {
 		Reserved:               0x00,
 	}
 
-	items[1].Serialize(msg)
-	items[1].Serialize(path)
+	err = items[1].Serialize(msg)
+	if err != nil {
+		return fmt.Errorf("error serializing disconnect msg: %w", err)
+	}
+	err = items[1].Serialize(path)
+	if err != nil {
+		return fmt.Errorf("error serializing disconnect path: %w", err)
+	}
 
 	itemData, err := serializeItems(items)
 	if err != nil {

@@ -351,14 +351,14 @@ func TestReadTooManyTags(t *testing.T) {
 			tag := "Program:gologix_tests.LongDints"
 
 			tags := make([]string, 0)
-			types := make([]gologix.CIPType, 0)
+			types := make([]any, 0)
 			elements := make([]int, 0)
 
 			tagcount := 100
 
 			for i := 0; i < tagcount; i++ {
 				tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
-				types = append(types, gologix.CIPTypeDINT)
+				types = append(types, int32(0))
 				elements = append(elements, 1)
 			}
 
@@ -588,6 +588,45 @@ func TestReadStringArray(t *testing.T) {
 					t.Errorf("index %d wanted %v got %v", i+1, want[i], have[i])
 				}
 			}
+		})
+	}
+}
+
+func TestReadUnknownType(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			var result any
+			err = client.Read("Program:gologix_tests.ReadDints[0]", &result)
+			if err != nil {
+				t.Errorf("problem reading. %v", err)
+				return
+			}
+
+			// Check if the result is of type int32
+			if _, ok := result.(int32); !ok {
+				t.Errorf("expected int32, got %T", result)
+				return
+			}
+			// Check if the value is as expected
+			if result != int32(4351) {
+				t.Errorf("expected 4351, got %v", result)
+				return
+			}
+
 		})
 	}
 }

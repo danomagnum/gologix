@@ -279,6 +279,15 @@ func (client *Client) Read(tag string, data any) error {
 			data[i] = v[i]
 		}
 		return nil
+	case *any:
+		// could be anything?
+		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		if err != nil {
+			return err
+		}
+		reflect.ValueOf(data).Elem().Set(reflect.ValueOf(val))
+
+		return nil
 
 	case []interface{}:
 		// a pointer to a struct.
@@ -371,9 +380,10 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	// setup item
 	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
 	// add path
-	reqItems[1].Serialize(ioi.Bytes())
-	// add service specific data
-	reqItems[1].Serialize(elements)
+	err = reqItems[1].Serialize(ioi, elements)
+	if err != nil {
+		return nil, fmt.Errorf("problem serializing ioi: %w", err)
+	}
 
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
@@ -564,7 +574,7 @@ type cipStringHeader struct {
 	Length  uint32
 }
 type cipStructHeader struct {
-	Unknown uint16
+	StructTypeCRC uint16
 }
 
 // Tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
@@ -586,7 +596,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
-	types := make([]CIPType, 0)
+	types := make([]any, 0)
 	elements := make([]int, 0)
 	tag_map := make(map[string]int)
 	val := reflect.ValueOf(tag_str).Elem()
@@ -597,7 +607,8 @@ func (client *Client) ReadMulti(tag_str any) error {
 			continue
 		}
 		v := val.Field(i).Interface()
-		ct, elem := GoVarToCIPType(v)
+		ct := v
+		_, elem := GoVarToCIPType(v)
 		types = append(types, ct)
 		elements = append(elements, elem)
 		tags = append(tags, tagPath)
@@ -635,6 +646,7 @@ type tagDesc struct {
 	TagName  string
 	TagType  CIPType
 	Elements int
+	Struct   any
 }
 
 func (client *Client) readList(tags []tagDesc) ([]any, error) {
@@ -698,9 +710,10 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	// the item's data and the service code actually starts the next portion of the message.  But the item's header length reflects
 	// the total data so maybe not.
 	reqItems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqItems[1].Serialize(ioi_header)
-	reqItems[1].Serialize(jump_table)
-	reqItems[1].Serialize(&b)
+	err := reqItems[1].Serialize(ioi_header, jump_table, &b)
+	if err != nil {
+		return nil, fmt.Errorf("problem serializing item header: %w", err)
+	}
 
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
@@ -810,6 +823,26 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 				}
 				result_values[i] = string(str)
+			} else if rHdr.Type == CIPTypeStruct {
+				typehash := cipStructHeader{}
+				err := binary.Read(myBytes, binary.LittleEndian, &typehash)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
+				}
+				//dat := make([]byte, binary.Size(tags[i].Struct))
+				if tags[i].Struct == nil {
+					// just return the byte array.
+					result_values[i] = myBytes.Bytes()
+					continue
+				}
+				x := reflect.New(reflect.TypeOf(tags[i].Struct)).Interface()
+				err = binary.Read(myBytes, binary.LittleEndian, x)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
+				}
+				// depointer the result to the correct type.
+				y := reflect.ValueOf(x).Elem().Interface()
+				result_values[i] = y
 			} else {
 				result_values[i], err = rHdr.Type.readValue(myBytes)
 				if err != nil {
@@ -890,7 +923,12 @@ func (client *Client) ReadMap(m map[string]any) error {
 	for k := range m {
 		v := m[k]
 		ct, elem := GoVarToCIPType(v)
-		tags[i] = tagDesc{TagName: k, TagType: ct, Elements: elem}
+		tags[i] = tagDesc{
+			TagName:  k,
+			TagType:  ct,
+			Elements: elem,
+			Struct:   v,
+		}
 		indexes[i] = k
 		i++
 	}

@@ -74,13 +74,38 @@ func (client *Client) write_udt(tag string, value any) error {
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Serialize(ioi_header)
-	reqitems[1].Serialize(ioi.Buffer)
-	reqitems[1].Serialize(datatype)
-	reqitems[1].Serialize(byte(2))
-	reqitems[1].Serialize(typecrc)
-	reqitems[1].Serialize(elements)
-	reqitems[1].Serialize(UDTdata)
+	err = reqitems[1].Serialize(ioi_header)
+	if err != nil {
+		return fmt.Errorf("problem serializing ioi header. %w", err)
+	}
+	err = reqitems[1].Serialize(ioi.Buffer)
+	if err != nil {
+		return fmt.Errorf("problem serializing ioi buffer. %w", err)
+	}
+	err = reqitems[1].Serialize(datatype)
+	if err != nil {
+		return fmt.Errorf("problem serializing datatype. %w", err)
+	}
+
+	err = reqitems[1].Serialize(byte(2))
+	if err != nil {
+		return fmt.Errorf("problem serializing number of elements. %w", err)
+	}
+
+	err = reqitems[1].Serialize(typecrc)
+	if err != nil {
+		return fmt.Errorf("problem serializing type crc. %w", err)
+	}
+
+	err = reqitems[1].Serialize(elements)
+	if err != nil {
+		return fmt.Errorf("problem serializing elements. %w", err)
+	}
+
+	err = reqitems[1].Serialize(UDTdata)
+	if err != nil {
+		return fmt.Errorf("problem serializing UDT data. %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
@@ -151,10 +176,25 @@ func (client *Client) write_single(tag string, value any) error {
 	reqitems := make([]CIPItem, 2)
 	reqitems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 	reqitems[1] = CIPItem{Header: cipItemHeader{ID: cipItem_ConnectedData}}
-	reqitems[1].Serialize(ioi_header)
-	reqitems[1].Serialize(ioi.Buffer)
-	reqitems[1].Serialize(ioi_footer)
-	reqitems[1].Serialize(value)
+	err = reqitems[1].Serialize(ioi_header)
+	if err != nil {
+		return fmt.Errorf("problem serializing ioi header. %w", err)
+	}
+
+	err = reqitems[1].Serialize(ioi.Buffer)
+	if err != nil {
+		return fmt.Errorf("problem serializing ioi buffer. %w", err)
+	}
+
+	err = reqitems[1].Serialize(ioi_footer)
+	if err != nil {
+		return fmt.Errorf("problem serializing ioi footer. %w", err)
+	}
+
+	err = reqitems[1].Serialize(value)
+	if err != nil {
+		return fmt.Errorf("problem serializing value. %w", err)
+	}
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {

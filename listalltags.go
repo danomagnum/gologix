@@ -80,9 +80,16 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	// if we are starting from scratch, we should list all the programs first so we have
 	// their instance IDs when we come across program scoped tags.
 	if start_instance == 1 {
-		client.ListAllPrograms()
+		err := client.ListAllPrograms()
+		if err != nil {
+			return fmt.Errorf("problem listing programs: %w", err)
+		}
 		for _, p := range client.KnownPrograms {
-			client.ListSubTags(p, 1)
+			_, err := client.ListSubTags(p, 1)
+			if err != nil {
+				return fmt.Errorf("problem listing sub tags for %s: %w", p.Name, err)
+			}
+
 		}
 	}
 
@@ -105,18 +112,24 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	// setup item
 	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
 	// add path
-	reqItems[1].Serialize(path.Bytes())
+	err = reqItems[1].Serialize(path.Bytes())
+	if err != nil {
+		return fmt.Errorf("problem serializing path: %w", err)
+	}
 	// add service specific data
 	number_of_attr_to_receive := 3
 	attr1_symbol_name := 1
 	attr2_symbol_type := 2
 	attr8_arrayDims := 8
-	reqItems[1].Serialize([4]uint16{
+	err = reqItems[1].Serialize([4]uint16{
 		uint16(number_of_attr_to_receive),
 		uint16(attr1_symbol_name),
 		uint16(attr2_symbol_type),
 		uint16(attr8_arrayDims),
 	})
+	if err != nil {
+		return fmt.Errorf("problem serializing item data: %w", err)
+	}
 
 	itemData, err := serializeItems(reqItems)
 	if err != nil {
