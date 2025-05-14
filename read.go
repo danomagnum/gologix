@@ -279,6 +279,15 @@ func (client *Client) Read(tag string, data any) error {
 			data[i] = v[i]
 		}
 		return nil
+	case *any:
+		// could be anything?
+		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		if err != nil {
+			return err
+		}
+		reflect.ValueOf(data).Elem().Set(reflect.ValueOf(val))
+
+		return nil
 
 	case []interface{}:
 		// a pointer to a struct.

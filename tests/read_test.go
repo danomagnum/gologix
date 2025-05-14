@@ -591,3 +591,42 @@ func TestReadStringArray(t *testing.T) {
 		})
 	}
 }
+
+func TestReadUnknownType(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			var result any
+			err = client.Read("Program:gologix_tests.ReadDints[0]", &result)
+			if err != nil {
+				t.Errorf("problem reading. %v", err)
+				return
+			}
+
+			// Check if the result is of type int32
+			if _, ok := result.(int32); !ok {
+				t.Errorf("expected int32, got %T", result)
+				return
+			}
+			// Check if the value is as expected
+			if result != int32(4351) {
+				t.Errorf("expected 4351, got %v", result)
+				return
+			}
+
+		})
+	}
+}
