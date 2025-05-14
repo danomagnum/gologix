@@ -351,14 +351,14 @@ func TestReadTooManyTags(t *testing.T) {
 			tag := "Program:gologix_tests.LongDints"
 
 			tags := make([]string, 0)
-			types := make([]gologix.CIPType, 0)
+			types := make([]any, 0)
 			elements := make([]int, 0)
 
 			tagcount := 100
 
 			for i := 0; i < tagcount; i++ {
 				tags = append(tags, fmt.Sprintf("%s[%d]", tag, i))
-				types = append(types, gologix.CIPTypeDINT)
+				types = append(types, int32(0))
 				elements = append(elements, 1)
 			}
 
