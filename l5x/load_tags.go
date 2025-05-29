@@ -3,6 +3,7 @@ package l5x
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 func LoadTags(l5xData RSLogix5000Content) (map[string]any, error) {
@@ -96,10 +97,11 @@ func LoadTags(l5xData RSLogix5000Content) (map[string]any, error) {
 
 }
 
-func LoadTagComments(l5xData RSLogix5000Content) (map[string]any, error) {
+func LoadTagComments(l5xData RSLogix5000Content) (map[string]string, error) {
+	dtm := GetDataTypeMap(l5xData)
 
 	var err error
-	tags := make(map[string]any)
+	tags := make(map[string]string)
 
 	for _, module := range l5xData.Controller.Modules.Module {
 		if module.Communications == nil {
@@ -147,9 +149,21 @@ func LoadTagComments(l5xData RSLogix5000Content) (map[string]any, error) {
 	}
 
 	for _, tag := range l5xData.Controller.Tags.Tag {
+
+		mydesc := ""
 		if tag.Data != nil {
 			if len(tag.Description) > 0 {
-				tags[tag.NameAttr] = tag.Description[0].CData()
+				mydesc = tag.Description[0].CData()
+				tags[tag.NameAttr] = mydesc
+			}
+		}
+		typeComments := GetTypeComments(dtm, tag.DataTypeAttr)
+		for typeName, typeComment := range typeComments {
+			if typeComment != "" {
+				if mydesc != "" {
+					typeComment = mydesc + " " + typeComment
+				}
+				tags[fmt.Sprintf("%s.%s", tag.NameAttr, typeName)] = typeComment
 			}
 		}
 	}
@@ -208,4 +222,75 @@ func LoadRungComments(l5xData RSLogix5000Content) (map[string]string, error) {
 		}
 	}
 	return comments, nil
+}
+
+// convert list of data types to a map[string]any
+func GetDataTypeMap(l5xData RSLogix5000Content) map[string]*DataTypeType {
+	dataTypes := make(map[string]*DataTypeType)
+
+	for _, dataType := range l5xData.Controller.DataTypes.DataType {
+		dataTypes[dataType.NameAttr] = dataType
+	}
+
+	return dataTypes
+}
+
+func GetTypeComments(types map[string]*DataTypeType, typeName string) map[string]string {
+	dt, ok := types[typeName]
+	if !ok {
+		return nil
+	}
+	out := make(map[string]string)
+	myDescription := ""
+	if dt.Description != nil {
+		myDescription = dt.Description.CData()
+	}
+	out[typeName] = myDescription
+	members := dt.Members
+	if members == nil {
+	}
+	for _, member := range dt.Members.Member {
+		//typeName := fmt.Sprintf("%s.%s", typeName, member.NameAttr)
+		memberDesc := myDescription
+		if member.Description != nil {
+			if myDescription != "" {
+				memberDesc = myDescription + "$" + member.Description.CData()
+			} else {
+				memberDesc = member.Description.CData()
+			}
+		}
+		name := member.NameAttr
+		//out[member.NameAttr] = memberDesc
+		submembers := GetTypeComments(types, member.DataTypeAttr)
+		if member.DataTypeAttr == "BIT" {
+			// bit number is BitNumberAttr + TargetAttr[-2:] - 1 ?
+			offset_str := member.TargetAttr[len(member.TargetAttr)-2:]
+			offset_str = strings.TrimLeft(offset_str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
+			num, err := strconv.Atoi(offset_str)
+			if err != nil {
+				continue // skip this member
+			}
+			pos := member.BitNumberAttr + num
+			// This is assinine.
+			switch num {
+			case 9:
+				pos--
+			case 18:
+				pos -= 2
+			case 27:
+				pos -= 3
+			}
+			name = fmt.Sprintf("%s<%d>", member.NameAttr, pos)
+		}
+		out[name] = memberDesc
+		for subName, subDesc := range submembers {
+			fullname := fmt.Sprintf("%s.%s", member.NameAttr, subName)
+			if memberDesc != "" {
+				out[fullname] = memberDesc + "." + subDesc
+			} else {
+				out[fullname] = subDesc
+			}
+		}
+	}
+	return out
 }

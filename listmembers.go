@@ -84,9 +84,15 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 		uint16(attr_MemberCount),
 		uint16(attr_symbol_type),
 	})
-	if err != nil {
-		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing item attribute list: %w", err)
-	}
+	// the attributes for the template object are
+	// 1 uint16 = Template Handle (Is this the CRC?)
+	// 2 uint16 = Number of members
+	// 3 uint16 = Size of the template in 32 bit words
+	// 4 uint32 = Size of the template in bytes
+	// 5 uint32 = Size of the data in the template (when sent in a read response)
+	// 6 uint16 = Family type  (0 for UDT, 1 for string?)
+	// 7 uint32 = Multiply Code?
+	// 8 uint8  = Recon Data
 
 	itemdata, err := serializeItems(reqitems)
 	if err != nil {
