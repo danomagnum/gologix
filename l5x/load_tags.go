@@ -254,7 +254,7 @@ func GetTypeComments(types map[string]*DataTypeType, typeName string) map[string
 		memberDesc := myDescription
 		if member.Description != nil {
 			if myDescription != "" {
-				memberDesc = myDescription + "$" + member.Description.CData()
+				memberDesc = myDescription + " " + member.Description.CData()
 			} else {
 				memberDesc = member.Description.CData()
 			}
@@ -286,7 +286,7 @@ func GetTypeComments(types map[string]*DataTypeType, typeName string) map[string
 		for subName, subDesc := range submembers {
 			fullname := fmt.Sprintf("%s.%s", member.NameAttr, subName)
 			if memberDesc != "" {
-				out[fullname] = memberDesc + "." + subDesc
+				out[fullname] = memberDesc + " " + subDesc
 			} else {
 				out[fullname] = subDesc
 			}
