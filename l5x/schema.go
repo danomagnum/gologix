@@ -257,7 +257,7 @@ type DataTypeMemberType struct {
 	RadixAttr          string                          `xml:"Radix,attr,omitempty"`
 	HiddenAttr         string                          `xml:"Hidden,attr,omitempty"`
 	TargetAttr         string                          `xml:"Target,attr,omitempty"`
-	BitNumberAttr      string                          `xml:"BitNumber,attr,omitempty"`
+	BitNumberAttr      int                             `xml:"BitNumber,attr,omitempty"`
 	SizeAttr           string                          `xml:"Size,attr,omitempty"`
 	OffsetAttr         string                          `xml:"Offset,attr,omitempty"`
 	MaxAttr            string                          `xml:"Max,attr,omitempty"`
@@ -1800,7 +1800,7 @@ type SheetType struct {
 
 // FBDInputRefType ...
 type FBDInputRefType struct {
-	XMLName              xml.Name                        `xml:"FBD_InputRefType"`
+	XMLName              xml.Name                        `xml:"IRef"`
 	IDAttr               string                          `xml:"ID,attr"`
 	XAttr                string                          `xml:"X,attr"`
 	YAttr                string                          `xml:"Y,attr"`
@@ -1820,7 +1820,7 @@ type FBDInputRefType struct {
 
 // FBDOutputRefType ...
 type FBDOutputRefType struct {
-	XMLName           xml.Name                        `xml:"FBD_OutputRefType"`
+	XMLName           xml.Name                        `xml:"ORef"`
 	IDAttr            string                          `xml:"ID,attr"`
 	XAttr             string                          `xml:"X,attr"`
 	YAttr             string                          `xml:"Y,attr"`
@@ -1838,7 +1838,7 @@ type FBDOutputRefType struct {
 
 // FBDInputWireConnectorType ...
 type FBDInputWireConnectorType struct {
-	XMLName          xml.Name                        `xml:"FBD_InputWireConnectorType"`
+	XMLName          xml.Name                        `xml:"ICon"`
 	IDAttr           string                          `xml:"ID,attr"`
 	XAttr            string                          `xml:"X,attr"`
 	YAttr            string                          `xml:"Y,attr"`
@@ -1852,7 +1852,7 @@ type FBDInputWireConnectorType struct {
 
 // FBDOutputWireConnectorType ...
 type FBDOutputWireConnectorType struct {
-	XMLName          xml.Name                        `xml:"FBD_OutputWireConnectorType"`
+	XMLName          xml.Name                        `xml:"OCon"`
 	IDAttr           string                          `xml:"ID,attr"`
 	XAttr            string                          `xml:"X,attr"`
 	YAttr            string                          `xml:"Y,attr"`
@@ -1866,7 +1866,7 @@ type FBDOutputWireConnectorType struct {
 
 // FBDUDIBlockType ...
 type FBDUDIBlockType struct {
-	XMLName           xml.Name                        `xml:"FBD_UDIBlockType"`
+	XMLName           xml.Name                        `xml:"AddOnInstruction"`
 	NameAttr          string                          `xml:"Name,attr"`
 	IDAttr            string                          `xml:"ID,attr"`
 	XAttr             string                          `xml:"X,attr"`
@@ -1897,7 +1897,7 @@ type FBDUDIArgumentType struct {
 
 // AFBDBlockType ...
 type AFBDBlockType struct {
-	XMLName               xml.Name                        `xml:"AFBD_BlockType"`
+	XMLName               xml.Name                        `xml:"Block"`
 	TypeAttr              string                          `xml:"Type,attr"`
 	IDAttr                string                          `xml:"ID,attr"`
 	XAttr                 string                          `xml:"X,attr"`
@@ -1921,7 +1921,7 @@ type AFBDBlockType struct {
 
 // AFBDFunctionType ...
 type AFBDFunctionType struct {
-	XMLName                 xml.Name                        `xml:"AFBD_FunctionType"`
+	XMLName                 xml.Name                        `xml:"Function"`
 	TypeAttr                string                          `xml:"Type,attr"`
 	IDAttr                  string                          `xml:"ID,attr"`
 	XAttr                   string                          `xml:"X,attr"`
@@ -1938,7 +1938,7 @@ type AFBDFunctionType struct {
 
 // FBDSpecialArrayType ...
 type FBDSpecialArrayType struct {
-	XMLName           xml.Name                        `xml:"FBD_SpecialArrayType"`
+	XMLName           xml.Name                        `xml:"Array"`
 	NameAttr          string                          `xml:"Name,attr"`
 	OperandAttr       string                          `xml:"Operand,attr,omitempty"`
 	OperandIOIAttr    string                          `xml:"OperandIOI,attr,omitempty"`
@@ -2034,7 +2034,7 @@ type FBDRETType struct {
 
 // FBDWireType ...
 type FBDWireType struct {
-	XMLName          xml.Name                        `xml:"FBD_WireType"`
+	XMLName          xml.Name                        `xml:"Wire"`
 	FromIDAttr       string                          `xml:"FromID,attr"`
 	FromParamAttr    string                          `xml:"FromParam,attr,omitempty"`
 	ToIDAttr         string                          `xml:"ToID,attr"`
@@ -2048,7 +2048,7 @@ type FBDWireType struct {
 
 // FBDFeedbackWireType ...
 type FBDFeedbackWireType struct {
-	XMLName          xml.Name                        `xml:"FBD_FeedbackWireType"`
+	XMLName          xml.Name                        `xml:"FeedbackWire"`
 	FromIDAttr       string                          `xml:"FromID,attr"`
 	FromParamAttr    string                          `xml:"FromParam,attr,omitempty"`
 	ToIDAttr         string                          `xml:"ToID,attr"`
