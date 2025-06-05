@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
 )
 
 // Read a single tag into data.  Data should be a pointer to the variable where the data will be deposited.
@@ -596,6 +598,7 @@ func (client *Client) ReadMulti(tag_str any) error {
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
 	tags := make([]string, 0)
+	parsedTags := make([]string, 0)
 	types := make([]any, 0)
 	elements := make([]int, 0)
 	tag_map := make(map[string]int)
@@ -606,16 +609,23 @@ func (client *Client) ReadMulti(tag_str any) error {
 		if !ok {
 			continue
 		}
+
+		parsedTag, length, err := client.parseTagNameAndLength(tagPath)
+		if err != nil {
+			return fmt.Errorf("problem parsing tag %s: %w", tagPath, err)
+		}
+
 		v := val.Field(i).Interface()
 		ct := v
 		_, elem := GoVarToCIPType(v)
 		types = append(types, ct)
-		elements = append(elements, elem)
+		elements = append(elements, elem*length)
 		tags = append(tags, tagPath)
+		parsedTags = append(parsedTags, parsedTag)
 		tag_map[tagPath] = i
 	}
 
-	result_values, err := client.ReadList(tags, types, elements)
+	result_values, err := client.ReadList(parsedTags, types, elements)
 	if err != nil {
 		return fmt.Errorf("problem in read list: %w", err)
 	}
@@ -640,6 +650,27 @@ func (client *Client) ReadMulti(tag_str any) error {
 	}
 
 	return nil
+}
+
+func (client *Client) parseTagNameAndLength(tag string) (string, int, error) {
+	re := regexp.MustCompile(`^([^\[]+)(?:\[(\d+)\])?$`)
+	matches := re.FindStringSubmatch(tag)
+
+	if len(matches) == 0 {
+		return "", 0, fmt.Errorf("invalid tag format: %s", tag)
+	}
+
+	name := matches[1]
+	length := 1 // default if not specified
+	if matches[2] != "" {
+		n, err := strconv.Atoi(matches[2])
+		if err != nil {
+			return "", 0, fmt.Errorf("invalid array length in tag: %s", tag)
+		}
+		length = n
+	}
+
+	return name, length, nil
 }
 
 type tagDesc struct {
