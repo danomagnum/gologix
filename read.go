@@ -595,27 +595,29 @@ func (client *Client) ReadMulti(tag_str any) error {
 	// build the tag list from the structure by reflecting through the tags on the fields of the struct.
 	T := reflect.TypeOf(tag_str).Elem()
 	vf := reflect.VisibleFields(T)
+	taglist := make([]tagDesc, 0, len(vf))
 	tags := make([]string, 0)
-	types := make([]any, 0)
-	elements := make([]int, 0)
 	tag_map := make(map[string]int)
 	val := reflect.ValueOf(tag_str).Elem()
 	for i := range vf {
 		field := vf[i]
 		tagPath, ok := field.Tag.Lookup("gologix")
-		if !ok {
+		if !ok || tagPath == "" {
 			continue
 		}
 		v := val.Field(i).Interface()
-		ct := v
-		_, elem := GoVarToCIPType(v)
-		types = append(types, ct)
-		elements = append(elements, elem)
+		t, elem := GoVarToCIPType(v)
 		tags = append(tags, tagPath)
 		tag_map[tagPath] = i
+		taglist = append(taglist, tagDesc{
+			TagName:  tagPath,
+			TagType:  t,
+			Elements: elem,
+			Struct:   v,
+		})
 	}
 
-	result_values, err := client.ReadList(tags, types, elements)
+	result_values, err := client.readList(taglist)
 	if err != nil {
 		return fmt.Errorf("problem in read list: %w", err)
 	}
@@ -697,12 +699,25 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("problem writing ioi buffer to msg buffer. %w", err)
 		}
+
+		totalMsgSize := b.Len() + SizeOf(h) + SizeOf(f) + 2 // 2 for the jump table entry
 		// TODO: calculate the actual message size, not just the IOI data size.
 		// TODO: We also need to calculate the response size we expect from the PLC and split
 		//       into multiple messages on that also.
-		if b.Len() > int(client.ConnectionSize) {
-			// TODO: split this read up into multiple messages.
-			return nil, fmt.Errorf("maximum read message size is %d", client.ConnectionSize)
+		if totalMsgSize > int(client.ConnectionSize) {
+			first_part := tags[:i]
+			rest := tags[i:]
+
+			results0, err := client.readList(first_part)
+			if err != nil {
+				return nil, fmt.Errorf("problem reading first part of tags: %w", err)
+			}
+			results1, err := client.readList(rest)
+			if err != nil {
+				return nil, fmt.Errorf("problem reading second part of tags: %w", err)
+			}
+			return append(results0, results1...), nil
+
 		}
 	}
 
