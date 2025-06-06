@@ -228,6 +228,9 @@ func testReadNew[T gologix.GoLogixTypes](t *testing.T, client *gologix.Client, t
 }
 
 func TestReadMulti(t *testing.T) {
+	// this assortment of reads is just longer than a small forward open so
+	// it will test that the library can handle multiple reads in a single forward open on some PLCs and
+	// a single forward open on others.
 	type test_str struct {
 		TestSint          int8    `gologix:"program:gologix_tests.readsint"`
 		TestInt           int16   `gologix:"program:gologix_tests.readint"`
