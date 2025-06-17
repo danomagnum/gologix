@@ -101,21 +101,34 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 		return nil, fmt.Errorf("tag %v not in map", tag)
 	}
 
-	t := reflect.ValueOf(val)
-
-	if t.Kind() == reflect.Slice {
-		if t.Type().Elem().Kind() == reflect.Bool {
-			// for bool slices, the array length is the number of 32 bit words, not the number of bits.
-			bools := int(qty * 32)
-			if bools > t.Len() {
-				bools = t.Len()
-			}
-			qty = int16(bools/32) + 1
-			values := reflect.Indirect(t)
-			v := values.Slice(0, int(bools))
-			return v.Interface(), nil
-
+	// bool arrays are special and are transmitted as dwords
+	if boolSlice, isBoolSlice := val.([]bool); isBoolSlice {
+		qty = 32 * qty // quantity on a bool array is the number of 32 bit words to read, not the number of bools
+		if int(qty) > len(boolSlice) {
+			qty = int16(len(boolSlice))
 		}
+
+		if qty == 0 {
+			return nil, fmt.Errorf("no bools available to read") // Return empty slice of dwords
+		}
+
+		targetBools := boolSlice[:qty]
+
+		numDwords := (len(targetBools) + 31) / 32
+		dwordSlice := make([]uint32, numDwords)
+
+		for i, bVal := range targetBools {
+			dwordIndex := i / 32
+			bitInDwordIndex := i % 32
+			if bVal {
+				dwordSlice[dwordIndex] |= (1 << uint(bitInDwordIndex))
+			}
+		}
+		return dwordSlice, nil
+	}
+
+	t := reflect.ValueOf(val)
+	if t.Kind() == reflect.Slice {
 		if int(qty) <= t.Len() {
 			values := reflect.Indirect(t)
 			v := values.Slice(0, int(qty))

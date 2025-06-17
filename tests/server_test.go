@@ -1,8 +1,11 @@
 package gologix_tests
 
 import (
+	"cmp"
+	"fmt"
 	"log"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -102,18 +105,82 @@ func TestServer(t *testing.T) {
 		t.Errorf("Expected testfloat64 to be %v but got %v", 10238.21, testFloat64)
 	}
 
-	testBoolArray := make([]bool, 10)
-	err = client.Read("testboolarray", &testBoolArray)
+	testBoolArray := make([]bool, 32)
+	err = client.Read("testboolarray", testBoolArray)
 	if err != nil {
 		t.Errorf("problem reading testboolarray. %v", err)
 	}
-	/*
-		expectedBoolArray := []bool{true, false, true, false, true, false, true, false, true, false}
-		if len(testBoolArray) != len(expectedBoolArray) || !equalBoolSlices(testBoolArray, expectedBoolArray) {
-			t.Errorf("Expected testboolarray to be %v but got %v", expectedBoolArray, testBoolArray)
-		}
-	*/
+	expectedBoolArray := []bool{
+		true,  // 0
+		false, // 1
+		true,  // 2
+		false, // 3
+		true,  // 4
+		false, // 5
+		true,  // 6
+		false, // 7
+		true,  // 8
+		false, // 9
+		false, // 10
+		false, // 11
+		false, // 12
+		false, // 13
+		false, // 14
+		false, // 15
+		false, // 16
+		false, // 17
+		false, // 18
+		false, // 19
+		false, // 20
+		false, // 21
+		false, // 22
+		false, // 23
+		false, // 24
+		false, // 25
+		false, // 26
+		false, // 27
+		false, // 28
+		false, // 29
+		false, // 30
+		false, // 31
+	}
+	if !equalBoolSlices(testBoolArray, expectedBoolArray) {
+		t.Errorf("Expected testboolarray to be %v but got %v", expectedBoolArray, testBoolArray)
+	}
 
+	err = testReadArray(client, "testint32array", []int32{1, 2, 3, 4, 5})
+	if err != nil {
+		t.Error("problem reading testint32array.", err)
+	}
+	err = testReadArray(client, "testint32array", []int32{1, 2})
+	if err != nil {
+		t.Error("problem reading testint32array.", err)
+	}
+
+}
+
+func testReadArray[T cmp.Ordered](client *gologix.Client, tag string, expected []T) error {
+	dest := make([]T, len(expected))
+	err := client.Read(tag, dest)
+	if err != nil {
+		return fmt.Errorf("problem reading %v: %v", tag, err)
+	}
+	if slices.Compare(dest, expected) != 0 {
+		return fmt.Errorf("Expected %v to be %v but got %v", tag, expected, dest)
+	}
+	return nil
+}
+
+func equalBoolSlices(testBoolArray []bool, expectedBoolArray []bool) bool {
+	if len(testBoolArray) != len(expectedBoolArray) {
+		return false
+	}
+	for i := range testBoolArray {
+		if testBoolArray[i] != expectedBoolArray[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func createTags(mtp *gologix.MapTagProvider) error {
