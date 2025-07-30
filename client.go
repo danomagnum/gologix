@@ -108,14 +108,42 @@ type Client struct {
 	logger_ip_set bool
 }
 
-// Create a client with reasonable defaults for the given ip address.
+// NewClient creates a new PLC client with reasonable defaults for the given IP address.
 //
-// Before using the client, you will probably want to call Connect().
-// After connecting be sure to call disconnect() when you are done with the client.  Probably a good place for a defer.
+// You must call Connect() before using the client for tag operations.
+// Always call Disconnect() when finished (preferably with defer).
 //
-// Default path is back plane, slot 0.  For devices that aren't in a rack and aren't control or compact logix,
-// such as the micro800 series or io modules, etc...  you probably want to change the path to []byte{}
-// after creating the client with this function.
+// For devices not in a ControlLogix/CompactLogix rack (such as Micro800 series,
+// PowerFlex drives, or I/O modules), change the path after creation:
+//
+//	client := gologix.NewClient("192.168.1.100")
+//	client.Controller.Path = &bytes.Buffer{}  // Empty path for some devices
+//
+// For PLCs in different slots, update the path:
+//
+//	client.Controller.Path, _ = gologix.ParsePath("1,2")  // Backplane, slot 2
+//
+// Other common configurations:
+//
+//	client.SocketTimeout = time.Second * 30        // Longer timeout
+//	client.AutoConnect = true                      // Auto-reconnect on failures
+//	client.KeepAliveAutoStart = true              // Enable connection keepalive
+//	client.Logger = slog.Default()               // Enable logging
+//
+// Example:
+//
+//	client := gologix.NewClient("192.168.1.100")
+//	err := client.Connect()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer client.Disconnect()
+//
+//	var value int16
+//	err = client.Read("TestInt", &value)
+//
+// Returns a configured client ready for connection. The IP address parameter
+// should be the IPv4 address of the PLC as a string (e.g., "192.168.1.100").
 func NewClient(ip string) *Client {
 	// default path is back plane -> slot 0
 	path, err := ParsePath("1,0")

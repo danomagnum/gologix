@@ -6,6 +6,37 @@ import (
 	"fmt"
 )
 
+// This function sends a List Services command to discover what communication services
+// the device supports. This is useful for device discovery, capability checking,
+// and diagnostic purposes.
+//
+// Returns a slice of CIPListService structures containing:
+//   - EncapProtocolVersion: The encapsulation protocol version supported
+//   - Capabilities: Service capability flags indicating supported features
+//   - Name: Human-readable service name
+//
+// Common services you might see include:
+//   - "Communications": Standard CIP communications service
+//   - "Directory Object": Object directory service
+//   - "File Object": File transfer service
+//
+// Example:
+//
+//	services, err := client.ListServices()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	for _, service := range services {
+//	    fmt.Printf("Service: %s\n", service.Name)
+//	    fmt.Printf("  Protocol Version: %d\n", service.EncapProtocolVersion)
+//	    fmt.Printf("  Capabilities: 0x%04X\n", service.Capabilities)
+//	}
+//
+// This function is typically used in conjunction with ListIdentity() for comprehensive
+// device discovery and capability assessment.
+//
+// Note: The device must be connected before calling this function.
 func (client *Client) ListServices() ([]CIPListService, error) {
 	client.Logger.Debug("listing services")
 

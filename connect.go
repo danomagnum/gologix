@@ -39,7 +39,34 @@ func (client *Client) startConnect() error {
 	}
 }
 
-// Connect to the PLC.
+// Connect establishes a CIP connection to the PLC.
+//
+// The client must be created with NewClient() before calling Connect().
+// Connection parameters like IP address, port, path, and timeouts should be
+// configured on the client before connecting.
+//
+// Example:
+//
+//	client := gologix.NewClient("192.168.1.100")
+//
+//	// Optional: configure non-default settings
+//	client.Controller.Port = 44818
+//	client.SocketTimeout = time.Second * 30
+//
+//	err := client.Connect()
+//	if err != nil {
+//	    log.Fatal("Failed to connect:", err)
+//	}
+//	defer client.Disconnect()  // Always disconnect when done
+//
+// Connect can be called multiple times safely - if already connected, it returns an error.
+// Use Connected() to check connection status, or enable AutoConnect for automatic reconnection.
+//
+// For devices that aren't in a ControlLogix/CompactLogix rack (like Micro800 series),
+// you may need to set an empty path: client.Controller.Path = &bytes.Buffer{}
+//
+// Returns an error if the connection fails due to network issues, invalid configuration,
+// PLC unavailability, or CIP protocol errors.
 func (client *Client) Connect() error {
 	err := client.startConnect()
 	if err != nil {

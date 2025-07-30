@@ -26,8 +26,31 @@ func (client *Client) startDisconnect() error {
 	}
 }
 
-// You will want to defer this after a successful Connect() to make sure you free up the controller resources
-// to disconnect we send two items - a null item and an unconnected data item for the unregister service
+// Disconnect gracefully closes the CIP connection to the PLC and releases controller resources.
+//
+// Always call Disconnect() after a successful Connect() to ensure proper cleanup.
+// It's recommended to use defer for this:
+//
+//	client := gologix.NewClient("192.168.1.100")
+//	err := client.Connect()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer client.Disconnect()  // Ensures cleanup even if errors occur
+//
+// If you don't call Disconnect(), the PLC connection may remain allocated until
+// it times out (typically about 2 minutes), which can prevent immediate reconnection
+// and may consume PLC connection resources.
+//
+// Disconnect can be called multiple times safely - subsequent calls after the first
+// successful disconnect will return an error but won't cause issues.
+//
+// The function attempts to send a proper disconnection message to the PLC, but will
+// force the local connection closed even if the PLC communication fails, ensuring
+// local resources are always cleaned up.
+//
+// Returns an error if already disconnected or if there are issues during the
+// disconnection sequence, but the connection will be closed regardless.
 func (client *Client) Disconnect() error {
 	err := client.startDisconnect()
 	if err != nil {

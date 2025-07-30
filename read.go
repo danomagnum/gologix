@@ -8,13 +8,32 @@ import (
 	"reflect"
 )
 
-// Read a single tag into data.  Data should be a pointer to the variable where the data will be deposited.
+// Read reads a single tag value from the PLC into the provided data variable.
 //
-// If the data type is not known at read time, use the Read_single function with a CIPType_Unknown type
+// The data parameter must be a pointer to a variable with a type that matches the PLC tag's data type.
+// Supported Go types are mapped to CIP types as documented in types.go.
 //
-// # To efficiently read multiple tags at once, use the ReadMulti, ReadMap, or ReadList functions
+// For arrays and slices, data should be a pre-allocated slice of the correct length:
+//   - Use a pointer (&variable) for scalar values and structs
+//   - Use a slice directly (no pointer) for arrays
 //
-// If the data type does not match what is returned by the controller you will get an error.
+// Examples:
+//   var intTag int16
+//   err := client.Read("TestInt", &intTag)  // Read INT tag
+//
+//   var realTag float32
+//   err := client.Read("TestReal", &realTag)  // Read REAL tag
+//
+//   intArray := make([]int32, 5)
+//   err := client.Read("TestDintArr[2]", intArray)  // Read 5 elements starting at index 2
+//
+//   var udtTag MyStruct
+//   err := client.Read("MyUDTTag", &udtTag)  // Read UDT into struct
+//
+// For reading multiple tags efficiently, use ReadMulti, ReadMap, or ReadList instead.
+// If the tag data type is unknown at compile time, use Read_single with CIPType_Unknown.
+//
+// Returns an error if the connection fails, the tag doesn't exist, or there's a type mismatch.
 func (client *Client) Read(tag string, data any) error {
 	err := client.checkConnection()
 	if err != nil {
@@ -351,11 +370,31 @@ func (client *Client) Read(tag string, data any) error {
 	return nil
 }
 
-// Read a single tag with the datatype given by a parameter instead of inferred from a pointer.
+// Read_single reads a single tag with an explicitly specified data type instead of inferring the type from a pointer.
 //
-// To read data of an unknown type, use CIPTypeUnknown for the data type.
+// This function allows you to read tags when the data type is not known at compile time. Use CIPType_Unknown 
+// to read a tag of unknown type - the PLC will return the actual data type and value.
 //
-// The data is returned as an interface{} so you'll probably have to type assert it.
+// Parameters:
+//   - tag: The name of the tag to read (case insensitive)
+//   - datatype: The expected CIP data type (use CIPType_Unknown for auto-detection)
+//   - elements: Number of elements to read (1 for scalar values)
+//
+// Returns the data as interface{}, which you'll need to type assert to the appropriate Go type.
+//
+// Examples:
+//   // Read a tag of known type
+//   value, err := client.Read_single("TestInt", CIPType_INT, 1)
+//   intValue := value.(int16)
+//
+//   // Read a tag of unknown type
+//   value, err := client.Read_single("UnknownTag", CIPType_Unknown, 1)
+//
+//   // Read multiple elements
+//   values, err := client.Read_single("IntArray", CIPType_INT, 5)
+//   intSlice := values.([]interface{})
+//
+// For strongly-typed reading, use the Read function instead. For multiple tags, use ReadMulti or ReadMap.
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
 
 	err := client.checkConnection()
@@ -577,10 +616,41 @@ type cipStructHeader struct {
 	StructTypeCRC uint16
 }
 
-// Tag_str is a pointer to a struct with each field tagged with a `gologix:"TAGNAME"` tag that specifies the tag on the client.
-// The types of each field need to correspond to the correct CIP type as mapped in types.go
+// ReadMulti reads multiple tags efficiently in a single request using struct field tags or a map.
 //
-// To read multiple tags without creating a tagged struct, use the ReadList() or ReadMap() functions instead.
+// This function supports two input types:
+//
+// 1. Struct with gologix field tags:
+//    Each field should have a `gologix:"tagname"` tag specifying the PLC tag to read.
+//    Field types must match the corresponding CIP types as documented in types.go.
+//
+//    Example:
+//      type MyTags struct {
+//          IntTag    int16     `gologix:"TestInt"`
+//          RealTag   float32   `gologix:"TestReal"`
+//          ArrayTag  []int32   `gologix:"TestDintArr[2]"`  // Read 5 elements starting at index 2
+//      }
+//      var tags MyTags
+//      tags.ArrayTag = make([]int32, 5)  // Pre-allocate slice
+//      err := client.ReadMulti(&tags)
+//
+// 2. Map[string]any:
+//    Keys are tag names, values are variables with correct types.
+//    The function updates the map values with data from the PLC.
+//
+//    Example:
+//      m := map[string]any{
+//          "TestInt":         int16(0),
+//          "TestReal":        float32(0),
+//          "TestDintArr[2]":  make([]int32, 5),
+//      }
+//      err := client.ReadMulti(m)
+//
+// For struct-based reading without field tags, or when working with maps exclusively, 
+// use ReadMap instead. For reading tags with different types, use ReadList.
+//
+// ReadMulti automatically splits large requests across multiple messages if needed
+// to stay within connection size limits.
 func (client *Client) ReadMulti(tag_str any) error {
 	switch x := tag_str.(type) {
 	case map[string]any:
@@ -913,17 +983,53 @@ type msgMultiReadResult struct {
 	Reserved2 byte
 }
 
-// Function for reading multiple tags at once where the tags are in a go map.
-// the keys in the map are the tag names, and the values need to be the correct type
-// for the tag.  The ReadMap function will update the values in the map to the current values
-// in the controller.
+// ReadMap reads multiple tags efficiently using a map where keys are tag names and values define the expected types.
 //
-// Example:
+// The map keys specify the tag names to read from the PLC (case insensitive).
+// The map values must be initialized with the correct Go types that correspond to the PLC tag types.
+// After the function completes successfully, the map values are updated with the current PLC values.
 //
-//		m := make(map[string]any) // define the map
-//		m["TestInt"] = int16(0) // the controller has a tag "TestInt" that is an INT
-//		m["TestDint"] = int32(0) // the controller has a tag "TestDint" that is a DINT
-//	    err = client.ReadMulti(&mr) // do the read.
+// Supported value types must match CIP types as documented in types.go:
+//   - Scalar types: int16 (INT), int32 (DINT), float32 (REAL), bool (BOOL), etc.
+//   - Arrays: pre-allocated slices like []int32, []float32, etc.
+//   - Strings: string type for STRING tags
+//   - Structs: user-defined types for UDT tags
+//
+// Examples:
+//   // Basic scalar tags
+//   m := map[string]any{
+//       "TestInt":    int16(0),      // Read INT tag
+//       "TestDint":   int32(0),      // Read DINT tag  
+//       "TestReal":   float32(0),    // Read REAL tag
+//       "TestBool":   false,         // Read BOOL tag
+//       "TestString": "",            // Read STRING tag
+//   }
+//
+//   // Array tags (specify starting index and pre-allocate slice)
+//   m["TestDintArr[2]"] = make([]int32, 5)  // Read 5 DINTs starting at index 2
+//   m["TestRealArr[0]"] = make([]float32, 10) // Read 10 REALs starting at index 0
+//
+//   // UDT tags  
+//   type MyUDT struct {
+//       Field1 int32
+//       Field2 float32
+//   }
+//   m["MyUDTTag"] = MyUDT{}
+//
+//   err := client.ReadMap(m)
+//   if err != nil {
+//       log.Fatal(err)
+//   }
+//   
+//   // Access the read values
+//   intValue := m["TestInt"].(int16)
+//   arrayValue := m["TestDintArr[2]"].([]int32)
+//
+// ReadMap automatically handles message splitting for large requests and optimizes
+// network usage by grouping tags into the minimum number of requests.
+//
+// For struct-based reading with field tags, use ReadMulti instead.
+// For reading tags with unknown types, set map values to nil.
 func (client *Client) ReadMap(m map[string]any) error {
 
 	err := client.checkConnection()
