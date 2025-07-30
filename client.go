@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+type connectionStatus int
+
+const (
+	connectionStatusDisconnected connectionStatus = iota
+	connectionStatusConnecting
+	connectionStatusConnected
+	connectionStatusDisconnecting
+)
+
 // you have to change this read sequencer every time you make a new tag request.  If you don't, you
 // won't get an error but it will return the last value you requested again.
 // You don't even have to keep incrementing it.  just going back and forth between 1 and 0 works OK.
@@ -75,17 +84,17 @@ type Client struct {
 	// tag reading functionality.
 	knownFirmware int
 
-	mutex                  sync.Mutex
-	conn                   net.Conn
+	// protects the connection and connection status
+	mutex      sync.Mutex
+	conn       net.Conn
+	connStatus connectionStatus
+
 	SessionHandle          uint32
 	OTNetworkConnectionID  uint32
 	HeaderSequenceCounter  uint16
 	ConnectionSize         uint16
 	ConnectionSerialNumber uint16
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rick rolled.
-	connected              bool
-	connecting             bool
-	disconnecting          bool
 	sequenceNumber         atomic.Uint32
 
 	cancel_keepalive chan struct{}

@@ -21,19 +21,44 @@ const (
 	rpiDefault              = time.Millisecond * 2500
 )
 
+func (client *Client) startConnect() error {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+	switch client.connStatus {
+	case connectionStatusConnected:
+		return fmt.Errorf("already connected")
+	case connectionStatusConnecting:
+		return fmt.Errorf("connection is already in progress")
+	case connectionStatusDisconnecting:
+		return fmt.Errorf("connection is currently disconnecting")
+	case connectionStatusDisconnected:
+		client.connStatus = connectionStatusConnecting
+		return nil
+	default:
+		return fmt.Errorf("unknown connection status: %d", client.connStatus)
+	}
+}
+
 // Connect to the PLC.
 func (client *Client) Connect() error {
-	if client.disconnecting {
-		client.Logger.Debug("waiting for client to finish disconnecting before connecting")
-		for client.disconnecting {
-			time.Sleep(time.Millisecond * 10)
+	err := client.startConnect()
+	if err != nil {
+		return err
+	}
+	success := false
+	defer func() {
+		if !success {
+			client.mutex.Lock()
+			client.connStatus = connectionStatusDisconnected
+			client.mutex.Unlock()
 		}
-	}
-	if client.connected || client.connecting {
-		return nil
-	}
-	client.connecting = true
-	defer func() { client.connecting = false }()
+		if success {
+			client.mutex.Lock()
+			client.connStatus = connectionStatusConnected
+			client.mutex.Unlock()
+		}
+	}()
+
 	if client.Logger != nil {
 		if !client.logger_ip_set {
 			if cl, ok := client.Logger.(LoggerInterfaceWith); ok && cl != nil {
@@ -61,7 +86,6 @@ func (client *Client) Connect() error {
 	client.sequenceNumber.Add(uint32(time.Now().UnixMilli()))
 
 	// default path is back plane -> slot 0
-	var err error
 	if client.Controller.Path == nil {
 		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
 		if err != nil {
@@ -110,8 +134,8 @@ func (client *Client) Connect() error {
 			return err
 		}
 	}
-	client.connected = true
 
+	success = true
 	if client.KeepAliveAutoStart {
 		go client.KeepAlive()
 	}
@@ -119,7 +143,9 @@ func (client *Client) Connect() error {
 }
 
 func (client *Client) Connected() bool {
-	return client.connected
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+	return client.connStatus == connectionStatusConnected
 }
 
 func (client *Client) registerSession() error {
@@ -175,7 +201,7 @@ func (client *Client) KeepAlive() {
 	for {
 		select {
 		case <-t.C:
-			if !client.connected {
+			if !client.Connected() {
 				client.Logger.Warn("keepalive failed. not connected")
 				return
 			}
@@ -492,7 +518,7 @@ type msgEIPForwardOpen_Standard_Reply struct {
 }
 
 func (client *Client) checkConnection() error {
-	if !client.connected {
+	if !client.Connected() {
 		if client.AutoConnect {
 			err := client.Connect()
 			if err != nil {
