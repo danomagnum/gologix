@@ -63,14 +63,54 @@ type msgListInstanceHeader struct {
 	Status        uint16
 }
 
-// Get all the tags on the device starting at start_instance.  Generally you would call this as ListAllTags(0) to get them all.
-// Once the function returns without error, you can access the results of the listing by looking at the client.KnownTags map
+// ListAllTags discovers and catalogs all tags available in the PLC, starting from the specified instance ID.
 //
-// the gist here is that we want to do a fragmented read (since there will undoubtedly be more than one packet's worth)
-// of the instance attribute list of the symbol objects.
+// This function performs a comprehensive scan of the PLC's symbol table to build a complete inventory
+// of available tags. The discovered tags are stored in the client's KnownTags map for later reference.
 //
-// see 1756-PM020H-EN-P March 2022 page 39
-// also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
+// The function automatically handles:
+//   - Controller-scoped tags (global tags)
+//   - Program-scoped tags (tags within program instances)
+//   - Array tags with dimension information
+//   - UDT (User Defined Type) tags with structure definitions
+//   - Fragmented responses for large tag lists
+//
+// Parameters:
+//   - start_instance: The symbol instance ID to start scanning from (use 0 to scan all tags)
+//
+// After successful completion, access the discovered tags via:
+//   - client.KnownTags: map[string]KnownTag containing all discovered tags (keyed by lowercase name)
+//   - client.KnownPrograms: slice of discovered program instances
+//   - client.KnownTypes: map of UDT definitions
+//
+// Examples:
+//
+//	// Discover all tags in the PLC
+//	err := client.ListAllTags(0)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Access discovered tags
+//	for tagName, tag := range client.KnownTags {
+//	    fmt.Printf("Tag: %s, Type: %s, Array: %v\n",
+//	        tag.Name, tag.Info.Type, tag.Array_Order)
+//	}
+//
+//	// Find a specific tag
+//	if tag, exists := client.KnownTags["testint"]; exists {
+//	    fmt.Printf("Found tag: %s with type %s\n", tag.Name, tag.Info.Type)
+//	}
+//
+//	// Check if it's an array
+//	if len(tag.Array_Order) > 0 {
+//	    fmt.Printf("Array dimensions: %v\n", tag.Array_Order)
+//	}
+//
+// Note: This operation can take significant time on PLCs with large numbers of tags.
+//
+// The function automatically calls ListAllPrograms() first when start_instance is 0
+// to ensure program-scoped tags are properly discovered and categorized.
 func (client *Client) ListAllTags(start_instance uint32) error {
 	const minimumTagValue = 1
 	if start_instance < minimumTagValue {

@@ -6,12 +6,46 @@ import (
 	"fmt"
 )
 
-// Read a list of tags of specified types.
+// ReadList reads multiple tags with explicitly specified types and element counts in a single efficient request.
 //
-// The result slice will be in the same order as the tag list.  Each value in the list will be an
-// interface{} so you'll need to type assert to get the values back out.
+// This function allows reading tags when you know the tag names but want to specify types and quantities
+// explicitly rather than relying on Go variable types. It's useful when working with dynamic tag lists
+// or when you need to read partial arrays with specific element counts.
 //
-// To read multiple tags at once without type assertion you can use ReadMulti()
+// Parameters:
+//   - tagnames: Slice of tag names to read (case insensitive)
+//   - types: Slice of example values with correct Go types for each tag
+//   - elements: Slice of element counts to read for each tag (1 for scalars)
+//
+// The three slices must have the same length and correspond by index.
+//
+// Returns a slice of interface{} values in the same order as the input tags.
+// You'll need to type assert the returned values to their expected types.
+//
+// Examples:
+//   // Read scalar tags
+//   tagnames := []string{"TestInt", "TestReal", "TestBool"}
+//   types := []any{int16(0), float32(0), false}
+//   elements := []int{1, 1, 1}
+//   values, err := client.ReadList(tagnames, types, elements)
+//   if err != nil {
+//       log.Fatal(err)
+//   }
+//   intVal := values[0].(int16)
+//   realVal := values[1].(float32)
+//   boolVal := values[2].(bool)
+//
+//   // Read partial arrays with different element counts
+//   tagnames := []string{"DintArray[0]", "RealArray[5]", "StringArray[0]"}
+//   types := []any{[]int32{}, []float32{}, []string{}}
+//   elements := []int{10, 5, 3}  // Read 10 DINTs, 5 REALs, 3 STRINGs
+//   values, err := client.ReadList(tagnames, types, elements)
+//
+// For strongly-typed reading with structs, use ReadMulti instead.
+// For map-based reading, use ReadMap.
+// For single tags, use Read or Read_single.
+//
+// ReadList automatically handles message splitting for large requests to stay within connection limits.
 func (client *Client) ReadList(tagnames []string, types []any, elements []int) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {

@@ -3,26 +3,67 @@ package gologix
 import (
 	"fmt"
 	"log/slog"
-	"time"
 )
 
-// You will want to defer this after a successful Connect() to make sure you free up the controller resources
-// to disconnect we send two items - a null item and an unconnected data item for the unregister service
-func (client *Client) Disconnect() error {
-	if client.connecting {
-		client.Logger.Debug("waiting for client to finish connecting before disconnecting")
-		for client.connecting {
-			time.Sleep(time.Millisecond * 10)
-		}
-	}
-	if !client.connected || client.disconnecting {
+func (client *Client) startDisconnect() error {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+	switch client.connStatus {
+	case connectionStatusDisconnected:
+		return fmt.Errorf("client is already disconnected")
+	case connectionStatusConnecting:
+		return fmt.Errorf("client is still connecting, cannot disconnect")
+	case connectionStatusConnected:
+		// continue to disconnect
+		client.connStatus = connectionStatusDisconnecting
+		return nil
+	case connectionStatusDisconnecting:
+		return fmt.Errorf("client is already disconnecting")
+	default:
+		// Don't know what to do with this status - but continuing the disconnection is probably the best option
+		client.connStatus = connectionStatusDisconnecting
 		return nil
 	}
-	client.disconnecting = true
-	defer func() { client.disconnecting = false }()
-	client.connected = false
-	var err error
+}
+
+// Disconnect gracefully closes the CIP connection to the PLC and releases controller resources.
+//
+// Always call Disconnect() after a successful Connect() to ensure proper cleanup.
+// It's recommended to use defer for this:
+//
+//	client := gologix.NewClient("192.168.1.100")
+//	err := client.Connect()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer client.Disconnect()  // Ensures cleanup even if errors occur
+//
+// If you don't call Disconnect(), the PLC connection may remain allocated until
+// it times out (typically about 2 minutes), which can prevent immediate reconnection
+// and may consume PLC connection resources.
+//
+// Disconnect can be called multiple times safely - subsequent calls after the first
+// successful disconnect will return an error but won't cause issues.
+//
+// The function attempts to send a proper disconnection message to the PLC, but will
+// force the local connection closed even if the PLC communication fails, ensuring
+// local resources are always cleaned up.
+//
+// Returns an error if already disconnected or if there are issues during the
+// disconnection sequence, but the connection will be closed regardless.
+func (client *Client) Disconnect() error {
+	err := client.startDisconnect()
+	if err != nil {
+		return err
+	}
 	client.Logger.Info("starting disconnection")
+
+	// No matter what happens, when we finish here, we'll consider the connection disconnected.
+	defer func() {
+		client.mutex.Lock()
+		client.connStatus = connectionStatusDisconnected
+		client.mutex.Unlock()
+	}()
 
 	if client.keepAliveRunning {
 		close(client.cancel_keepalive)

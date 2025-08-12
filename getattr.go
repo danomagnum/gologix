@@ -12,9 +12,92 @@ type cipAttributeResponseHdr struct {
 	Status          uint16
 }
 
-// This function can be used to do a GetAttrSingle on the specified class/instance/attribute.  The returned
-// CIPItem can then be used to parse the data out into whatever type you expect.  Note that you have to know what type
-// you expect to receive for the request ahead of time.
+// GetAttrSingle retrieves a single attribute value from a specified CIP object.
+//
+// This function executes a CIP GetAttributeSingle service to read a specific attribute
+// from a target object/instance combination. It provides direct access to device
+// attributes that may not be available through standard tag operations.
+//
+// Parameters:
+//   - class: The CIP object class (e.g., CipObject_Identity, CipObject_ControllerInfo)
+//   - instance: The instance number of the object (typically 1 for singleton objects)
+//   - attr: The attribute number to read from the specified object instance
+//
+// Returns a CIPItem containing the raw attribute data that must be deserialized
+// based on the expected data type for the specific attribute being read.
+//
+// The caller must know the expected data type and structure of the attribute
+// response in advance to properly parse the returned data.
+//
+// Common Use Cases:
+//
+//  1. Reading device vendor information:
+//     // Get Vendor ID (attribute 1) from Identity Object
+//     result, err := client.GetAttrSingle(
+//     gologix.CipObject_Identity,
+//     gologix.CIPInstance(1),
+//     gologix.CIPAttribute(1),
+//     )
+//     if err != nil {
+//     log.Fatal(err)
+//     }
+//
+//     var vendorID uint16
+//     err = result.DeSerialize(&vendorID)
+//     fmt.Printf("Vendor ID: %d\n", vendorID)
+//
+//  2. Reading device product information:
+//     // Get Product Code (attribute 3) from Identity Object
+//     result, err := client.GetAttrSingle(
+//     gologix.CipObject_Identity,
+//     gologix.CIPInstance(1),
+//     gologix.CIPAttribute(3),
+//     )
+//     if err != nil {
+//     log.Fatal(err)
+//     }
+//
+//     var productCode uint16
+//     err = result.DeSerialize(&productCode)
+//     fmt.Printf("Product Code: %d\n", productCode)
+//
+//  3. Reading controller-specific attributes:
+//     // Get controller information
+//     result, err := client.GetAttrSingle(
+//     gologix.CipObject_ControllerInfo,
+//     gologix.CIPInstance(1),
+//     gologix.CIPAttribute(1), // Controller property
+//     )
+//     if err != nil {
+//     log.Fatal(err)
+//     }
+//
+//     var controllerProp uint16
+//     err = result.DeSerialize(&controllerProp)
+//
+//  4. Reading current time from controller:
+//     // Get microseconds since Unix epoch from Time Object
+//     result, err := client.GetAttrSingle(
+//     gologix.CipObject_TIME,
+//     gologix.CIPInstance(1),
+//     gologix.CIPAttribute(11), // Time attribute
+//     )
+//     if err != nil {
+//     log.Fatal(err)
+//     }
+//
+//     var timeUs int64
+//     err = result.DeSerialize(&timeUs)
+//     currentTime := time.UnixMicro(timeUs)
+//
+// Error Handling:
+// The function returns errors for communication failures, connection issues,
+// or invalid object/attribute combinations. Some attributes may require
+// specific access privileges or may not be supported on all device types.
+//
+// Data Type Considerations:
+// Different attributes return different data types (uint16, uint32, strings, etc.).
+// Consult the device documentation or CIP specification for attribute data types.
 func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr CIPAttribute) (*CIPItem, error) {
 
 	err := client.checkConnection()
@@ -234,17 +317,98 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 }
 
-// Generic CIP Message
+// GenericCIPMessage sends a custom CIP (Common Industrial Protocol) message to the device.
 //
-// This is for advanced use.  You'll need to provide the object/instance/attribute/member that the message is directed towards in the
-// proper serialized format.
-// You can do this with the Serialize(gologix.CIPObject(1), gologix.CIPInstance(2), gologix.CIPAttribute(3)) function where 1,2,3
-// are the actual class/instance/attribute you are targeting
+// This is an advanced function that provides direct access to the CIP messaging layer,
+// allowing for custom commands beyond the standard tag read/write operations. It enables
+// interaction with any CIP object, service, and attributes on EIP devices.
 //
-// CIP expects you to know the data type for each of the values so you'll have to parse the resulting CIPItem yourself.
+// Parameters:
+//   - service: The CIP service code to execute (e.g., CIPService_GetAttributeSingle, CIPService_Stop)
+//   - path: Serialized CIP path specifying the target object/instance/attribute
+//   - msg_data: Additional data payload for the service (empty []byte{} if not needed)
 //
-// If there are no variable-length fields in the response data you are expecting, the best way may be to create the equivalent
-// struct with the proper types and do an item.Serialize(&InstanceOfMyType)
+// Returns a CIPItem containing the response data that must be manually parsed based on
+// the expected response format for the specific service and object being accessed.
+//
+// Path Construction:
+// The path parameter must be constructed using the Serialize() function:
+//
+//	// Target a specific object and instance
+//	path, err := gologix.Serialize(gologix.CipObject_TIME, gologix.CIPInstance(1))
+//
+//	// Target a specific attribute of an object
+//	path, err := gologix.Serialize(
+//	    gologix.CIPClass(1),        // Identity Object
+//	    gologix.CIPInstance(1),     // Instance 1
+//	    gologix.CIPAttribute(1),    // Vendor ID attribute
+//	)
+//
+// Response Parsing:
+// The returned CIPItem must be deserialized based on the expected response structure:
+//
+//	type TimeResponse struct {
+//	    AttrCount int16
+//	    AttrID    uint16
+//	    Status    uint16
+//	    Usecs     int64  // Microseconds since Unix epoch
+//	}
+//
+//	response := TimeResponse{}
+//	err = result.DeSerialize(&response)
+//
+// Common Use Cases:
+//
+//  1. Reading controller time:
+//     path, _ := gologix.Serialize(gologix.CipObject_TIME, gologix.CIPInstance(1))
+//     result, err := client.GenericCIPMessage(
+//     gologix.CIPService_GetAttributeList,
+//     path.Bytes(),
+//     []byte{0x01, 0x00, 0x0B, 0x00}, // Request attribute 11 (time)
+//     )
+//
+//  2. Accessing controller run mode:
+//     path, _ := gologix.Serialize(gologix.CipObject_RunMode, gologix.CIPInstance(1))
+//     result, err := client.GenericCIPMessage(
+//     gologix.CIPService_GetAttributeSingle,
+//     path.Bytes(),
+//     []byte{},
+//     )
+//
+//  3. Controller control operations (requires elevated privileges):
+//     path, _ := gologix.Serialize(gologix.CipObject_RunMode, gologix.CIPInstance(1))
+//     result, err := client.GenericCIPMessage(
+//     gologix.CIPService_Stop,  // Will likely fail without proper privileges
+//     path.Bytes(),
+//     []byte{},
+//     )
+//
+//  4. Reading device identity information:
+//     path, _ := gologix.Serialize(
+//     gologix.CipObject_Identity,
+//     gologix.CIPInstance(1),
+//     gologix.CIPAttribute(1), // Vendor ID
+//     )
+//     result, err := client.GenericCIPMessage(
+//     gologix.CIPService_GetAttributeSingle,
+//     path.Bytes(),
+//     []byte{},
+//     )
+//
+// Error Handling:
+// The function returns errors for communication issues, but CIP-level errors
+// (like access denied, object not found) may be embedded in the response data.
+// Always check both the error return and parse the response status codes.
+//
+// Security Considerations:
+// Many advanced operations require elevated privileges. Operations like starting/stopping
+// the controller, modifying safety parameters, or accessing security objects will
+// typically return privilege violation errors (0x0F) unless proper authentication
+// and authorization have been established.
+// Authorization is a secret that only rockwell knows.
+//
+// Note: This function is intended for advanced users who need direct CIP protocol
+// access. For standard tag operations, use Read(), Write(), and related functions.
 func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byte) (*CIPItem, error) {
 
 	reqitems := make([]CIPItem, 2)

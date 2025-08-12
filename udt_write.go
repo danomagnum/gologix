@@ -76,10 +76,54 @@ func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 
 }
 
-// Write multiple tags at once where the tagnames are the keys of a map and the values are the corresponding
-// values.
+// WriteMap writes multiple tags efficiently using a map where keys are tag names and values are the data to write.
 //
-// To write multiple tags with a struct, see WriteMulti()
+// The map keys specify the tag names to write to in the PLC (case insensitive).
+// The map values must be Go types that correspond to the PLC tag types as documented in types.go.
+//
+// Supported value types:
+//   - Scalar types: int16 (INT), int32 (DINT), float32 (REAL), bool (BOOL), string (STRING), etc.
+//   - Arrays: slices like []int32, []float32, etc.
+//   - Structs: user-defined types for UDT tags (struct name must match UDT name)
+//
+// Examples:
+//   // Basic scalar writes
+//   writeMap := map[string]interface{}{
+//       "TestInt":    int16(123),
+//       "TestDint":   int32(456789),  
+//       "TestReal":   float32(123.45),
+//       "TestBool":   true,
+//       "TestString": "Hello PLC",
+//   }
+//
+//   // Array writes (write to specific indices)
+//   writeMap["TestDintArr[0]"] = []int32{1, 2, 3, 4, 5}  // Write 5 elements starting at index 0
+//   writeMap["TestRealArr[10]"] = []float32{1.1, 2.2, 3.3} // Write 3 elements starting at index 10
+//
+//   // UDT writes
+//   type MyUDT struct {
+//       Field1 int32
+//       Field2 float32
+//   }
+//   writeMap["MyUDTTag"] = MyUDT{Field1: 100, Field2: 3.14}
+//
+//   // Individual UDT field writes  
+//   writeMap["MyUDTTag.Field1"] = int32(200)
+//   writeMap["MyUDTTag.Field2"] = float32(6.28)
+//
+//   err := client.WriteMap(writeMap)
+//   if err != nil {
+//       log.Fatal(err)
+//   }
+//
+// For struct-based writing with field tags, use WriteMulti instead.
+// For writing a single tag, use Write.
+//
+// WriteMap automatically handles message splitting for large requests and optimizes
+// network usage by grouping writes into the minimum number of requests.
+//
+// Returns an error if the connection fails, any tag doesn't exist, there are type mismatches,
+// or any tags are read-only.
 func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 
 	// build the tag list from the structure

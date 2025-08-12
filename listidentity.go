@@ -6,6 +6,44 @@ import (
 	"fmt"
 )
 
+// ListIdentity queries the device for its identity information and capabilities.
+//
+// This function sends a List Identity command to retrieve comprehensive information
+// about the connected device. This is essential for device discovery, identification,
+// and determining device capabilities and configuration.
+//
+// Returns a listIdentityResponeBody structure containing:
+//   - EncapProtocolVersion: EtherNet/IP encapsulation protocol version
+//   - SocketAddress: Device network addressing information
+//   - Vendor: Vendor ID (manufacturer identifier)
+//   - DeviceType: Type of device (PLC, HMI, drive, etc.)
+//   - ProductCode: Manufacturer-specific product identifier
+//   - Revision: Device firmware/hardware revision information
+//   - Status: Current device status flags
+//   - SerialNumber: Unique device serial number
+//   - ProductName: Human-readable product name
+//   - State: Current device operational state
+//
+// Example:
+//   identity, err := client.ListIdentity()
+//   if err != nil {
+//       log.Fatal(err)
+//   }
+//
+//   fmt.Printf("Device: %s\n", identity.ProductName)
+//   fmt.Printf("Vendor: %s\n", identity.Vendor)
+//   fmt.Printf("Product Code: %d\n", identity.ProductCode)
+//   fmt.Printf("Serial Number: 0x%08X\n", identity.SerialNumber)
+//   fmt.Printf("Revision: %d.%d\n", identity.Revision.Major, identity.Revision.Minor)
+//   fmt.Printf("Status: 0x%04X\n", identity.Status)
+//
+// This function is commonly used for:
+//   - Device discovery and inventory
+//   - Verifying device compatibility
+//   - Diagnostic and troubleshooting information
+//   - Network device scanning
+//
+// Note: The device must be connected before calling this function.
 func (client *Client) ListIdentity() (*listIdentityResponeBody, error) {
 	client.Logger.Debug("listing identity")
 

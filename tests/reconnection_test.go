@@ -76,10 +76,7 @@ func TestNoReconnection(t *testing.T) {
 				return
 			}
 			defer func() {
-				err := client.Disconnect()
-				if err != nil {
-					t.Errorf("problem disconnecting. %v", err)
-				}
+				client.Disconnect()
 			}()
 			tag := "Program:gologix_tests.ReadDints[0]"
 			have := make([]int32, 5)
