@@ -2,11 +2,15 @@
 
 gologix is a communication driver written in native Go that lets you easily read/write values from tags in Rockwell Automation ControlLogix and CompactLogix PLCs over Ethernet/IP using Go. PLCs that use CIP over Ethernet/IP are supported (ControlLogix, CompactLogix, Micro820). Models like PLC5, SLC, and MicroLogix that use PCCC instead of CIP are *not* supported.
 
-It is modeled after pylogix with changes to make it usable in Go.
+It is modeled after pylogix with changes to make it usable in Go with a goal of being similar in usage patterns to modules of the go standard library.
 
-### Your First Client Program:
+### Client
 
-There are a few examples in the `examples` folder. Here is an abridged version of the `/examples/SimpleRead` example. See the actual example for a more thorough description of what is going on.
+The `client` lets you read and write tag data to a logix PLC.  
+
+You can read/write single tags (atomic or UDT) with `Read` by providing a pointer to the equivalent go type and it will populate the data similar to the json library. You can also read multiple tags at once with `ReadMulti`, `ReadList`, and `ReadMap`.  You can likewise write with `Write`, `WritMulti`, and `WriteMap`.  If you don't know what tag you want, you can list all the tags in a controller with `ListAllTags` or programs with `ListAllPrograms`.  To do a custom message you can use `GenericCIPMessage`.  There are also a couple other features for advanced use.
+
+There are examples for all these methods in the `examples`, `tests`, and `canned` folders. Here is an abridged version of the `/examples/SimpleRead` example. See the actual example for a more thorough description of what is going on.
 
 ```go
 package main
@@ -36,7 +40,9 @@ func main() {
 }
 ```
 
-### Your First Server Program:
+### Server
+
+The `Server` type lets you receive MSG instructions from the controller. or behave as an IO adapter.
 
 There are a few examples in the `examples` folder. Here is an abridged version of the `/examples/Server_Class3` example. See the actual example(s) for a more thorough description of what is going on. Basically, it listens to incoming MSG instructions doing CIP Data Table Writes and CIP Data Table Reads and maps the data to/from an internal Go map. You can then access the data through that map as long as you acquire the lock on it.
 
@@ -78,21 +84,10 @@ func main() {
 
 There is a `canned` package that can be used for common features such as reading controller fault codes or the status of forces. Look at the `/examples/Canned` directory to see how to use these. You can also use the code in `/canned/` as good examples of how to do particular things. Pull requests for extensions to the `canned` package are welcome (as are all pull requests).
 
-### Other Features
+### L5X File Support
 
-- Can behave as a class 1 or class 3 server, allowing push messages from a PLC (class 3 via MSG instruction) or implicit messaging (class 1). See the *server examples*.
-- You can read/write multiple tags at once by defining a struct with each field tagged with `gologix:"tagname"`. See `MultiRead` in the examples directory.
-- To read multiple items from an array, pass a slice to the `Read` method.
-- To read more than one arbitrary tag at once, use the `ReadList` method. The first parameter is a slice of tag names, and the second parameter is a slice of each tag's type.
-- You can read UDTs if you define an equivalent struct to blit the data into. Arrays of UDTs also work (see limitation below about UDTs with packed bools).
+The `l5x` package provides support for working with RSLogix5000 L5X export files. This allows you to parse project files exported from Studio 5000 to extract tag information, UDT definitions, and program structure without needing a live connection to the PLC.
 
-There is also a `Server` type that lets you receive MSG instructions from the controller. See "Server" in the examples folder. It currently handles reads and writes of atomic data types (SINT, INT, DINT, REAL). You could use this to create a "push" mechanism instead of having to poll the controller for data changes.
-
-### Limitations
-
-- You cannot write multiple items from an array at once yet, but you can do them piecewise if needed.
-- You can write to BOOL tags but NOT to bits of integers yet (e.g., "MyBool" is OK, but "MyDint.3" is NOT). You can read from either just fine. A "write with mask" implementation may be needed for this.
-- No UDTs or arrays in the server yet.
 
 ## License
 
