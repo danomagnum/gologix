@@ -54,7 +54,9 @@ type Controller struct {
 type Client struct {
 	Controller Controller
 
-	SerialNumber uint32 // serial number for the client
+	// serial number for the client.  This is set to a random value when the client is created.
+	// if you need to set it to a specific value, do so before calling Connect().
+	SerialNumber uint32
 	VendorId     uint16 // vendor id for the client as determined from ODVA
 
 	// Used for the keepalive messages.
@@ -165,6 +167,7 @@ func NewClient(ip string) *Client {
 		KeepAliveProps:     []CIPAttribute{1, 2, 3, 4, 10},
 		RPI:                rpiDefault,
 		SocketTimeout:      socketTimeoutDefault,
+		SerialNumber:       rand.Uint32(),
 		KnownTags:          make(map[string]KnownTag),
 		KnownTypes:         make(map[string]UDTDescriptor),
 		KnownTypesByID:     make(map[uint32]UDTDescriptor),
