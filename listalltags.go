@@ -303,9 +303,15 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 // per 1756-PM020H-EN-P page 43 there are some conditions in which we should discard the tags
 // because they aren't valid for reading/writing.
 func isValidTag(tag_string string, tag_ftr TagInfo) bool {
-	if tag_string[:2] == "__" {
-		return false
-	}
+	// Check for empty string
+    if tag_string == "" {
+        return false
+    }
+    
+    // Check for system tags (start with __)
+    if strings.HasPrefix(tag_string, "__") {
+        return false
+    }
 	if strings.Contains(tag_string, ":") {
 		if !strings.HasPrefix(tag_string, "Program") {
 			return false
@@ -315,3 +321,4 @@ func isValidTag(tag_string string, tag_ftr TagInfo) bool {
 	_ = tag_ftr
 	return true
 }
+
