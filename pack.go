@@ -256,7 +256,34 @@ func Unpack(r io.Reader, data any) (n int, err error) {
 	if refVal.Kind() == reflect.Ptr {
 		refVal = reflect.ValueOf(data).Elem()
 	}
+
 	refType := refVal.Type()
+	k := refType.Kind()
+	switch k {
+	case reflect.Slice:
+		// we have a slice of structs.  We need to unpack each one individually
+		l := refVal.Len()
+		for i := 0; i < l; i++ {
+			s, err := Unpack(r, refVal.Index(i).Addr().Interface())
+			if err != nil {
+				return n, fmt.Errorf("problem unpacking slice element %d: %w", i, err)
+			}
+			n += s
+			align := p.Align(refType.Elem())
+			if s%align != 0 {
+				s, err = r.Read(make([]byte, align-s%align))
+				if err != nil {
+					return n, fmt.Errorf("problem reading slice element padding: %w", err)
+				}
+				n += s
+			}
+		}
+		return n, nil
+
+	case reflect.Struct:
+		// continue on
+
+	}
 	for i := 0; i < refType.NumField(); i++ {
 		field := refType.Field(i)
 		a := p.Align(field.Type)

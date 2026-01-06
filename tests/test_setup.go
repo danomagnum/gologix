@@ -13,6 +13,7 @@ type TestConfig struct {
 		SoftwareVersionMajor byte   `json:"SoftwareVersionMajor"`
 		SoftwareVersionMinor byte   `json:"SoftwareVersionMinor"`
 		SerialNumber         uint32 `json:"SerialNumber"`
+		Skip                 bool   `json:"Skip"`
 		ProductName          string `json:"ProductName"`
 	} `json:"TagReadWriteTests"`
 
@@ -26,6 +27,7 @@ type TestConfig struct {
 		Status               uint16 `json:"Status"`
 		SerialNumber         uint32 `json:"SerialNumber"`
 		ProductName          string `json:"ProductName"`
+		Skip                 bool   `json:"Skip"`
 		State                uint8  `json:"State"`
 		Services             []struct {
 			Name         string `json:"Name"`
@@ -46,6 +48,17 @@ func getTestConfig() TestConfig {
 	var tc TestConfig
 
 	dec.Decode(&tc)
+	finalTC := TestConfig{}
+	for _, t := range tc.TagReadWriteTests {
+		if !t.Skip {
+			finalTC.TagReadWriteTests = append(finalTC.TagReadWriteTests, t)
+		}
+	}
+	for _, t := range tc.GenericCIPTests {
+		if !t.Skip {
+			finalTC.GenericCIPTests = append(finalTC.GenericCIPTests, t)
+		}
+	}
 
-	return tc
+	return finalTC
 }

@@ -1,7 +1,19 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Sun May 04 22:41:26 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Mon Jan 05 20:23:33 2026" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
+<DataType Name="BigString" Family="StringFamily" Class="User">
+<Members>
+<Member Name="LEN" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="DATA" DataType="SINT" Dimension="100" Radix="ASCII" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="LilString" Family="StringFamily" Class="User">
+<Members>
+<Member Name="LEN" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="DATA" DataType="SINT" Dimension="25" Radix="ASCII" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
 <DataType Name="NestedUDT" Family="NoFamily" Class="User">
 <Members>
 <Member Name="Field1" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
@@ -177,6 +189,114 @@
 <Programs Use="Context">
 <Program Use="Target" Name="gologix_tests" TestEdits="false" MainRoutineName="Main" Disabled="false" UseAsFolder="false">
 <Tags>
+<Tag Name="BigString" TagType="Base" DataType="BigString" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[16,'Im a big string.$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		]]]>
+</Data>
+<Data Format="String" Length="16">
+<![CDATA['Im a big string.']]>
+</Data>
+</Tag>
+<Tag Name="BigStrings" TagType="Base" DataType="BigString" Dimensions="10" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[[4,'ZERO$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'ONE$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'TWO$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[5,'THREE$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[4,'FOUR$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[4,'FIVE$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'SIX$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[5,'SEVEN$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[5,'EIGHT$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[4,'NINE$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		]]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="BigString" Dimensions="10">
+<Element Index="[0]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['ZERO']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['ONE']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['TWO']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[3]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['THREE']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[4]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['FOUR']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[5]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['FIVE']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[6]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['SIX']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[7]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['SEVEN']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[8]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['EIGHT']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[9]">
+<Structure DataType="BigString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="BigString" Radix="ASCII">
+<![CDATA['NINE']]>
+</DataValueMember>
+</Structure>
+</Element>
+</Array>
+</Data>
+</Tag>
 <Tag Name="BoolArray" TagType="Base" DataType="BOOL" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
 <![CDATA[[2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1,2#0,2#0,2#0,2#0,2#0,2#1,2#1,2#1
@@ -341,6 +461,108 @@
 </Data>
 <Data Format="Decorated">
 <DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="LilString" TagType="Base" DataType="LilString" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[15,'Im a lil string$00$00$00$00$00$00$00$00$00$00']]]>
+</Data>
+<Data Format="String" Length="15">
+<![CDATA['Im a lil string']]>
+</Data>
+</Tag>
+<Tag Name="LilStrings" TagType="Base" DataType="LilString" Dimensions="10" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[[4,'zero$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],[3,'one$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'two$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],[5,'three$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[4,'four$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],[4,'five$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'six$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],[5,'seven$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[5,'eight$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],[4,'nine$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		]]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="LilString" Dimensions="10">
+<Element Index="[0]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['zero']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['one']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['two']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[3]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['three']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[4]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['four']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[5]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['five']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[6]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['six']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[7]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['seven']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[8]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="5"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['eight']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[9]">
+<Structure DataType="LilString">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="4"/>
+<DataValueMember Name="DATA" DataType="LilString" Radix="ASCII">
+<![CDATA['nine']]>
+</DataValueMember>
+</Structure>
+</Element>
+</Array>
 </Data>
 </Tag>
 <Tag Name="LongDints" TagType="Base" DataType="DINT" Dimensions="100" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
@@ -1347,7 +1569,7 @@
 </Tag>
 <Tag Name="TestTimer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[1703634,2345,0]]]>
+<![CDATA[[3214320,2345,0]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -1397,14 +1619,14 @@
 </Tag>
 <Tag Name="TimerBytes" TagType="Base" DataType="SINT" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[-46,-2,25,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-76,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+<![CDATA[[-16,11,49,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-76,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		,0,0,0,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="64" Radix="Decimal">
-<Element Index="[0]" Value="-46"/>
-<Element Index="[1]" Value="-2"/>
-<Element Index="[2]" Value="25"/>
+<Element Index="[0]" Value="-16"/>
+<Element Index="[1]" Value="11"/>
+<Element Index="[2]" Value="49"/>
 <Element Index="[3]" Value="0"/>
 <Element Index="[4]" Value="41"/>
 <Element Index="[5]" Value="9"/>

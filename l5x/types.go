@@ -41,6 +41,6 @@ func L5xTypeToGoType(typestr string, valuestr string) (any, error) {
 		return uint64(value), nil
 
 	default:
-		return nil, fmt.Errorf("unknown type %s", typestr)
+		return fmt.Sprintf("Unknown type: %s", typestr), nil
 	}
 }
