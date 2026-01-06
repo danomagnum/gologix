@@ -269,8 +269,9 @@ func Unpack(r io.Reader, data any) (n int, err error) {
 				return n, fmt.Errorf("problem unpacking slice element %d: %w", i, err)
 			}
 			n += s
-			if s%4 != 0 {
-				s, err = r.Read(make([]byte, 4-s%4))
+			align := p.Align(refType.Elem())
+			if s%align != 0 {
+				s, err = r.Read(make([]byte, align-s%align))
 				if err != nil {
 					return n, fmt.Errorf("problem reading slice element padding: %w", err)
 				}
