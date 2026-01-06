@@ -10,6 +10,7 @@
     "SoftwareVersionMajor": 20,
     "SoftwareVersionMinor": 19,
     "SerialNumber": 1615551361,
+    "Skip": false,
     "ProductName": "1769-L35E/B LOGIX5335E"
     }
   ],
@@ -23,6 +24,7 @@
       "SoftwareVersionMinor": 19,
       "SerialNumber": 1615551361,
       "ProductName": "1769-L35E/B LOGIX5335E",
+      "Skip": false,
       "Services": [
         {
           "Name": "Communications",

@@ -18,17 +18,18 @@ import (
 //   - Use a slice directly (no pointer) for arrays
 //
 // Examples:
-//   var intTag int16
-//   err := client.Read("TestInt", &intTag)  // Read INT tag
 //
-//   var realTag float32
-//   err := client.Read("TestReal", &realTag)  // Read REAL tag
+//	var intTag int16
+//	err := client.Read("TestInt", &intTag)  // Read INT tag
 //
-//   intArray := make([]int32, 5)
-//   err := client.Read("TestDintArr[2]", intArray)  // Read 5 elements starting at index 2
+//	var realTag float32
+//	err := client.Read("TestReal", &realTag)  // Read REAL tag
 //
-//   var udtTag MyStruct
-//   err := client.Read("MyUDTTag", &udtTag)  // Read UDT into struct
+//	intArray := make([]int32, 5)
+//	err := client.Read("TestDintArr[2]", intArray)  // Read 5 elements starting at index 2
+//
+//	var udtTag MyStruct
+//	err := client.Read("MyUDTTag", &udtTag)  // Read UDT into struct
 //
 // For reading multiple tags efficiently, use ReadMulti, ReadMap, or ReadList instead.
 // If the tag data type is unknown at compile time, use Read_single with CIPType_Unknown.
@@ -360,7 +361,8 @@ func (client *Client) Read(tag string, data any) error {
 
 		b := bytes.NewBuffer(dat)
 		//TODO: unpack here instead of just a read.
-		err = binary.Read(b, binary.LittleEndian, data)
+		//err = binary.Read(b, binary.LittleEndian, data)
+		_, err = Unpack(b, data)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data element %w", err)
 		}
@@ -372,7 +374,7 @@ func (client *Client) Read(tag string, data any) error {
 
 // Read_single reads a single tag with an explicitly specified data type instead of inferring the type from a pointer.
 //
-// This function allows you to read tags when the data type is not known at compile time. Use CIPType_Unknown 
+// This function allows you to read tags when the data type is not known at compile time. Use CIPType_Unknown
 // to read a tag of unknown type - the PLC will return the actual data type and value.
 //
 // Parameters:
@@ -383,16 +385,17 @@ func (client *Client) Read(tag string, data any) error {
 // Returns the data as interface{}, which you'll need to type assert to the appropriate Go type.
 //
 // Examples:
-//   // Read a tag of known type
-//   value, err := client.Read_single("TestInt", CIPType_INT, 1)
-//   intValue := value.(int16)
 //
-//   // Read a tag of unknown type
-//   value, err := client.Read_single("UnknownTag", CIPType_Unknown, 1)
+//	// Read a tag of known type
+//	value, err := client.Read_single("TestInt", CIPType_INT, 1)
+//	intValue := value.(int16)
 //
-//   // Read multiple elements
-//   values, err := client.Read_single("IntArray", CIPType_INT, 5)
-//   intSlice := values.([]interface{})
+//	// Read a tag of unknown type
+//	value, err := client.Read_single("UnknownTag", CIPType_Unknown, 1)
+//
+//	// Read multiple elements
+//	values, err := client.Read_single("IntArray", CIPType_INT, 5)
+//	intSlice := values.([]interface{})
 //
 // For strongly-typed reading, use the Read function instead. For multiple tags, use ReadMulti or ReadMap.
 func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
@@ -620,33 +623,33 @@ type cipStructHeader struct {
 //
 // This function supports two input types:
 //
-// 1. Struct with gologix field tags:
-//    Each field should have a `gologix:"tagname"` tag specifying the PLC tag to read.
-//    Field types must match the corresponding CIP types as documented in types.go.
+//  1. Struct with gologix field tags:
+//     Each field should have a `gologix:"tagname"` tag specifying the PLC tag to read.
+//     Field types must match the corresponding CIP types as documented in types.go.
 //
-//    Example:
-//      type MyTags struct {
-//          IntTag    int16     `gologix:"TestInt"`
-//          RealTag   float32   `gologix:"TestReal"`
-//          ArrayTag  []int32   `gologix:"TestDintArr[2]"`  // Read 5 elements starting at index 2
-//      }
-//      var tags MyTags
-//      tags.ArrayTag = make([]int32, 5)  // Pre-allocate slice
-//      err := client.ReadMulti(&tags)
+//     Example:
+//     type MyTags struct {
+//     IntTag    int16     `gologix:"TestInt"`
+//     RealTag   float32   `gologix:"TestReal"`
+//     ArrayTag  []int32   `gologix:"TestDintArr[2]"`  // Read 5 elements starting at index 2
+//     }
+//     var tags MyTags
+//     tags.ArrayTag = make([]int32, 5)  // Pre-allocate slice
+//     err := client.ReadMulti(&tags)
 //
-// 2. Map[string]any:
-//    Keys are tag names, values are variables with correct types.
-//    The function updates the map values with data from the PLC.
+//  2. Map[string]any:
+//     Keys are tag names, values are variables with correct types.
+//     The function updates the map values with data from the PLC.
 //
-//    Example:
-//      m := map[string]any{
-//          "TestInt":         int16(0),
-//          "TestReal":        float32(0),
-//          "TestDintArr[2]":  make([]int32, 5),
-//      }
-//      err := client.ReadMulti(m)
+//     Example:
+//     m := map[string]any{
+//     "TestInt":         int16(0),
+//     "TestReal":        float32(0),
+//     "TestDintArr[2]":  make([]int32, 5),
+//     }
+//     err := client.ReadMulti(m)
 //
-// For struct-based reading without field tags, or when working with maps exclusively, 
+// For struct-based reading without field tags, or when working with maps exclusively,
 // use ReadMap instead. For reading tags with different types, use ReadList.
 //
 // ReadMulti automatically splits large requests across multiple messages if needed
@@ -996,34 +999,35 @@ type msgMultiReadResult struct {
 //   - Structs: user-defined types for UDT tags
 //
 // Examples:
-//   // Basic scalar tags
-//   m := map[string]any{
-//       "TestInt":    int16(0),      // Read INT tag
-//       "TestDint":   int32(0),      // Read DINT tag  
-//       "TestReal":   float32(0),    // Read REAL tag
-//       "TestBool":   false,         // Read BOOL tag
-//       "TestString": "",            // Read STRING tag
-//   }
 //
-//   // Array tags (specify starting index and pre-allocate slice)
-//   m["TestDintArr[2]"] = make([]int32, 5)  // Read 5 DINTs starting at index 2
-//   m["TestRealArr[0]"] = make([]float32, 10) // Read 10 REALs starting at index 0
+//	// Basic scalar tags
+//	m := map[string]any{
+//	    "TestInt":    int16(0),      // Read INT tag
+//	    "TestDint":   int32(0),      // Read DINT tag
+//	    "TestReal":   float32(0),    // Read REAL tag
+//	    "TestBool":   false,         // Read BOOL tag
+//	    "TestString": "",            // Read STRING tag
+//	}
 //
-//   // UDT tags  
-//   type MyUDT struct {
-//       Field1 int32
-//       Field2 float32
-//   }
-//   m["MyUDTTag"] = MyUDT{}
+//	// Array tags (specify starting index and pre-allocate slice)
+//	m["TestDintArr[2]"] = make([]int32, 5)  // Read 5 DINTs starting at index 2
+//	m["TestRealArr[0]"] = make([]float32, 10) // Read 10 REALs starting at index 0
 //
-//   err := client.ReadMap(m)
-//   if err != nil {
-//       log.Fatal(err)
-//   }
-//   
-//   // Access the read values
-//   intValue := m["TestInt"].(int16)
-//   arrayValue := m["TestDintArr[2]"].([]int32)
+//	// UDT tags
+//	type MyUDT struct {
+//	    Field1 int32
+//	    Field2 float32
+//	}
+//	m["MyUDTTag"] = MyUDT{}
+//
+//	err := client.ReadMap(m)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Access the read values
+//	intValue := m["TestInt"].(int16)
+//	arrayValue := m["TestDintArr[2]"].([]int32)
 //
 // ReadMap automatically handles message splitting for large requests and optimizes
 // network usage by grouping tags into the minimum number of requests.
