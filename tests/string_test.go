@@ -24,7 +24,7 @@ func (bs *BigString) String() string {
 	return string(bs.Data[:bs.Length])
 }
 
-func TestReadStringNew(t *testing.T) {
+func TestReadCustomString(t *testing.T) {
 	tcs := getTestConfig()
 	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
@@ -78,7 +78,7 @@ func TestReadStringNew(t *testing.T) {
 	}
 }
 
-func TestReadStringsNew(t *testing.T) {
+func TestReadCustomStringArray(t *testing.T) {
 	tcs := getTestConfig()
 	for _, tc := range tcs.TagReadWriteTests {
 		t.Run(tc.PlcAddress, func(t *testing.T) {
