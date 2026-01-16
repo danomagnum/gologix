@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/danomagnum/gologix"
@@ -39,6 +40,11 @@ func main() {
 		log.Printf("Error getting tag list. %v", err)
 		return
 	}
+
+	for _, p := range client.KnownPrograms {
+		fmt.Println(p.Name)
+	}
+	return
 
 	// Reading specific tags as examples
 	var y int32

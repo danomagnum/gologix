@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -117,12 +118,18 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = minimumTagValue
 	}
 
+	fallbackProgramNames := true
 	// if we are starting from scratch, we should list all the programs first so we have
 	// their instance IDs when we come across program scoped tags.
 	if start_instance == 1 {
 		err := client.ListAllPrograms()
 		if err != nil {
-			return fmt.Errorf("problem listing programs: %w", err)
+			if errors.As(err, &CIPStatusError{}) {
+				fallbackProgramNames = true
+				client.KnownPrograms = make(map[string]*KnownProgram)
+			} else {
+				return fmt.Errorf("problem listing programs: %w", err)
+			}
 		}
 		for _, p := range client.KnownPrograms {
 			_, err := client.ListSubTags(p, 1)
@@ -260,7 +267,17 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		if len(tag_string) > 8 {
 			if strings.HasPrefix(tag_string, "Program:") {
 				// we have a program scoped tag.  These are read separately.
-				continue
+				if !fallbackProgramNames {
+					continue
+				}
+				progName := strings.Split(tag_string, ":")[1]
+				p := &KnownProgram{Name: progName}
+				client.KnownPrograms[strings.ToLower(p.Name)] = p
+				_, err := client.ListSubTags(p, 1)
+				if err != nil {
+					return fmt.Errorf("problem listing sub tags for %s: %w", p.Name, err)
+				}
+
 			}
 		}
 
@@ -304,14 +321,14 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 // because they aren't valid for reading/writing.
 func isValidTag(tag_string string, tag_ftr TagInfo) bool {
 	// Check for empty string
-    if tag_string == "" {
-        return false
-    }
-    
-    // Check for system tags (start with __)
-    if strings.HasPrefix(tag_string, "__") {
-        return false
-    }
+	if tag_string == "" {
+		return false
+	}
+
+	// Check for system tags (start with __)
+	if strings.HasPrefix(tag_string, "__") {
+		return false
+	}
 	if strings.Contains(tag_string, ":") {
 		if !strings.HasPrefix(tag_string, "Program") {
 			return false
@@ -321,4 +338,3 @@ func isValidTag(tag_string string, tag_ftr TagInfo) bool {
 	_ = tag_ftr
 	return true
 }
-

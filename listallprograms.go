@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -25,7 +26,7 @@ func (client *Client) ListAllPrograms() error {
 	resp, err := client.GenericCIPMessage(CIPService_GetInstanceAttributeList, path.Bytes(), msg_data.Bytes())
 	if err != nil {
 		client.Logger.Warn("problem reading programs", "error", err)
-		return err
+		return fmt.Errorf("problem reading programs: %w", err)
 	}
 
 	results := make(map[string]*KnownProgram)

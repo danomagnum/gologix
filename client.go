@@ -183,6 +183,15 @@ type KnownProgram struct {
 }
 
 func (kp KnownProgram) Bytes() []byte {
+	if kp.ID == 0 {
+		b := bytes.Buffer{}
+		x, err := marshalIOIPart("Program:" + kp.Name)
+		if err != nil {
+			return b.Bytes()
+		}
+		b.Write(x)
+		return b.Bytes()
+	}
 	b := bytes.Buffer{}
 	b.Write(CipObject_Programs.Bytes()) // 0x20 0x6B
 	b.Write(kp.ID.Bytes())
