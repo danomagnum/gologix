@@ -118,13 +118,14 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 		start_instance = minimumTagValue
 	}
 
-	fallbackProgramNames := true
+	fallbackProgramNames := false
 	// if we are starting from scratch, we should list all the programs first so we have
 	// their instance IDs when we come across program scoped tags.
 	if start_instance == 1 {
 		err := client.ListAllPrograms()
 		if err != nil {
-			if errors.As(err, &CIPStatusError{}) {
+			var cipErr CIPStatusError
+			if errors.As(err, &cipErr) {
 				fallbackProgramNames = true
 				client.KnownPrograms = make(map[string]*KnownProgram)
 			} else {
@@ -270,7 +271,11 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 				if !fallbackProgramNames {
 					continue
 				}
-				progName := strings.Split(tag_string, ":")[1]
+				progName := strings.TrimPrefix(tag_string, "Program:")
+				if progName == "" {
+					// no program name after prefix; skip creating an invalid KnownProgram
+					continue
+				}
 				p := &KnownProgram{Name: progName}
 				client.KnownPrograms[strings.ToLower(p.Name)] = p
 				_, err := client.ListSubTags(p, 1)
