@@ -44,7 +44,6 @@ func main() {
 	for _, p := range client.KnownPrograms {
 		fmt.Println(p.Name)
 	}
-	return
 
 	// Reading specific tags as examples
 	var y int32

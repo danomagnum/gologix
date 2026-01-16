@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"log"
+	"log/slog"
 	"math/rand"
 	"net"
 	"sync"
@@ -187,6 +188,7 @@ func (kp KnownProgram) Bytes() []byte {
 		b := bytes.Buffer{}
 		x, err := marshalIOIPart("Program:" + kp.Name)
 		if err != nil {
+			slog.Warn("could not marshal to bytes", "KnownProgram", kp)
 			return b.Bytes()
 		}
 		b.Write(x)
