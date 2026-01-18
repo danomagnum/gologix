@@ -146,7 +146,7 @@ func (client *Client) Connect() error {
 		}
 		err = client.forwardOpen(item)
 		if err != nil {
-			client.Logger.Warn("large forward open failed. falling back to standard forward open", slog.Any("err", err))
+			client.Logger.Warn("Large forward open failed. Not all devices support this.  Falling back to standard forward open", slog.Any("err", err))
 			client.ConnectionSize = connSizeStandardDefault
 		}
 	}
