@@ -299,7 +299,8 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 					"header", tag_hdr,
 					"footer", tag_ftr,
 					"template ID", tag_ftr.Template_ID(),
-					"predefined", tag_ftr.PreDefined())
+					"predefined", tag_ftr.PreDefined(),
+					"error", err)
 				//return err
 			} else {
 				kt.UDT = &u

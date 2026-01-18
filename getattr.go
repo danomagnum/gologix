@@ -323,7 +323,7 @@ type CIPStatusError struct {
 }
 
 func (e CIPStatusError) Error() string {
-	return fmt.Sprintf("CIP status error: expected 0x%X (%v), got 0x%X (%v)", e.Expected, e.Expected, e.Status, e.Status)
+	return fmt.Sprintf("CIP status error: expected 0x%X (%v), got 0x%X (%v)", e.Expected, e.Expected, int16(e.Status), e.Status)
 }
 
 // GenericCIPMessage sends a custom CIP (Common Industrial Protocol) message to the device.

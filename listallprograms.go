@@ -25,7 +25,7 @@ func (client *Client) ListAllPrograms() error {
 
 	resp, err := client.GenericCIPMessage(CIPService_GetInstanceAttributeList, path.Bytes(), msg_data.Bytes())
 	if err != nil {
-		client.Logger.Warn("problem reading programs", "error", err)
+		client.Logger.Warn("problem reading programs directly  Some controllers don't support this method. Use ListAllTags to attempt fallback.", "error", err)
 		return fmt.Errorf("problem reading programs: %w", err)
 	}
 
