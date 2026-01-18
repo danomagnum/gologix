@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -110,10 +109,6 @@ func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) 
 		err = binary.Read(data2, binary.LittleEndian, tag_ftr)
 		if err != nil {
 			return nil, fmt.Errorf("problem reading tag footer. %w", err)
-		}
-
-		if strings.ToLower(newtag_name) == "program:gologix_tests.testtimer" {
-			log.Printf("found it.")
 		}
 
 		kt := KnownTag{

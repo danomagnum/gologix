@@ -12,7 +12,7 @@ func main() {
 	var err error
 
 	// Setup the client to connect to a PLC with the specified IP address
-	client := gologix.NewClient("192.168.2.241")
+	client := gologix.NewClient("192.168.2.245")
 
 	// For example, to have a controller on slot 1 instead of 0 you could do this:
 	//client.Path, err = gologix.Serialize(gologix.CIPPort{PortNo: 1}, gologix.CIPAddress(1))
@@ -39,6 +39,7 @@ func main() {
 
 	// For a specific program, list its subtags with a depth of 1
 	for _, p := range client.KnownPrograms {
+		fmt.Println(p.Name)
 		if p.Name == "gologix_tests" {
 			client.ListSubTags(p, 1)
 		}

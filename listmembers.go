@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 // this is specifically the response for a GetAttrList service on a
@@ -243,22 +244,21 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	descriptor.Instance_ID = str_instance
 	descriptor.Members = make([]UDTMemberDescriptor, template_info.MemberCount)
 
-	struct_name, err := data2.ReadString(0x3B)
+	struct_name, err := data2.ReadString(0x00)
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't read struct name. %w", err)
+	}
+
+	if strings.Contains(struct_name, ";") {
+		struct_name = strings.Split(struct_name, ";")[0]
 	}
 	struct_name = struct_name[:len(struct_name)-1]
 	descriptor.Name = struct_name
 
-	_, err = data2.ReadString(0x00)
-	if err != nil {
-		return UDTDescriptor{}, fmt.Errorf("couldn't read unknown data. %w", err)
-	}
-
 	for i := 0; i < int(template_info.MemberCount); i++ {
 
 		fieldname, err := data2.ReadString(0x00)
-		if err != nil {
+		if err != nil && fieldname == "" {
 			return UDTDescriptor{}, fmt.Errorf("couldn't read field name. %w", err)
 		}
 		fieldname = fieldname[:len(fieldname)-1]

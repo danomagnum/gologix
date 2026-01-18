@@ -317,6 +317,15 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 
 }
 
+type CIPStatusError struct {
+	Expected CIPStatus
+	Status   CIPStatus
+}
+
+func (e CIPStatusError) Error() string {
+	return fmt.Sprintf("CIP status error: expected 0x%X (%v), got 0x%X (%v)", e.Expected, e.Expected, int16(e.Status), e.Status)
+}
+
 // GenericCIPMessage sends a custom CIP (Common Industrial Protocol) message to the device.
 //
 // This is an advanced function that provides direct access to the CIP messaging layer,
@@ -471,7 +480,8 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 		return nil, fmt.Errorf("problem getting resposne status: %w", err)
 	}
 	if status != 0 {
-		return &items[1], fmt.Errorf("got status of 0x%X instead of 0", status)
+		err := CIPStatusError{Expected: 0, Status: CIPStatus(status)}
+		return &items[1], err
 	}
 
 	return &items[1], nil
