@@ -57,11 +57,11 @@ func (client *Client) ListIdentity() (*listIdentityResponeBody, error) {
 		return nil, fmt.Errorf("couldn't parse items. %w", err)
 	}
 
-	if len(items) != 1 {
-		return nil, fmt.Errorf("expected 1 item, got %d", len(items))
+	if len(items) < 1 {
+		return nil, fmt.Errorf("expected at least 1 item, got %d", len(items))
 	}
 
-	// The response only contains one item.
+	// Parse the first identity item (PLCs with dual-port Ethernet may return multiple).
 	response := listIdentityResponeBody{}
 	err = response.ParseFromBytes(items[0].Data)
 	if err != nil {

@@ -363,6 +363,7 @@ const (
 	CipObject_DPIDevice                    CIPClass = 0x92
 	CipObject_DPIParams                    CIPClass = 0x93
 	CipObject_DPIFault                     CIPClass = 0x97
+	CipObject_DataTable                    CIPClass = 0xB2 // DataTable buffer for grouped tag reads
 )
 
 // from https://rockwellautomation.custhelp.com/ci/okcsFattach/get/114390_5
