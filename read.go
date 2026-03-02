@@ -702,7 +702,7 @@ func (client *Client) ReadMulti(tag_str any, args ...any) error {
 			continue
 		}
 		if args != nil {
-			tagPath = formatName(tagPath, args)
+			tagPath = formatName(tagPath, args...)
 		}
 		v := val.Field(i).Interface()
 		t, elem := GoVarToCIPType(v)
