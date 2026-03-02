@@ -620,6 +620,10 @@ type cipStructHeader struct {
 }
 
 // ReadMulti reads multiple tags efficiently in a single request using struct field tags or a map.
+// Any curly bracketed numbers in the tag path will be replaced with the optional arguments passed in
+// in order. For example, "MyTag{0}.This" with an argument of 5 will read "MyTag[5].This". This allows
+// you to use a single struct as a template for reading multiple similar tags without having to define
+// a separate struct for each instance.
 //
 // This function supports two input types:
 //
@@ -654,7 +658,26 @@ type cipStructHeader struct {
 //
 // ReadMulti automatically splits large requests across multiple messages if needed
 // to stay within connection size limits.
-func (client *Client) ReadMulti(tag_str any) error {
+//
+// Example of using arguments for dynamic tag paths:
+//
+//	type Alarms struct {
+//	    Value int32 `gologix:"Machine_{0}.Alarms"`
+//	}
+//	var machine1 Alarms
+//	err := client.ReadMulti(&machine1, 0)  // Reads "Machine_0.Alarms"
+//	var machine2 Alarms
+//	err := client.ReadMulti(&machine2, 1)  // Reads "Machine_1.Alarms"
+//
+//
+//	type SubsystemAlarms struct {
+//	    Value int32 `gologix:"Machine_{0}.{1}.Alarms"`
+//	}
+//	var pusherAlarms SubsystemAlarms
+//	err := client.ReadMulti(&machine1, 0, "pusher")  // Reads "Machine_0.pusher.Alarms"
+//	var welderAlarms SubsystemAlarms
+//	err := client.ReadMulti(&machine2, 1, "welder")  // Reads "Machine_1.welder.Alarms"
+func (client *Client) ReadMulti(tag_str any, args ...any) error {
 	switch x := tag_str.(type) {
 	case map[string]any:
 		return client.ReadMap(x)
@@ -677,6 +700,9 @@ func (client *Client) ReadMulti(tag_str any) error {
 		tagPath, ok := field.Tag.Lookup("gologix")
 		if !ok || tagPath == "" {
 			continue
+		}
+		if args != nil {
+			tagPath = formatName(tagPath, args)
 		}
 		v := val.Field(i).Interface()
 		t, elem := GoVarToCIPType(v)
