@@ -621,7 +621,7 @@ type cipStructHeader struct {
 
 // ReadMulti reads multiple tags efficiently in a single request using struct field tags or a map.
 // Any curly bracketed numbers in the tag path will be replaced with the optional arguments passed in
-// in order. For example, "MyTag{0}.This" with an argument of 5 will read "MyTag[5].This". This allows
+// in order. For example, "MyTag{0}.This" with an argument of 5 will read "MyTag5.This". This allows
 // you to use a single struct as a template for reading multiple similar tags without having to define
 // a separate struct for each instance.
 //
