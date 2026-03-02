@@ -17,6 +17,7 @@ type DataTableBufferTag struct {
 	index        uint16  // 1-based sequential position in the buffer
 	ioi          []byte  // raw IOI EPath bytes
 	batchID      uint16  // 0x4E response value — groups tags for 0x4C read parsing
+	synched      bool    // internal flag to track if this tag has been added to the buffer on the PLC side.
 }
 
 // Index returns the 1-based PLC-assigned index for this tag in the buffer.
@@ -35,11 +36,13 @@ type DataTableBuffer struct {
 	client     *Client
 	instanceID uint16               // assigned by PLC during Create; use InstanceID() getter
 	tags       []DataTableBufferTag // tags added to the buffer, in order; use Tags() getter
-	created    bool                 // true after successful Create
 	// expansions tracks multi-element TagDef expansions from AddTagGroup.
 	// Key: the base resolved tag name (e.g. "EXAMPLE[1,0]")
 	// Value: the expanded individual tag names (e.g. ["EXAMPLE[1,0]", ..., "EXAMPLE[1,4]"])
 	expansions map[string][]string
+
+	created bool // true after successful Create
+	synched bool // internal flag to track if tags have been added on this side but not yet sent to PLC via AddTag/AddTags
 }
 
 // InstanceID returns the PLC-assigned instance ID for this datatable buffer.
@@ -173,6 +176,7 @@ func (client *Client) DeleteDataTableBuffer(instanceID uint16) error {
 type addTagEntry struct {
 	dataTypeSize uint16
 	ioi          []byte
+	index        int // the position of this tag in the buffer's tags slice, used to update batchID and synched after a successful add
 }
 
 // DataTableAddTags sends a CIP service 0x4E to the specified datatable buffer instance,
@@ -238,7 +242,7 @@ func (client *Client) DataTableAddTags(instanceID uint16, entries []addTagEntry)
 // DataTableAddTag sends a CIP service 0x4E to add a single tag to the datatable buffer.
 // This is a convenience wrapper around DataTableAddTags for single-tag adds.
 func (client *Client) DataTableAddTag(instanceID uint16, dataTypeSize uint16, tagIOIs []byte) (uint16, error) {
-	return client.DataTableAddTags(instanceID, []addTagEntry{{dataTypeSize, tagIOIs}})
+	return client.DataTableAddTags(instanceID, []addTagEntry{{dataTypeSize, tagIOIs, 0}})
 }
 
 // DataTableReadBuffer sends a CIP Read (0x4C) service to the specified datatable
@@ -335,10 +339,7 @@ func (buf *DataTableBuffer) AddTag(tagName string, cipType CIPType) error {
 		return fmt.Errorf("tag %q: %w", tagName, err)
 	}
 
-	batchID, err := buf.client.DataTableAddTag(buf.instanceID, typeSize, ioi.Bytes())
-	if err != nil {
-		return fmt.Errorf("could not add tag %q to buffer: %w", tagName, err)
-	}
+	buf.synched = false
 
 	buf.tags = append(buf.tags, DataTableBufferTag{
 		Name:         tagName,
@@ -346,9 +347,34 @@ func (buf *DataTableBuffer) AddTag(tagName string, cipType CIPType) error {
 		DataTypeSize: typeSize,
 		index:        uint16(len(buf.tags) + 1),
 		ioi:          ioi.Bytes(),
-		batchID:      batchID,
+		batchID:      0,
+		synched:      false,
 	})
 
+	return nil
+}
+
+// Run through the tags in the buffer that have not yet been sent to the PLC and send them in a batch via DataTableAddTags.
+// marking them as synched if successful. This is called automatically by ReadAll if there are unsynched tags, but can be
+// called manually if you want to control when the tags are sent to the PLC (e.g. to group multiple AddTag calls into one batch).
+func (buf *DataTableBuffer) SyncTags() error {
+	entries := make([]addTagEntry, 0)
+	for i := range buf.tags {
+		if buf.tags[i].synched {
+			continue
+		}
+		entries = append(entries, addTagEntry{buf.tags[i].DataTypeSize, buf.tags[i].ioi, i})
+	}
+
+	batchID, err := buf.client.DataTableAddTags(buf.instanceID, entries)
+	if err != nil {
+		return fmt.Errorf("could not add tags to buffer: %w", err)
+	}
+	for _, entry := range entries {
+		buf.tags[entry.index].batchID = batchID
+		buf.tags[entry.index].synched = true
+	}
+	buf.synched = true
 	return nil
 }
 
@@ -398,11 +424,6 @@ func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
 		}
 	}
 
-	batchID, err := buf.client.DataTableAddTags(buf.instanceID, entries)
-	if err != nil {
-		return fmt.Errorf("could not add tags to buffer: %w", err)
-	}
-
 	// Assign sequential indices and record the batch ID for read parsing.
 	baseIndex := uint16(len(buf.tags) + 1)
 	for i, t := range prepared {
@@ -412,9 +433,11 @@ func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
 			DataTypeSize: t.typeSize,
 			index:        baseIndex + uint16(i),
 			ioi:          t.ioi,
-			batchID:      batchID,
+			batchID:      0,
+			synched:      false,
 		})
 	}
+	buf.synched = false
 
 	return nil
 }
@@ -450,6 +473,13 @@ func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
 	}
 	if len(buf.tags) == 0 {
 		return nil, fmt.Errorf("no tags in datatable buffer")
+	}
+
+	if !buf.synched {
+		err := buf.SyncTags()
+		if err != nil {
+			return nil, fmt.Errorf("could not sync tags before read: %w", err)
+		}
 	}
 
 	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
@@ -507,6 +537,13 @@ func (buf *DataTableBuffer) ReadAllRaw() (map[string][]byte, error) {
 	}
 	if len(buf.tags) == 0 {
 		return nil, fmt.Errorf("no tags in datatable buffer")
+	}
+
+	if !buf.synched {
+		err := buf.SyncTags()
+		if err != nil {
+			return nil, fmt.Errorf("could not sync tags before read: %w", err)
+		}
 	}
 
 	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
