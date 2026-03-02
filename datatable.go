@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -18,6 +19,7 @@ type DataTableBufferTag struct {
 	ioi          []byte  // raw IOI EPath bytes
 	batchID      uint16  // 0x4E response value — groups tags for 0x4C read parsing
 	synched      bool    // internal flag to track if this tag has been added to the buffer on the PLC side.
+	Var          any     // optional field to store the value of the tag after reading from the buffer, not used internally by the library
 }
 
 // Index returns the 1-based PLC-assigned index for this tag in the buffer.
@@ -319,6 +321,42 @@ func (client *Client) NewDataTableBuffer() (*DataTableBuffer, error) {
 	}, nil
 }
 
+// Add a tag to the datatable buffer and associate it with a reference to a Go variable.
+// When the buffer is read, the decoded value for this tag will also be updated to the value
+// that was read from the PLC.
+func (buf *DataTableBuffer) AddTagRef(tagName string, data any) error {
+
+	if !buf.created {
+		return fmt.Errorf("datatable buffer not created")
+	}
+	cipType, _ := GoVarToCIPType(data)
+
+	ioi, err := buf.client.newIOI(tagName, cipType)
+	if err != nil {
+		return fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
+	}
+
+	typeSize, err := buf.resolveTypeSize(tagName, cipType)
+	if err != nil {
+		return fmt.Errorf("tag %q: %w", tagName, err)
+	}
+
+	buf.synched = false
+
+	buf.tags = append(buf.tags, DataTableBufferTag{
+		Name:         tagName,
+		CIPType:      cipType,
+		DataTypeSize: typeSize,
+		index:        uint16(len(buf.tags) + 1),
+		ioi:          ioi.Bytes(),
+		batchID:      0,
+		synched:      false,
+		Var:          data,
+	})
+
+	return nil
+}
+
 // AddTag adds a single tag to the datatable buffer by its symbolic name and CIP type.
 // The tag is sent to the PLC via service 0x4E and the PLC-assigned batch index is recorded.
 //
@@ -520,9 +558,33 @@ func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
 			return nil, fmt.Errorf("could not decode value for tag %q: %w", tag.Name, err)
 		}
 		result[tag.Name] = value
+		if tag.Var != nil {
+			// If the caller has set the Var field, also store the value there for direct access.
+			// use reflection to set the value of the caller's variable, if possible
+			err := setGoVar(tag.Var, value)
+			if err != nil {
+				return nil, fmt.Errorf("could not set Var field for tag %q: %w", tag.Name, err)
+			}
+		}
 	}
 
 	return result, nil
+}
+
+func setGoVar(dest any, value any) error {
+	destVal := reflect.ValueOf(dest)
+	if destVal.Kind() != reflect.Ptr {
+		return fmt.Errorf("Var field must be a pointer to set value, got %T", dest)
+	}
+	if !destVal.Elem().CanSet() {
+		return fmt.Errorf("cannot set value on Var field of type %T", dest)
+	}
+	valueVal := reflect.ValueOf(value)
+	if !valueVal.Type().AssignableTo(destVal.Elem().Type()) {
+		return fmt.Errorf("cannot assign value of type %T to Var field of type %T", value, dest)
+	}
+	destVal.Elem().Set(valueVal)
+	return nil
 }
 
 // ReadAllRaw reads all tag values from the buffer and returns them as a map

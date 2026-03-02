@@ -41,7 +41,8 @@ func main() {
 		log.Fatalf("Error creating datatable buffer: %v", err)
 	}
 
-	err = buf.AddTag("TestDint", gologix.CIPTypeDINT)
+	var x int32
+	err = buf.AddTagRef("TestDint", &x)
 	if err != nil {
 		log.Fatalf("Error adding DINT tag: %v", err)
 	}
@@ -67,6 +68,8 @@ func main() {
 	for name, val := range values {
 		fmt.Printf("  %s = %v\n", name, val)
 	}
+
+	fmt.Printf("  Direct variable access: TestDint = %v\n", x)
 
 	buf.Close()
 
