@@ -21,29 +21,29 @@ type GoLogixTypes interface {
 // also return the element count
 func GoVarToCIPType(T any) (CIPType, int) {
 	switch x := T.(type) {
-	case bool:
+	case bool, *bool:
 		return CIPTypeBOOL, 1
-	case byte:
+	case byte, *byte:
 		return CIPTypeBYTE, 1
-	case int8:
+	case int8, *int8:
 		return CIPTypeSINT, 1
-	case uint16:
+	case uint16, *uint16:
 		return CIPTypeUINT, 1
-	case int16:
+	case int16, *int16:
 		return CIPTypeINT, 1
-	case uint32:
+	case uint32, *uint32:
 		return CIPTypeUDINT, 1
-	case int32:
+	case int32, *int32:
 		return CIPTypeDINT, 1
-	case uint64:
+	case uint64, *uint64:
 		return CIPTypeLWORD, 1
-	case int64:
+	case int64, *int64:
 		return CIPTypeLINT, 1
-	case float32:
+	case float32, *float32:
 		return CIPTypeREAL, 1
-	case float64:
+	case float64, *float64:
 		return CIPTypeLREAL, 1
-	case string:
+	case string, *string:
 		return CIPTypeSTRING, 1
 	case []byte:
 		return CIPTypeBYTE, len(x)
