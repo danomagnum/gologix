@@ -482,6 +482,8 @@ func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
 
 // ReadAll reads all tag values from the datatable buffer in a single CIP request
 // (service 0x4C) and returns them as a map from tag name to the decoded Go value.
+// Any tags that were added to the buffer with a reference to a Go variable in the
+// Var field will also have that variable updated.
 //
 // # Response layout
 //
@@ -729,6 +731,95 @@ func (buf *DataTableBuffer) AddTagGroup(group *TagGroup, args ...any) error {
 	}
 
 	return buf.AddTags(tagMap)
+}
+
+// ---------------------------------------------------------------------------
+// Struct Tag integration
+// ---------------------------------------------------------------------------
+
+// AddTaggedStruct adds all tags from a tagged go struct (with `gologix` struct tags)
+// to this datatable buffer. Args substitute {0}, {1}, ... placeholders in tag names.
+//
+// Automatically sets references to struct fields in the Var field of each buffer tag,
+// so that after reading the struct fields will be populated with the read values.
+//
+// Can be called multiple times with different args to build up a large buffer:
+//
+// Example:
+//
+//	    type MyTags struct {
+//	    IntTag    int16     `gologix:"Machine{0}TestInt"`
+//	    RealTag   float32   `gologix:"Machine{0}TestReal"`
+//	    ArrayTag  []int32   `gologix:"Machine{0}TestDintArr[2]"`  // Read 5 elements starting at index 2
+//	    }
+//	    var tags1 MyTags
+//	    var tags2 MyTags
+//		buf.AddTaggedStruct(&tags1, 1)  // inspection point 1
+//		buf.AddTaggedStruct(&tags2, 2)  // inspection point 2
+//		// buf now has all tags for both structs
+func (buf *DataTableBuffer) AddTaggedStruct(str any, args ...any) error {
+	if !buf.created {
+		return fmt.Errorf("datatable buffer not created")
+	}
+
+	// Reflect over struct fields
+	T := reflect.TypeOf(str)
+	if T.Kind() == reflect.Ptr {
+		T = T.Elem()
+	}
+	v := reflect.ValueOf(str)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	vf := reflect.VisibleFields(T)
+	tagMap := make(map[string]CIPType)
+	varPtrs := make(map[string]any)
+
+	for i := range vf {
+		field := vf[i]
+		tagPath, ok := field.Tag.Lookup("gologix")
+		if !ok || tagPath == "" {
+			continue
+		}
+		if args != nil {
+			tagPath = formatName(tagPath, args...)
+		}
+		fieldVal := v.Field(i)
+		cipType, elements := GoVarToCIPType(fieldVal.Interface())
+
+		// Handle slices/arrays (multi-element tags)
+		if elements > 1 {
+			expanded := expandArrayTag(tagPath, elements)
+			buf.expansions[tagPath] = expanded
+			for idx, name := range expanded {
+				tagMap[name] = cipType
+				// For slices, set Var to the element pointer
+				if fieldVal.Kind() == reflect.Slice && fieldVal.Len() > idx {
+					varPtrs[name] = fieldVal.Index(idx).Addr().Interface()
+				}
+			}
+		} else {
+			buf.expansions[tagPath] = []string{tagPath}
+			tagMap[tagPath] = cipType
+			varPtrs[tagPath] = fieldVal.Addr().Interface()
+		}
+	}
+
+	// Add tags to buffer
+	err := buf.AddTags(tagMap)
+	if err != nil {
+		return err
+	}
+
+	// Set Var pointers for each tag
+	for i := range buf.tags {
+		if ptr, ok := varPtrs[buf.tags[i].Name]; ok {
+			buf.tags[i].Var = ptr
+		}
+	}
+
+	return nil
 }
 
 // ReadAllTyped reads all tag values from the buffer in a single CIP request

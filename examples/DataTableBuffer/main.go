@@ -138,12 +138,26 @@ func main() {
 		log.Fatalf("Error adding tag group: %v", err)
 	}
 
+	type MyStruct struct {
+		TestDint int32 `gologix:"program:gologix_tests.{0}.Field1"`
+		TestInt  int16 `gologix:"TestInt"`
+	}
+
+	var s MyStruct
+	err = buf.AddTaggedStruct(&s, "readudt")
+
 	// ReadAllTyped returns typed accessors and auto-collapses multi-element
 	// tags back into slices.
 	result, err := buf.ReadAllTyped()
 	if err != nil {
 		log.Fatalf("Error reading typed: %v", err)
 	}
+
+	if s.TestDint != 85456 {
+		log.Fatalf("Unexpected value for TestDint: %v", s.TestDint)
+	}
+
+	fmt.Printf("struct value: %+v\n", s)
 
 	// Multi-element tag → slice accessor
 	dints, err := result.Int32Slice("TestDintArr[0]")
