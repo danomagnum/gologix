@@ -272,3 +272,98 @@ func TestReadMultiWithGaps2(t *testing.T) {
 		})
 	}
 }
+
+func TestReadMultiWithNumArgs(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			type multiread struct {
+				TestInt  int16   `gologix:"TestInt"`
+				TestDint int32   `gologix:"TestDint"`
+				TestArr  []int32 `gologix:"TestDintArr[{0}]"`
+			}
+			var mr multiread
+			mr.TestArr = make([]int32, 5)
+
+			// call the read multi function with the structure passed in as a pointer.
+			err = client.ReadMulti(&mr, 2)
+			if err != nil {
+				log.Printf("error reading testint. %v", err)
+			}
+			if mr.TestArr[0] != 4353 {
+				t.Errorf("TestArr[0] expected 4353 but got %d", mr.TestArr[0])
+			}
+			if mr.TestArr[4] != 4357 {
+				t.Errorf("TestArr[4] expected 4357 but got %d", mr.TestArr[4])
+			}
+			err = client.ReadMulti(&mr, 3)
+			if err != nil {
+				log.Printf("error reading testint. %v", err)
+			}
+			if mr.TestArr[0] != 4354 {
+				t.Errorf("TestArr[0] expected 4353 but got %d", mr.TestArr[0])
+			}
+			if mr.TestArr[4] != 4358 {
+				t.Errorf("TestArr[4] expected 4357 but got %d", mr.TestArr[4])
+			}
+
+		})
+	}
+}
+
+func TestReadMultiWithStrArgs(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			type multiread struct {
+				TestInt  int16 `gologix:"TestInt"`
+				TestDint int32 `gologix:"program:gologix_tests.{0}.Field1"`
+			}
+			var mr multiread
+
+			// call the read multi function with the structure passed in as a pointer.
+			err = client.ReadMulti(&mr, "readudt")
+			if err != nil {
+				log.Printf("error reading testint. %v", err)
+			}
+			if mr.TestDint != 85456 {
+				t.Errorf("TestDint expected 85456 but got %d", mr.TestDint)
+			}
+
+			err = client.ReadMulti(&mr, "readudt2")
+			if err != nil {
+				log.Printf("error reading testint. %v", err)
+			}
+			if mr.TestDint != 654321 {
+				t.Errorf("TestDint expected 654321 but got %d", mr.TestDint)
+			}
+
+		})
+	}
+}

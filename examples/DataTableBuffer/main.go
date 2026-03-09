@@ -41,7 +41,8 @@ func main() {
 		log.Fatalf("Error creating datatable buffer: %v", err)
 	}
 
-	err = buf.AddTag("TestDint", gologix.CIPTypeDINT)
+	var x int32
+	err = buf.AddTagRef("TestDint", &x)
 	if err != nil {
 		log.Fatalf("Error adding DINT tag: %v", err)
 	}
@@ -67,6 +68,8 @@ func main() {
 	for name, val := range values {
 		fmt.Printf("  %s = %v\n", name, val)
 	}
+
+	fmt.Printf("  Direct variable access: TestDint = %v\n", x)
 
 	buf.Close()
 
@@ -124,7 +127,7 @@ func main() {
 
 	group := gologix.NewTagGroup(
 		// Elements=3 expands to: TestDintArray[0], TestDintArray[1], TestDintArray[2]
-		gologix.TagDef{Name: "TestDintArray[{0}]", Type: gologix.CIPTypeDINT, Elements: 3},
+		gologix.TagDef{Name: "TestDintArr[{0}]", Type: gologix.CIPTypeDINT, Elements: 3},
 		// Elements=1 (or omitted) adds a single tag as-is.
 		gologix.TagDef{Name: "TestReal", Type: gologix.CIPTypeREAL},
 	)
@@ -135,6 +138,14 @@ func main() {
 		log.Fatalf("Error adding tag group: %v", err)
 	}
 
+	type MyStruct struct {
+		TestDint int32 `gologix:"program:gologix_tests.{0}.Field1"`
+		TestInt  int16 `gologix:"TestInt"`
+	}
+
+	var s MyStruct
+	err = buf.AddTaggedStruct(&s, "readudt")
+
 	// ReadAllTyped returns typed accessors and auto-collapses multi-element
 	// tags back into slices.
 	result, err := buf.ReadAllTyped()
@@ -142,12 +153,18 @@ func main() {
 		log.Fatalf("Error reading typed: %v", err)
 	}
 
+	if s.TestDint != 85456 {
+		log.Fatalf("Unexpected value for TestDint: %v", s.TestDint)
+	}
+
+	fmt.Printf("struct value: %+v\n", s)
+
 	// Multi-element tag → slice accessor
-	dints, err := result.Int32Slice("TestDintArray[0]")
+	dints, err := result.Int32Slice("TestDintArr[0]")
 	if err != nil {
 		log.Fatalf("Error getting int32 slice: %v", err)
 	}
-	fmt.Printf("  TestDintArray[0..2] = %v\n", dints)
+	fmt.Printf("  TestDintArr[0..2] = %v\n", dints)
 
 	// Single tag → scalar accessor
 	realVal, err := result.Float32("TestReal")

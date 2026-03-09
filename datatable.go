@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -17,6 +18,8 @@ type DataTableBufferTag struct {
 	index        uint16  // 1-based sequential position in the buffer
 	ioi          []byte  // raw IOI EPath bytes
 	batchID      uint16  // 0x4E response value — groups tags for 0x4C read parsing
+	synched      bool    // internal flag to track if this tag has been added to the buffer on the PLC side.
+	Var          any     // optional field to store the value of the tag after reading from the buffer, not used internally by the library
 }
 
 // Index returns the 1-based PLC-assigned index for this tag in the buffer.
@@ -35,11 +38,13 @@ type DataTableBuffer struct {
 	client     *Client
 	instanceID uint16               // assigned by PLC during Create; use InstanceID() getter
 	tags       []DataTableBufferTag // tags added to the buffer, in order; use Tags() getter
-	created    bool                 // true after successful Create
 	// expansions tracks multi-element TagDef expansions from AddTagGroup.
 	// Key: the base resolved tag name (e.g. "EXAMPLE[1,0]")
 	// Value: the expanded individual tag names (e.g. ["EXAMPLE[1,0]", ..., "EXAMPLE[1,4]"])
 	expansions map[string][]string
+
+	created bool // true after successful Create
+	synched bool // internal flag to track if tags have been added on this side but not yet sent to PLC via AddTag/AddTags
 }
 
 // InstanceID returns the PLC-assigned instance ID for this datatable buffer.
@@ -173,6 +178,7 @@ func (client *Client) DeleteDataTableBuffer(instanceID uint16) error {
 type addTagEntry struct {
 	dataTypeSize uint16
 	ioi          []byte
+	index        int // the position of this tag in the buffer's tags slice, used to update batchID and synched after a successful add
 }
 
 // DataTableAddTags sends a CIP service 0x4E to the specified datatable buffer instance,
@@ -238,7 +244,7 @@ func (client *Client) DataTableAddTags(instanceID uint16, entries []addTagEntry)
 // DataTableAddTag sends a CIP service 0x4E to add a single tag to the datatable buffer.
 // This is a convenience wrapper around DataTableAddTags for single-tag adds.
 func (client *Client) DataTableAddTag(instanceID uint16, dataTypeSize uint16, tagIOIs []byte) (uint16, error) {
-	return client.DataTableAddTags(instanceID, []addTagEntry{{dataTypeSize, tagIOIs}})
+	return client.DataTableAddTags(instanceID, []addTagEntry{{dataTypeSize, tagIOIs, 0}})
 }
 
 // DataTableReadBuffer sends a CIP Read (0x4C) service to the specified datatable
@@ -315,6 +321,42 @@ func (client *Client) NewDataTableBuffer() (*DataTableBuffer, error) {
 	}, nil
 }
 
+// Add a tag to the datatable buffer and associate it with a reference to a Go variable.
+// When the buffer is read, the decoded value for this tag will also be updated to the value
+// that was read from the PLC.
+func (buf *DataTableBuffer) AddTagRef(tagName string, data any) error {
+
+	if !buf.created {
+		return fmt.Errorf("datatable buffer not created")
+	}
+	cipType, _ := GoVarToCIPType(data)
+
+	ioi, err := buf.client.newIOI(tagName, cipType)
+	if err != nil {
+		return fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
+	}
+
+	typeSize, err := buf.resolveTypeSize(tagName, cipType)
+	if err != nil {
+		return fmt.Errorf("tag %q: %w", tagName, err)
+	}
+
+	buf.synched = false
+
+	buf.tags = append(buf.tags, DataTableBufferTag{
+		Name:         tagName,
+		CIPType:      cipType,
+		DataTypeSize: typeSize,
+		index:        uint16(len(buf.tags) + 1),
+		ioi:          ioi.Bytes(),
+		batchID:      0,
+		synched:      false,
+		Var:          data,
+	})
+
+	return nil
+}
+
 // AddTag adds a single tag to the datatable buffer by its symbolic name and CIP type.
 // The tag is sent to the PLC via service 0x4E and the PLC-assigned batch index is recorded.
 //
@@ -335,10 +377,7 @@ func (buf *DataTableBuffer) AddTag(tagName string, cipType CIPType) error {
 		return fmt.Errorf("tag %q: %w", tagName, err)
 	}
 
-	batchID, err := buf.client.DataTableAddTag(buf.instanceID, typeSize, ioi.Bytes())
-	if err != nil {
-		return fmt.Errorf("could not add tag %q to buffer: %w", tagName, err)
-	}
+	buf.synched = false
 
 	buf.tags = append(buf.tags, DataTableBufferTag{
 		Name:         tagName,
@@ -346,9 +385,34 @@ func (buf *DataTableBuffer) AddTag(tagName string, cipType CIPType) error {
 		DataTypeSize: typeSize,
 		index:        uint16(len(buf.tags) + 1),
 		ioi:          ioi.Bytes(),
-		batchID:      batchID,
+		batchID:      0,
+		synched:      false,
 	})
 
+	return nil
+}
+
+// Run through the tags in the buffer that have not yet been sent to the PLC and send them in a batch via DataTableAddTags.
+// marking them as synched if successful. This is called automatically by ReadAll if there are unsynched tags, but can be
+// called manually if you want to control when the tags are sent to the PLC (e.g. to group multiple AddTag calls into one batch).
+func (buf *DataTableBuffer) SyncTags() error {
+	entries := make([]addTagEntry, 0)
+	for i := range buf.tags {
+		if buf.tags[i].synched {
+			continue
+		}
+		entries = append(entries, addTagEntry{buf.tags[i].DataTypeSize, buf.tags[i].ioi, i})
+	}
+
+	batchID, err := buf.client.DataTableAddTags(buf.instanceID, entries)
+	if err != nil {
+		return fmt.Errorf("could not add tags to buffer: %w", err)
+	}
+	for _, entry := range entries {
+		buf.tags[entry.index].batchID = batchID
+		buf.tags[entry.index].synched = true
+	}
+	buf.synched = true
 	return nil
 }
 
@@ -398,11 +462,6 @@ func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
 		}
 	}
 
-	batchID, err := buf.client.DataTableAddTags(buf.instanceID, entries)
-	if err != nil {
-		return fmt.Errorf("could not add tags to buffer: %w", err)
-	}
-
 	// Assign sequential indices and record the batch ID for read parsing.
 	baseIndex := uint16(len(buf.tags) + 1)
 	for i, t := range prepared {
@@ -412,15 +471,19 @@ func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
 			DataTypeSize: t.typeSize,
 			index:        baseIndex + uint16(i),
 			ioi:          t.ioi,
-			batchID:      batchID,
+			batchID:      0,
+			synched:      false,
 		})
 	}
+	buf.synched = false
 
 	return nil
 }
 
 // ReadAll reads all tag values from the datatable buffer in a single CIP request
 // (service 0x4C) and returns them as a map from tag name to the decoded Go value.
+// Any tags that were added to the buffer with a reference to a Go variable in the
+// Var field will also have that variable updated.
 //
 // # Response layout
 //
@@ -450,6 +513,13 @@ func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
 	}
 	if len(buf.tags) == 0 {
 		return nil, fmt.Errorf("no tags in datatable buffer")
+	}
+
+	if !buf.synched {
+		err := buf.SyncTags()
+		if err != nil {
+			return nil, fmt.Errorf("could not sync tags before read: %w", err)
+		}
 	}
 
 	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
@@ -490,9 +560,33 @@ func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
 			return nil, fmt.Errorf("could not decode value for tag %q: %w", tag.Name, err)
 		}
 		result[tag.Name] = value
+		if tag.Var != nil {
+			// If the caller has set the Var field, also store the value there for direct access.
+			// use reflection to set the value of the caller's variable, if possible
+			err := setGoVar(tag.Var, value)
+			if err != nil {
+				return nil, fmt.Errorf("could not set Var field for tag %q: %w", tag.Name, err)
+			}
+		}
 	}
 
 	return result, nil
+}
+
+func setGoVar(dest any, value any) error {
+	destVal := reflect.ValueOf(dest)
+	if destVal.Kind() != reflect.Ptr {
+		return fmt.Errorf("Var field must be a pointer to set value, got %T", dest)
+	}
+	if !destVal.Elem().CanSet() {
+		return fmt.Errorf("cannot set value on Var field of type %T", dest)
+	}
+	valueVal := reflect.ValueOf(value)
+	if !valueVal.Type().AssignableTo(destVal.Elem().Type()) {
+		return fmt.Errorf("cannot assign value of type %T to Var field of type %T", value, dest)
+	}
+	destVal.Elem().Set(valueVal)
+	return nil
 }
 
 // ReadAllRaw reads all tag values from the buffer and returns them as a map
@@ -507,6 +601,13 @@ func (buf *DataTableBuffer) ReadAllRaw() (map[string][]byte, error) {
 	}
 	if len(buf.tags) == 0 {
 		return nil, fmt.Errorf("no tags in datatable buffer")
+	}
+
+	if !buf.synched {
+		err := buf.SyncTags()
+		if err != nil {
+			return nil, fmt.Errorf("could not sync tags before read: %w", err)
+		}
 	}
 
 	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
@@ -630,6 +731,95 @@ func (buf *DataTableBuffer) AddTagGroup(group *TagGroup, args ...any) error {
 	}
 
 	return buf.AddTags(tagMap)
+}
+
+// ---------------------------------------------------------------------------
+// Struct Tag integration
+// ---------------------------------------------------------------------------
+
+// AddTaggedStruct adds all tags from a tagged go struct (with `gologix` struct tags)
+// to this datatable buffer. Args substitute {0}, {1}, ... placeholders in tag names.
+//
+// Automatically sets references to struct fields in the Var field of each buffer tag,
+// so that after reading the struct fields will be populated with the read values.
+//
+// Can be called multiple times with different args to build up a large buffer:
+//
+// Example:
+//
+//	    type MyTags struct {
+//	    IntTag    int16     `gologix:"Machine{0}TestInt"`
+//	    RealTag   float32   `gologix:"Machine{0}TestReal"`
+//	    ArrayTag  []int32   `gologix:"Machine{0}TestDintArr[2]"`  // Read 5 elements starting at index 2
+//	    }
+//	    var tags1 MyTags
+//	    var tags2 MyTags
+//		buf.AddTaggedStruct(&tags1, 1)  // inspection point 1
+//		buf.AddTaggedStruct(&tags2, 2)  // inspection point 2
+//		// buf now has all tags for both structs
+func (buf *DataTableBuffer) AddTaggedStruct(str any, args ...any) error {
+	if !buf.created {
+		return fmt.Errorf("datatable buffer not created")
+	}
+
+	// Reflect over struct fields
+	T := reflect.TypeOf(str)
+	if T.Kind() == reflect.Ptr {
+		T = T.Elem()
+	}
+	v := reflect.ValueOf(str)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	vf := reflect.VisibleFields(T)
+	tagMap := make(map[string]CIPType)
+	varPtrs := make(map[string]any)
+
+	for i := range vf {
+		field := vf[i]
+		tagPath, ok := field.Tag.Lookup("gologix")
+		if !ok || tagPath == "" {
+			continue
+		}
+		if args != nil {
+			tagPath = formatName(tagPath, args...)
+		}
+		fieldVal := v.Field(i)
+		cipType, elements := GoVarToCIPType(fieldVal.Interface())
+
+		// Handle slices/arrays (multi-element tags)
+		if elements > 1 {
+			expanded := expandArrayTag(tagPath, elements)
+			buf.expansions[tagPath] = expanded
+			for idx, name := range expanded {
+				tagMap[name] = cipType
+				// For slices, set Var to the element pointer
+				if fieldVal.Kind() == reflect.Slice && fieldVal.Len() > idx {
+					varPtrs[name] = fieldVal.Index(idx).Addr().Interface()
+				}
+			}
+		} else {
+			buf.expansions[tagPath] = []string{tagPath}
+			tagMap[tagPath] = cipType
+			varPtrs[tagPath] = fieldVal.Addr().Interface()
+		}
+	}
+
+	// Add tags to buffer
+	err := buf.AddTags(tagMap)
+	if err != nil {
+		return err
+	}
+
+	// Set Var pointers for each tag
+	for i := range buf.tags {
+		if ptr, ok := varPtrs[buf.tags[i].Name]; ok {
+			buf.tags[i].Var = ptr
+		}
+	}
+
+	return nil
 }
 
 // ReadAllTyped reads all tag values from the buffer in a single CIP request
