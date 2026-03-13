@@ -40,7 +40,7 @@ func main() {
 		CycleCountEighth float32 `gologix:"CycleFloatEighth"`
 	}
 
-	t, err := gologix.NewStructTrend[TrendData](client, time.Millisecond*10, 100)
+	t, err := gologix.NewStructTrend[TrendData](client, time.Millisecond*10, 1000)
 	if err != nil {
 		log.Fatalf("Error setting trend attributes: %v", err)
 	}
@@ -50,13 +50,16 @@ func main() {
 		log.Fatalf("Error starting trend: %v", err)
 	}
 
-	for i := 0; i < 5; i++ {
-		time.Sleep(time.Second)
+	delay := time.Second
+
+	for i := 0; i < 100; i++ {
+		time.Sleep(delay)
 		dat, err := t.ReadAll()
 		if err != nil {
 			log.Fatalf("Error updating trend: %v", err)
 		}
-		fmt.Printf("Trend data: %+v\n", dat)
+		fmt.Printf("Trend data count: %d\n", len(dat))
+		delay *= 2
 	}
 
 	err = t.StopTrend()

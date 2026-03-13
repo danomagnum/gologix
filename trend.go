@@ -142,10 +142,6 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 		iois[i] = ioi.Bytes()
 	}
 
-	// TODO: only count fields with gologix struct tags
-	fieldCount := uint16(len(tagList))
-	_ = fieldCount
-
 	// ------------
 	// Create the trend instance data table
 	// ------------
@@ -154,7 +150,14 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 		return nil, fmt.Errorf("could not serialize path for trend creation: %w", err)
 	}
 
-	resp, err := client.GenericCIPMessage(CIPService_Create, path.Bytes(), nil)
+	data, err := attrValueBytes(
+		AttributeValue{Attribute: 8, Value: uint32(bufferSize)}, // Buffer size in bytes.
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize attribute values: %w", err)
+	}
+
+	resp, err := client.GenericCIPMessage(CIPService_Create, path.Bytes(), data.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("datatable buffer create failed: %w", err)
 	}

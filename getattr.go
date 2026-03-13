@@ -494,29 +494,37 @@ type AttributeValue struct {
 	Value     any
 }
 
-func (client *Client) SetAttrList(class CIPClass, instance CIPInstance, attrValues ...AttributeValue) error {
+func attrValueBytes(avs ...AttributeValue) (*bytes.Buffer, error) {
 
 	var data bytes.Buffer
 
-	err := binary.Write(&data, binary.LittleEndian, uint16(len(attrValues)))
+	err := binary.Write(&data, binary.LittleEndian, uint16(len(avs)))
 	if err != nil {
-		return fmt.Errorf("could not write attribute count: %w", err)
+		return nil, fmt.Errorf("could not write attribute count: %w", err)
 	}
-	for _, a := range attrValues {
+	for _, a := range avs {
 		err = binary.Write(&data, binary.LittleEndian, a.Attribute)
 
 		if err != nil {
-			return fmt.Errorf("could not write attribute: %w", err)
+			return nil, fmt.Errorf("could not write attribute: %w", err)
 		}
 		err = binary.Write(&data, binary.LittleEndian, a.Value)
 		if err != nil {
-			return fmt.Errorf("could not write attribute value: %w", err)
+			return nil, fmt.Errorf("could not write attribute value: %w", err)
 		}
 	}
+	return &data, nil
+}
+
+func (client *Client) SetAttrList(class CIPClass, instance CIPInstance, attrValues ...AttributeValue) error {
 
 	path, err := Serialize(class, instance)
 	if err != nil {
 		return fmt.Errorf("could not serialize path for trend read: %w", err)
+	}
+	data, err := attrValueBytes(attrValues...)
+	if err != nil {
+		return fmt.Errorf("could not serialize attribute values: %w", err)
 	}
 
 	_, err = client.GenericCIPMessage(CIPService_SetAttributeList, path.Bytes(), data.Bytes())
