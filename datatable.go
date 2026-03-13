@@ -3,10 +3,12 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
 	"reflect"
-	"sort"
 	"strings"
+	"time"
 )
 
 // DataTableBufferTag tracks a single tag that has been added to a datatable buffer.
@@ -93,9 +95,9 @@ func dataTableTypeSize(t CIPType) (uint16, error) {
 // STRING20 or STRING40 whose slot sizes differ from the standard 88-byte AB STRING.
 //
 // Falls back to dataTableTypeSize() if the tag is not in KnownTags or has no UDT.
-func (buf *DataTableBuffer) resolveTypeSize(tagName string, cipType CIPType) (uint16, error) {
+func (client *Client) resolveTypeSize(tagName string, cipType CIPType) (uint16, error) {
 	if cipType == CIPTypeSTRING || cipType == CIPTypeStruct {
-		kt, ok := buf.client.KnownTags[strings.ToLower(tagName)]
+		kt, ok := client.KnownTags[strings.ToLower(tagName)]
 		if ok && kt.UDT != nil && kt.UDT.Info.SizeBytes > 0 {
 			return uint16(kt.UDT.Info.SizeBytes), nil
 		}
@@ -142,7 +144,10 @@ func (client *Client) CreateDataTableBuffer() (uint16, error) {
 	}
 
 	path := dataTablePath(0x0000)
-	data := []byte{0x01, 0x00, 0x03, 0x00, 0x03, 0x00}
+	//data := []byte{0x01, 0x00, 0x03, 0x00, 0x03, 0x00}
+	data := []byte{0x02, 0x00, 0x08, 0x00, 0x00, 0x10, 0x00, 0x00, 0x03, 0x00, 0x01}
+	//data := []byte{}
+	// Request format from pcap: [02 00][08 00][bufsize:4LE][03 00][num_tags:1]
 
 	resp, err := client.GenericCIPMessage(CIPService_Create, path, data)
 	if err != nil {
@@ -179,72 +184,6 @@ type addTagEntry struct {
 	dataTypeSize uint16
 	ioi          []byte
 	index        int // the position of this tag in the buffer's tags slice, used to update batchID and synched after a successful add
-}
-
-// DataTableAddTags sends a CIP service 0x4E to the specified datatable buffer instance,
-// adding one or more tags in a single call. Each tag carries its own dataTypeSize and
-// IOI EPath — mixed type sizes are supported.
-//
-// Wire format (validated against pcap):
-//
-//	[02 00 01 01]         hardcoded header
-//	[1 byte: tagCount]    number of tags in this call
-//	Repeated tagCount times:
-//	  [2 bytes LE: dataTypeSize]  this tag's slot size in bytes
-//	  [1 byte: ioiLenWords]       this tag's IOI length in 16-bit words
-//	  [N bytes: IOI EPath]        this tag's path bytes
-//
-// The response contains a single uint16: a batch/entry index that increments
-// per 0x4E call (1 for the first call, 2 for the second, etc.). This value
-// is used as a group marker in the 0x4C read response.
-func (client *Client) DataTableAddTags(instanceID uint16, entries []addTagEntry) (uint16, error) {
-	err := client.checkConnection()
-	if err != nil {
-		return 0, fmt.Errorf("could not add tag to datatable buffer: %w", err)
-	}
-
-	path := dataTablePath(instanceID)
-
-	// Estimate capacity: 5 header + per-tag (2 typeSize + 1 ioiLen + IOI bytes)
-	capacity := 5
-	for _, e := range entries {
-		capacity += 3 + len(e.ioi)
-	}
-	msgData := make([]byte, 0, capacity)
-
-	// Header: 02 00 01 01
-	msgData = append(msgData, 0x02, 0x00, 0x01, 0x01)
-	// Tag count
-	msgData = append(msgData, byte(len(entries)))
-
-	for _, e := range entries {
-		// Per-tag: dataTypeSize LE16
-		sizeBytes := make([]byte, 2)
-		binary.LittleEndian.PutUint16(sizeBytes, e.dataTypeSize)
-		msgData = append(msgData, sizeBytes...)
-		// Per-tag: IOI length in 16-bit words
-		msgData = append(msgData, byte(len(e.ioi)/2))
-		// Per-tag: IOI EPath bytes
-		msgData = append(msgData, e.ioi...)
-	}
-
-	// Service 0x4E — Add Tag when targeting class 0xB2 buffer instance.
-	resp, err := client.GenericCIPMessage(CIPService(0x4E), path, msgData)
-	if err != nil {
-		return 0, fmt.Errorf("datatable add tag failed: %w", err)
-	}
-
-	batchIndex, err := resp.Uint16()
-	if err != nil {
-		return 0, fmt.Errorf("could not read batch index from add tag response: %w", err)
-	}
-	return batchIndex, nil
-}
-
-// DataTableAddTag sends a CIP service 0x4E to add a single tag to the datatable buffer.
-// This is a convenience wrapper around DataTableAddTags for single-tag adds.
-func (client *Client) DataTableAddTag(instanceID uint16, dataTypeSize uint16, tagIOIs []byte) (uint16, error) {
-	return client.DataTableAddTags(instanceID, []addTagEntry{{dataTypeSize, tagIOIs, 0}})
 }
 
 // DataTableReadBuffer sends a CIP Read (0x4C) service to the specified datatable
@@ -321,258 +260,6 @@ func (client *Client) NewDataTableBuffer() (*DataTableBuffer, error) {
 	}, nil
 }
 
-// Add a tag to the datatable buffer and associate it with a reference to a Go variable.
-// When the buffer is read, the decoded value for this tag will also be updated to the value
-// that was read from the PLC.
-func (buf *DataTableBuffer) AddTagRef(tagName string, data any) error {
-
-	if !buf.created {
-		return fmt.Errorf("datatable buffer not created")
-	}
-	cipType, _ := GoVarToCIPType(data)
-
-	ioi, err := buf.client.newIOI(tagName, cipType)
-	if err != nil {
-		return fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
-	}
-
-	typeSize, err := buf.resolveTypeSize(tagName, cipType)
-	if err != nil {
-		return fmt.Errorf("tag %q: %w", tagName, err)
-	}
-
-	buf.synched = false
-
-	buf.tags = append(buf.tags, DataTableBufferTag{
-		Name:         tagName,
-		CIPType:      cipType,
-		DataTypeSize: typeSize,
-		index:        uint16(len(buf.tags) + 1),
-		ioi:          ioi.Bytes(),
-		batchID:      0,
-		synched:      false,
-		Var:          data,
-	})
-
-	return nil
-}
-
-// AddTag adds a single tag to the datatable buffer by its symbolic name and CIP type.
-// The tag is sent to the PLC via service 0x4E and the PLC-assigned batch index is recorded.
-//
-// The IOI is built using the client's standard IOI encoding, which supports both
-// symbolic (0x91 segments) and instance-optimized (class 0x6B) addressing.
-func (buf *DataTableBuffer) AddTag(tagName string, cipType CIPType) error {
-	if !buf.created {
-		return fmt.Errorf("datatable buffer not created")
-	}
-
-	ioi, err := buf.client.newIOI(tagName, cipType)
-	if err != nil {
-		return fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
-	}
-
-	typeSize, err := buf.resolveTypeSize(tagName, cipType)
-	if err != nil {
-		return fmt.Errorf("tag %q: %w", tagName, err)
-	}
-
-	buf.synched = false
-
-	buf.tags = append(buf.tags, DataTableBufferTag{
-		Name:         tagName,
-		CIPType:      cipType,
-		DataTypeSize: typeSize,
-		index:        uint16(len(buf.tags) + 1),
-		ioi:          ioi.Bytes(),
-		batchID:      0,
-		synched:      false,
-	})
-
-	return nil
-}
-
-// Run through the tags in the buffer that have not yet been sent to the PLC and send them in a batch via DataTableAddTags.
-// marking them as synched if successful. This is called automatically by ReadAll if there are unsynched tags, but can be
-// called manually if you want to control when the tags are sent to the PLC (e.g. to group multiple AddTag calls into one batch).
-func (buf *DataTableBuffer) SyncTags() error {
-	entries := make([]addTagEntry, 0)
-	for i := range buf.tags {
-		if buf.tags[i].synched {
-			continue
-		}
-		entries = append(entries, addTagEntry{buf.tags[i].DataTypeSize, buf.tags[i].ioi, i})
-	}
-
-	batchID, err := buf.client.DataTableAddTags(buf.instanceID, entries)
-	if err != nil {
-		return fmt.Errorf("could not add tags to buffer: %w", err)
-	}
-	for _, entry := range entries {
-		buf.tags[entry.index].batchID = batchID
-		buf.tags[entry.index].synched = true
-	}
-	buf.synched = true
-	return nil
-}
-
-// AddTags adds multiple tags to the datatable buffer in a single 0x4E call.
-// Each tag carries its own dataTypeSize and IOI EPath — mixed type sizes are
-// supported in one call (confirmed via pcap).
-//
-// Because tags is a map, iteration order (and therefore the tag position in the
-// buffer) is non-deterministic. Use AddTag in a loop if you need a specific ordering.
-func (buf *DataTableBuffer) AddTags(tags map[string]CIPType) error {
-	if !buf.created {
-		return fmt.Errorf("datatable buffer not created")
-	}
-
-	type preparedTag struct {
-		name     string
-		cipType  CIPType
-		typeSize uint16
-		ioi      []byte
-	}
-
-	// Resolve IOI and type size for each tag.
-	prepared := make([]preparedTag, 0, len(tags))
-	for name, cipType := range tags {
-		ioi, err := buf.client.newIOI(name, cipType)
-		if err != nil {
-			return fmt.Errorf("could not create IOI for tag %q: %w", name, err)
-		}
-		typeSize, err := buf.resolveTypeSize(name, cipType)
-		if err != nil {
-			return fmt.Errorf("tag %q: %w", name, err)
-		}
-		prepared = append(prepared, preparedTag{
-			name:     name,
-			cipType:  cipType,
-			typeSize: typeSize,
-			ioi:      ioi.Bytes(),
-		})
-	}
-
-	// Build entries for a single DataTableAddTags call.
-	entries := make([]addTagEntry, len(prepared))
-	for i, t := range prepared {
-		entries[i] = addTagEntry{
-			dataTypeSize: t.typeSize,
-			ioi:          t.ioi,
-		}
-	}
-
-	// Assign sequential indices and record the batch ID for read parsing.
-	baseIndex := uint16(len(buf.tags) + 1)
-	for i, t := range prepared {
-		buf.tags = append(buf.tags, DataTableBufferTag{
-			Name:         t.name,
-			CIPType:      t.cipType,
-			DataTypeSize: t.typeSize,
-			index:        baseIndex + uint16(i),
-			ioi:          t.ioi,
-			batchID:      0,
-			synched:      false,
-		})
-	}
-	buf.synched = false
-
-	return nil
-}
-
-// ReadAll reads all tag values from the datatable buffer in a single CIP request
-// (service 0x4C) and returns them as a map from tag name to the decoded Go value.
-// Any tags that were added to the buffer with a reference to a Go variable in the
-// Var field will also have that variable updated.
-//
-// # Response layout
-//
-// The PLC returns a byte stream grouped by 0x4E add-tag calls (batches).
-// For each batch (in the order the 0x4E calls were made):
-//
-//	[2 bytes LE] batch/entry index (1, 2, ...)
-//	For each tag in that batch (in the order they were added):
-//	  [DataTypeSize bytes] tag value
-//
-// The 2-byte entry header appears once per 0x4E call, NOT per tag. When all
-// tags are added in a single AddTags call, there is exactly one entry header
-// followed by all tag values concatenated. When using AddTag individually,
-// each tag gets its own entry header.
-//
-// Tags are sorted by index (insertion order) to match the PLC's output order.
-// We track batch boundaries via each tag's batchID field, skipping the 2-byte
-// entry header whenever we encounter a new batch.
-//
-// For STRING/Struct types the slot is a fixed size determined at AddTag time
-// (e.g. 88 bytes for standard AB STRING), but the actual string content is
-// variable-length within that slot: [4-byte uint32 LEN][LEN chars][padding].
-// decodeDataTableValue reads LEN to extract only the meaningful characters.
-func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
-	if !buf.created {
-		return nil, fmt.Errorf("datatable buffer not created")
-	}
-	if len(buf.tags) == 0 {
-		return nil, fmt.Errorf("no tags in datatable buffer")
-	}
-
-	if !buf.synched {
-		err := buf.SyncTags()
-		if err != nil {
-			return nil, fmt.Errorf("could not sync tags before read: %w", err)
-		}
-	}
-
-	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Sort tags by index so we walk the response in the order the PLC emits entries.
-	sorted := make([]DataTableBufferTag, len(buf.tags))
-	copy(sorted, buf.tags)
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].index < sorted[j].index
-	})
-
-	result := make(map[string]any, len(sorted))
-	currentBatch := uint16(0)
-	for _, tag := range sorted {
-		// When we hit a new batch, skip the 2-byte entry header.
-		if tag.batchID != currentBatch {
-			if _, err := resp.Uint16(); err != nil {
-				return nil, fmt.Errorf("could not read batch header before tag %q: %w", tag.Name, err)
-			}
-			currentBatch = tag.batchID
-		}
-
-		// Read exactly DataTypeSize bytes — this is the fixed slot size for
-		// this tag's type, matching what was sent in the 0x4E Add Tag request.
-		if resp.Pos+int(tag.DataTypeSize) > len(resp.Data) {
-			return nil, fmt.Errorf("not enough data for tag %q (index %d): need %d bytes at offset %d, have %d total",
-				tag.Name, tag.index, tag.DataTypeSize, resp.Pos, len(resp.Data))
-		}
-		raw := make([]byte, tag.DataTypeSize)
-		copy(raw, resp.Data[resp.Pos:resp.Pos+int(tag.DataTypeSize)])
-		resp.Pos += int(tag.DataTypeSize)
-
-		value, err := decodeDataTableValue(tag.CIPType, raw)
-		if err != nil {
-			return nil, fmt.Errorf("could not decode value for tag %q: %w", tag.Name, err)
-		}
-		result[tag.Name] = value
-		if tag.Var != nil {
-			// If the caller has set the Var field, also store the value there for direct access.
-			// use reflection to set the value of the caller's variable, if possible
-			err := setGoVar(tag.Var, value)
-			if err != nil {
-				return nil, fmt.Errorf("could not set Var field for tag %q: %w", tag.Name, err)
-			}
-		}
-	}
-
-	return result, nil
-}
-
 func setGoVar(dest any, value any) error {
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() != reflect.Ptr {
@@ -587,62 +274,6 @@ func setGoVar(dest any, value any) error {
 	}
 	destVal.Elem().Set(valueVal)
 	return nil
-}
-
-// ReadAllRaw reads all tag values from the buffer and returns them as a map
-// from tag name to raw byte slices, without type decoding.
-//
-// The response is parsed identically to ReadAll (see its doc comment for the
-// wire layout), but the raw DataTypeSize bytes for each tag are returned
-// directly instead of being decoded into Go types.
-func (buf *DataTableBuffer) ReadAllRaw() (map[string][]byte, error) {
-	if !buf.created {
-		return nil, fmt.Errorf("datatable buffer not created")
-	}
-	if len(buf.tags) == 0 {
-		return nil, fmt.Errorf("no tags in datatable buffer")
-	}
-
-	if !buf.synched {
-		err := buf.SyncTags()
-		if err != nil {
-			return nil, fmt.Errorf("could not sync tags before read: %w", err)
-		}
-	}
-
-	resp, err := buf.client.DataTableReadBuffer(buf.instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	sorted := make([]DataTableBufferTag, len(buf.tags))
-	copy(sorted, buf.tags)
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].index < sorted[j].index
-	})
-
-	result := make(map[string][]byte, len(sorted))
-	currentBatch := uint16(0)
-	for _, tag := range sorted {
-		// When we hit a new batch, skip the 2-byte entry header (see ReadAll).
-		if tag.batchID != currentBatch {
-			if _, err := resp.Uint16(); err != nil {
-				return nil, fmt.Errorf("could not read batch header before tag %q: %w", tag.Name, err)
-			}
-			currentBatch = tag.batchID
-		}
-
-		if resp.Pos+int(tag.DataTypeSize) > len(resp.Data) {
-			return nil, fmt.Errorf("not enough data for tag %q (index %d): need %d bytes at offset %d, have %d total",
-				tag.Name, tag.index, tag.DataTypeSize, resp.Pos, len(resp.Data))
-		}
-		raw := make([]byte, tag.DataTypeSize)
-		copy(raw, resp.Data[resp.Pos:resp.Pos+int(tag.DataTypeSize)])
-		resp.Pos += int(tag.DataTypeSize)
-		result[tag.Name] = raw
-	}
-
-	return result, nil
 }
 
 // RemoveTag removes a tag from the buffer by its name. Sends service 0x4F with
@@ -688,52 +319,6 @@ func (buf *DataTableBuffer) Close() error {
 }
 
 // ---------------------------------------------------------------------------
-// TagGroup integration
-// ---------------------------------------------------------------------------
-
-// AddTagGroup adds all tags from a TagGroup to this datatable buffer.
-// Args substitute {0}, {1}, ... placeholders in tag names.
-//
-// Multi-element tags (Elements > 1) are expanded into individual buffer tags.
-// For example, a TagDef with Name="EXAMPLE[{0},0]", Type=CIPTypeDINT,
-// Elements=5 and args=[1] adds 5 individual tags: "EXAMPLE[1,0]" through
-// "EXAMPLE[1,4]".
-//
-// All tags are batched into a single AddTags call for efficiency (the protocol
-// allows mixed dataTypeSizes in one 0x4E service request).
-//
-// Can be called multiple times with different args to build up a large buffer:
-//
-//	buf.AddTagGroup(inspPointTags, 1)  // inspection point 1
-//	buf.AddTagGroup(inspPointTags, 2)  // inspection point 2
-//	// buf now has all tags for both points
-func (buf *DataTableBuffer) AddTagGroup(group *TagGroup, args ...any) error {
-	if !buf.created {
-		return fmt.Errorf("datatable buffer not created")
-	}
-
-	// Collect all resolved tag names with their types for batched AddTags.
-	tagMap := make(map[string]CIPType)
-
-	for _, def := range group.defs {
-		resolvedName := formatName(def.Name, args...)
-
-		if def.Elements > 1 {
-			expanded := expandArrayTag(resolvedName, def.Elements)
-			buf.expansions[resolvedName] = expanded
-			for _, name := range expanded {
-				tagMap[name] = def.Type
-			}
-		} else {
-			buf.expansions[resolvedName] = []string{resolvedName}
-			tagMap[resolvedName] = def.Type
-		}
-	}
-
-	return buf.AddTags(tagMap)
-}
-
-// ---------------------------------------------------------------------------
 // Struct Tag integration
 // ---------------------------------------------------------------------------
 
@@ -757,24 +342,21 @@ func (buf *DataTableBuffer) AddTagGroup(group *TagGroup, args ...any) error {
 //		buf.AddTaggedStruct(&tags1, 1)  // inspection point 1
 //		buf.AddTaggedStruct(&tags2, 2)  // inspection point 2
 //		// buf now has all tags for both structs
-func (buf *DataTableBuffer) AddTaggedStruct(str any, args ...any) error {
-	if !buf.created {
-		return fmt.Errorf("datatable buffer not created")
-	}
+func (trend *PLCStructTrend[T]) AddTaggedStruct(args ...any) error {
+	var str T
 
 	// Reflect over struct fields
-	T := reflect.TypeOf(str)
-	if T.Kind() == reflect.Ptr {
-		T = T.Elem()
+	Typ := reflect.TypeOf(str)
+	if Typ.Kind() == reflect.Ptr {
+		Typ = Typ.Elem()
 	}
 	v := reflect.ValueOf(str)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 
-	vf := reflect.VisibleFields(T)
-	tagMap := make(map[string]CIPType)
-	varPtrs := make(map[string]any)
+	vf := reflect.VisibleFields(Typ)
+	tagList := make([]string, 0, len(vf))
 
 	for i := range vf {
 		field := vf[i]
@@ -786,99 +368,296 @@ func (buf *DataTableBuffer) AddTaggedStruct(str any, args ...any) error {
 			tagPath = formatName(tagPath, args...)
 		}
 		fieldVal := v.Field(i)
-		cipType, elements := GoVarToCIPType(fieldVal.Interface())
+		_, elements := GoVarToCIPType(fieldVal.Interface())
 
 		// Handle slices/arrays (multi-element tags)
 		if elements > 1 {
 			expanded := expandArrayTag(tagPath, elements)
-			buf.expansions[tagPath] = expanded
-			for idx, name := range expanded {
-				tagMap[name] = cipType
+			for _, name := range expanded {
+				tagList = append(tagList, name)
 				// For slices, set Var to the element pointer
-				if fieldVal.Kind() == reflect.Slice && fieldVal.Len() > idx {
-					varPtrs[name] = fieldVal.Index(idx).Addr().Interface()
-				}
 			}
 		} else {
-			buf.expansions[tagPath] = []string{tagPath}
-			tagMap[tagPath] = cipType
-			varPtrs[tagPath] = fieldVal.Addr().Interface()
+			tagList = append(tagList, tagPath)
 		}
 	}
 
-	// Add tags to buffer
-	err := buf.AddTags(tagMap)
-	if err != nil {
-		return err
-	}
-
-	// Set Var pointers for each tag
-	for i := range buf.tags {
-		if ptr, ok := varPtrs[buf.tags[i].Name]; ok {
-			buf.tags[i].Var = ptr
+	iois := make([][]byte, len(tagList))
+	for i, tagName := range tagList {
+		ioi, err := trend.client.newIOI(tagName, CIPTypeDINT) // TODO: determine type from struct field
+		if err != nil {
+			return fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
 		}
+		iois[i] = ioi.Bytes()
 	}
 
 	return nil
 }
 
-// ReadAllTyped reads all tag values from the buffer in a single CIP request
-// and returns a TagGroupResult with typed accessors.
-//
-// Multi-element tags that were added via AddTagGroup are automatically
-// re-collapsed from individual values into slices. For example, if
-// "EXAMPLE[1,0]" was expanded into 5 individual tags during AddTagGroup,
-// the result will contain "EXAMPLE[1,0]" → []any{val0, val1, ..., val4}.
-//
-// Tags added via the plain AddTag/AddTags methods (not through a TagGroup)
-// are included as-is in the result.
-func (buf *DataTableBuffer) ReadAllTyped() (*TagGroupResult, error) {
-	rawValues, err := buf.ReadAll()
+type PLCStructTrend[T any] struct {
+	instanceID uint16
+	client     *Client
+}
+
+func (trend *PLCStructTrend[T]) Path() (*bytes.Buffer, error) {
+	path, err := Serialize(CipObject_DataTable, CIPInstance(trend.instanceID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not serialize path for trend read: %w", err)
+	}
+	return path, nil
+}
+
+type attribute struct {
+	id   uint16
+	data any
+}
+
+func attrList(attrs ...attribute) []byte {
+	var data bytes.Buffer
+
+	err := binary.Write(&data, binary.LittleEndian, uint16(len(attrs)))
+	if err != nil {
+		return nil
+	}
+	for _, a := range attrs {
+		err = binary.Write(&data, binary.LittleEndian, a.id)
+		if err != nil {
+			return nil
+		}
+		err = binary.Write(&data, binary.LittleEndian, a.data)
+		if err != nil {
+			return nil
+		}
+	}
+	return data.Bytes()
+}
+
+// A samplerate of 0 means you will only get a single sample every time you read.
+func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize uint16, args ...any) (*PLCStructTrend[T], error) {
+	var trend = new(PLCStructTrend[T])
+	trend.client = client
+
+	var str T
+
+	// Reflect over struct fields and figure out everything we need to add tags for them
+	// (names, types, IOIs) before we create the trend instance on the PLC
+	Typ := reflect.TypeOf(str)
+	if Typ.Kind() == reflect.Ptr {
+		Typ = Typ.Elem()
+	}
+	v := reflect.ValueOf(str)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
 
-	// If no TagGroup expansions were recorded, just wrap the raw values.
-	if len(buf.expansions) == 0 {
-		return &TagGroupResult{values: rawValues}, nil
+	vf := reflect.VisibleFields(Typ)
+	tagList := make([]string, 0, len(vf))
+	tagTypes := make([]CIPType, 0, len(vf))
+
+	for i := range vf {
+		field := vf[i]
+		tagPath, ok := field.Tag.Lookup("gologix")
+		if !ok || tagPath == "" {
+			continue
+		}
+		if args != nil {
+			tagPath = formatName(tagPath, args...)
+		}
+		fieldVal := v.Field(i)
+		ct, elements := GoVarToCIPType(fieldVal.Interface())
+
+		// Handle slices/arrays (multi-element tags)
+		if elements > 1 {
+			expanded := expandArrayTag(tagPath, elements)
+			for _, name := range expanded {
+				tagList = append(tagList, name)
+				tagTypes = append(tagTypes, ct)
+				// For slices, set Var to the element pointer
+			}
+		} else {
+			tagList = append(tagList, tagPath)
+			tagTypes = append(tagTypes, ct)
+		}
 	}
 
-	// Build the result, collapsing expanded multi-element tags back into slices.
-	result := make(map[string]any, len(rawValues))
+	iois := make([][]byte, len(tagList))
+	for i, tagName := range tagList {
+		ioi, err := trend.client.newIOI(tagName, CIPTypeDINT) // TODO: determine type from struct field
+		if err != nil {
+			return nil, fmt.Errorf("could not create IOI for tag %q: %w", tagName, err)
+		}
+		iois[i] = ioi.Bytes()
+	}
 
-	// Track which raw keys have been consumed by expansions.
-	consumed := make(map[string]bool)
+	// TODO: only count fields with gologix struct tags
+	fieldCount := uint16(len(tagList))
 
-	for baseName, expanded := range buf.expansions {
-		if len(expanded) > 1 {
-			// Multi-element: collapse into a slice.
-			slice := make([]any, len(expanded))
-			for i, name := range expanded {
-				v, ok := rawValues[name]
-				if !ok {
-					return nil, fmt.Errorf("expanded tag %q not found in buffer response", name)
+	// ------------
+	// Create the trend instance data table
+	// ------------
+	path, err := Serialize(CipObject_DataTable, CIPInstance(0))
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize path for trend creation: %w", err)
+	}
+	data := attrList(
+		attribute{id: 8, data: uint32(bufferSize)}, // buffer size
+		attribute{id: 3, data: uint32(fieldCount)}, // number of tags in the trend
+	)
+
+	resp, err := client.GenericCIPMessage(CIPService_Create, path.Bytes(), data)
+	if err != nil {
+		return nil, fmt.Errorf("datatable buffer create failed: %w", err)
+	}
+
+	trend.instanceID, err = resp.Uint16()
+	if err != nil {
+		return nil, fmt.Errorf("could not read instance ID from create response: %w", err)
+	}
+
+	path, err = trend.Path()
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize path with trend id %d: %w", trend.instanceID, err)
+	}
+
+	// ------------
+	// Set up some additional attributes on the trend
+	// ------------
+	data = attrList(
+		attribute{id: 1, data: uint32(sampleRate.Microseconds())}, // sample rate in microseconds
+		attribute{id: 5, data: uint8(0)},                          // state (0=stopped)
+	)
+
+	// Service 0x04 = SetAttributeList
+	_, err = trend.client.GenericCIPMessage(CIPService(0x04), path.Bytes(), data)
+	if err != nil {
+		return nil, fmt.Errorf("SetTrendAttrs CIP request failed: %w", err)
+	}
+
+	// ------------
+	// Add tags to the trend
+	// ------------
+
+	// Estimate capacity: 5 header + per-tag (2 typeSize + 1 ioiLen + IOI bytes)
+	capacity := 5
+	for _, e := range iois {
+		capacity += 3 + len(e)
+	}
+	msgData := make([]byte, 0, capacity)
+
+	// Header: 02 00 01 01
+	msgData = append(msgData, 0x02, 0x00, 0x01, 0x01)
+	// Tag count
+	msgData = append(msgData, byte(len(iois)))
+
+	for i, e := range iois {
+		// Per-tag: dataTypeSize LE16
+		sizeBytes := make([]byte, 2)
+		s, err := client.resolveTypeSize(tagList[i], tagTypes[i])
+		if err != nil {
+			return nil, fmt.Errorf("could not resolve type size for tag %q: %w", tagList[i], err)
+		}
+		binary.LittleEndian.PutUint16(sizeBytes, s)
+		msgData = append(msgData, sizeBytes...)
+		// Per-tag: IOI length in 16-bit words
+		msgData = append(msgData, byte(len(e)/2))
+		// Per-tag: IOI EPath bytes
+		msgData = append(msgData, e...)
+	}
+
+	// Service 0x4E — Add Tag when targeting class 0xB2 buffer instance.
+	resp, err = client.GenericCIPMessage(CIPService(0x4E), path.Bytes(), msgData)
+	if err != nil {
+		return nil, fmt.Errorf("datatable add tag failed: %w", err)
+	}
+
+	batchIndex, err := resp.Uint16()
+	if err != nil {
+		return nil, fmt.Errorf("could not read batch index from add tag response: %w", err)
+	}
+	if batchIndex != 1 {
+		return nil, fmt.Errorf("unexpected batch index in add tag response: got %d, want 1", batchIndex)
+	}
+
+	return trend, nil
+}
+
+func (trend *PLCStructTrend[T]) StartTrend() error {
+	path := dataTablePath(trend.instanceID)
+	_, err := trend.client.GenericCIPMessage(CIPService_Start, path, nil)
+	return err
+}
+
+func (trend *PLCStructTrend[T]) StopTrend() error {
+	path := dataTablePath(trend.instanceID)
+	_, err := trend.client.GenericCIPMessage(CIPService_Stop, path, nil)
+	return err
+}
+
+func (trend *PLCStructTrend[T]) ReadAll() ([]T, error) {
+	err := trend.client.checkConnection()
+	if err != nil {
+		return nil, fmt.Errorf("could not read datatable buffer: %w", err)
+	}
+
+	path, err := trend.Path()
+	if err != nil {
+		return nil, fmt.Errorf("could not serialize path for trend read: %w", err)
+	}
+
+	resp, err := trend.client.GenericCIPMessage(CIPService_Read, path.Bytes(), []byte{})
+	if err != nil {
+		return nil, fmt.Errorf("datatable buffer read failed: %w", err)
+	}
+	results := make([]T, 0)
+	for {
+		// Read until we run out of data or hit an error. Each read should give us a full struct's worth of data.
+		str, err := decodeStructTrendValue[T](resp)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break // no more complete structs to read
+			}
+			return nil, fmt.Errorf("could not decode trend value: %w", err)
+		}
+		results = append(results, str)
+	}
+
+	return results, nil
+}
+
+func decodeStructTrendValue[T any](resp *CIPItem) (T, error) {
+	var str T
+	Typ := reflect.TypeOf(str)
+	if Typ.Kind() == reflect.Ptr {
+		Typ = Typ.Elem()
+	}
+	v := reflect.ValueOf(&str).Elem()
+
+	vf := reflect.VisibleFields(Typ)
+
+	for i := range vf {
+		field := vf[i]
+		tagPath, ok := field.Tag.Lookup("gologix")
+		if !ok || tagPath == "" {
+			continue
+		}
+		ct, elements := GoVarToCIPType(v.Field(i).Interface())
+		if elements > 1 {
+			for j := 0; j < int(elements); j++ {
+				value, err := decodeDataTableValue(ct, resp.Data[resp.Pos:])
+				if err != nil {
+					return str, fmt.Errorf("could not decode value for field %q element %d: %w", field.Name, j, err)
 				}
-				slice[i] = v
-				consumed[name] = true
+				v.Field(i).Set(reflect.Append(v.Field(i), reflect.ValueOf(value)))
+				resp.Pos += int(ct.Size())
 			}
-			result[baseName] = slice
-		} else if len(expanded) == 1 {
-			// Scalar from TagGroup: pass through directly.
-			v, ok := rawValues[expanded[0]]
-			if !ok {
-				return nil, fmt.Errorf("tag %q not found in buffer response", expanded[0])
+		} else {
+			value, err := decodeDataTableValue(ct, resp.Data[resp.Pos:])
+			if err != nil {
+				return str, fmt.Errorf("could not decode value for field %q: %w", field.Name, err)
 			}
-			result[baseName] = v
-			consumed[expanded[0]] = true
+			v.Field(i).Set(reflect.ValueOf(value))
+			resp.Pos += int(ct.Size())
 		}
 	}
-
-	// Include any tags that were added via plain AddTag (not through a TagGroup).
-	for name, val := range rawValues {
-		if !consumed[name] {
-			result[name] = val
-		}
-	}
-
-	return &TagGroupResult{values: result}, nil
+	return str, nil
 }
