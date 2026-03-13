@@ -147,7 +147,7 @@ const (
 	CIPService_GetConnectionOwner       CIPService = 0x5A
 	CIPService_ForwardOpen              CIPService = 0x54
 	CIPService_LargeForwardOpen         CIPService = 0x5B
-	CIPService_FragRead                 CIPService = 0x52 // Fragmented Read
+	CIPService_FragRead                 CIPService = 0x52 // Fragmented (partial) Read
 	CIPService_FragWrite                CIPService = 0x53 // Fragmented Write
 	CIPService_GetInstanceAttributeList CIPService = 0x55
 	CIPService_GetConnectionData        CIPService = 0x57

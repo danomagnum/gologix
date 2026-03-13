@@ -77,6 +77,11 @@ type PLCStructTrend[T any] struct {
 	client     *Client
 }
 
+type StructTrendSample[T any] struct {
+	Timestamp time.Time
+	Data      T
+}
+
 func (trend *PLCStructTrend[T]) Path() (*bytes.Buffer, error) {
 	path, err := Serialize(CipObject_DataTable, trend.instanceID)
 	if err != nil {
@@ -152,6 +157,7 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 
 	data, err := attrValueBytes(
 		AttributeValue{Attribute: 8, Value: uint32(bufferSize)}, // Buffer size in bytes.
+		//AttributeValue{Attribute: 3, Value: uint8(1)},           // Buffer size in bytes.
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not serialize attribute values: %w", err)
@@ -187,6 +193,16 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 	}
 
 	// ------------
+	// check some stuff
+	// ------------
+
+	resp, err = client.GetAttrList(CipObject_DataTable, trend.instanceID, 1, 3, 5, 6, 7, 8, 10)
+	if err != nil {
+		return nil, fmt.Errorf("could not read back trend attributes: %w", err)
+	}
+	_ = resp
+
+	// ------------
 	// Add tags to the trend
 	// ------------
 
@@ -216,6 +232,8 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 		// Per-tag: IOI EPath bytes
 		msgData = append(msgData, e...)
 	}
+
+	msgData = append(msgData, []byte{0xFF, 0xFF, 0xFF, 0xFF}...)
 
 	// Service 0x4E — Add Tag when targeting class 0xB2 buffer instance.
 	resp, err = client.GenericCIPMessage(CIPService(0x4E), path.Bytes(), msgData)
@@ -252,7 +270,13 @@ func (trend *PLCStructTrend[T]) StopTrend() error {
 	return err
 }
 
-func (trend *PLCStructTrend[T]) ReadAll() ([]T, error) {
+func (trend *PLCStructTrend[T]) continueRead(path []byte) (*CIPItem, error) {
+	//start := make([]byte, 2)
+	//binary.LittleEndian.PutUint16(start, uint16(offset))
+	return trend.client.GenericCIPMessage(CIPService_Read, path, nil)
+}
+
+func (trend *PLCStructTrend[T]) ReadAll() ([]StructTrendSample[T], error) {
 	err := trend.client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not read datatable buffer: %w", err)
@@ -265,9 +289,22 @@ func (trend *PLCStructTrend[T]) ReadAll() ([]T, error) {
 
 	resp, err := trend.client.GenericCIPMessage(CIPService_Read, path.Bytes(), []byte{})
 	if err != nil {
-		return nil, fmt.Errorf("datatable buffer read failed: %w", err)
+		statErr, ok := err.(CIPStatusError)
+		if ok {
+			if statErr.Status == CIPStatus_PartialTransfer {
+				fmt.Printf("GOTTA GET THAT DATA BRO!!")
+				resp2, err := trend.continueRead(path.Bytes())
+				if err != nil {
+					return nil, fmt.Errorf("error during fragmented read: %w", err)
+				}
+				resp.Data = append(resp.Data, resp2.Data[resp2.Pos:]...)
+			}
+		} else {
+
+			return nil, fmt.Errorf("datatable buffer read failed: %w", err)
+		}
 	}
-	results := make([]T, 0)
+	results := make([]StructTrendSample[T], 0)
 	for {
 		// Read until we run out of data or hit an error. Each read should give us a full struct's worth of data.
 		str, err := decodeStructTrendValue[T](resp)
@@ -283,8 +320,9 @@ func (trend *PLCStructTrend[T]) ReadAll() ([]T, error) {
 	return results, nil
 }
 
-func decodeStructTrendValue[T any](resp *CIPItem) (T, error) {
+func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) {
 	var str T
+	var result StructTrendSample[T]
 	Typ := reflect.TypeOf(str)
 	if Typ.Kind() == reflect.Ptr {
 		Typ = Typ.Elem()
@@ -296,11 +334,13 @@ func decodeStructTrendValue[T any](resp *CIPItem) (T, error) {
 	dtIndex, err := resp.Uint16()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return str, io.EOF // signal that we've read all available data
+			return result, io.EOF // signal that we've read all available data
 		}
-		return str, fmt.Errorf("could not read data type index from response: %w", err)
+		return result, fmt.Errorf("could not read data type index from response: %w", err)
 	}
-	_ = dtIndex // TODO: use this to verify the data type of the response matches what we expect for this struct
+	if dtIndex != 1 {
+		return result, fmt.Errorf("unexpected index in response: got %d, want 1", dtIndex)
+	}
 
 	for i := range vf {
 		field := vf[i]
@@ -313,7 +353,7 @@ func decodeStructTrendValue[T any](resp *CIPItem) (T, error) {
 			for j := 0; j < int(elements); j++ {
 				value, err := decodeDataTableValue(ct, resp.Data[resp.Pos:])
 				if err != nil {
-					return str, fmt.Errorf("could not decode value for field %q element %d: %w", field.Name, j, err)
+					return result, fmt.Errorf("could not decode value for field %q element %d: %w", field.Name, j, err)
 				}
 				v.Field(i).Set(reflect.Append(v.Field(i), reflect.ValueOf(value)))
 				resp.Pos += int(ct.Size())
@@ -321,11 +361,20 @@ func decodeStructTrendValue[T any](resp *CIPItem) (T, error) {
 		} else {
 			value, err := decodeDataTableValue(ct, resp.Data[resp.Pos:])
 			if err != nil {
-				return str, fmt.Errorf("could not decode value for field %q: %w", field.Name, err)
+				return result, fmt.Errorf("could not decode value for field %q: %w", field.Name, err)
 			}
 			v.Field(i).Set(reflect.ValueOf(value))
 			resp.Pos += int(ct.Size())
 		}
 	}
-	return str, nil
+
+	/*
+		ts, err := resp.Uint32()
+		if err != nil {
+			return result, fmt.Errorf("could not read timestamp from response: %w", err)
+		}
+		result.Timestamp = time.Unix(int64(ts)*1000/128, 0)
+	*/
+	result.Data = str
+	return result, nil
 }
