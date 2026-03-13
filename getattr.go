@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -486,4 +487,42 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 
 	return &items[1], nil
 
+}
+
+type AttributeValue struct {
+	Attribute CIPAttribute
+	Value     any
+}
+
+func (client *Client) SetAttrList(class CIPClass, instance CIPInstance, attrValues ...AttributeValue) error {
+
+	var data bytes.Buffer
+
+	err := binary.Write(&data, binary.LittleEndian, uint16(len(attrValues)))
+	if err != nil {
+		return fmt.Errorf("could not write attribute count: %w", err)
+	}
+	for _, a := range attrValues {
+		err = binary.Write(&data, binary.LittleEndian, a.Attribute)
+
+		if err != nil {
+			return fmt.Errorf("could not write attribute: %w", err)
+		}
+		err = binary.Write(&data, binary.LittleEndian, a.Value)
+		if err != nil {
+			return fmt.Errorf("could not write attribute value: %w", err)
+		}
+	}
+
+	path, err := Serialize(class, instance)
+	if err != nil {
+		return fmt.Errorf("could not serialize path for trend read: %w", err)
+	}
+
+	_, err = client.GenericCIPMessage(CIPService_SetAttributeList, path.Bytes(), data.Bytes())
+	if err != nil {
+		return fmt.Errorf("could not set attribute list: %w", err)
+	}
+
+	return nil
 }

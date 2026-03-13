@@ -109,6 +109,9 @@ func (item *CIPItem) Rest() []byte {
 
 // Retrieve the next byte in the item's buffer and increment the buffer position.
 func (item *CIPItem) Byte() (byte, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -120,6 +123,9 @@ func (item *CIPItem) Byte() (byte, error) {
 // Retrieve 2 bytes from the buffer and increment the buffer position by 2.  The
 // data is interpreted as a 16 bit unsigned integer.
 func (item *CIPItem) Uint16() (uint16, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+1 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -131,6 +137,9 @@ func (item *CIPItem) Uint16() (uint16, error) {
 // Retrieve 2 bytes from the buffer and increment the buffer position by 2.  The
 // data is interpreted as a 16 bit signed integer.
 func (item *CIPItem) Int16() (int16, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+1 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -142,6 +151,9 @@ func (item *CIPItem) Int16() (int16, error) {
 // Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit unsigned integer.
 func (item *CIPItem) Uint32() (uint32, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -153,6 +165,9 @@ func (item *CIPItem) Uint32() (uint32, error) {
 // Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit signed integer.
 func (item *CIPItem) Int32() (int32, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -164,6 +179,9 @@ func (item *CIPItem) Int32() (int32, error) {
 // Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit unsigned integer.
 func (item *CIPItem) Uint64() (uint64, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -175,6 +193,9 @@ func (item *CIPItem) Uint64() (uint64, error) {
 // Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit signed integer.
 func (item *CIPItem) Int64() (int64, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -186,6 +207,9 @@ func (item *CIPItem) Int64() (int64, error) {
 // Retrieve 4 bytes from the buffer and increment the buffer position by 4.  The
 // data is interpreted as a 32 bit floating point number.
 func (item *CIPItem) Float32() (float32, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+3 {
 		return 0, fmt.Errorf("item out of data")
 	}
@@ -197,6 +221,9 @@ func (item *CIPItem) Float32() (float32, error) {
 // Retrieve 8 bytes from the buffer and increment the buffer position by 8.  The
 // data is interpreted as a 64 bit floating point number.
 func (item *CIPItem) Float64() (float64, error) {
+	if item.Pos == len(item.Data) {
+		return 0, io.EOF
+	}
 	if len(item.Data) <= item.Pos+7 {
 		return 0, fmt.Errorf("item out of data")
 	}
