@@ -36,12 +36,12 @@ func main() {
 	fmt.Println("=== AddTag (one at a time) ===")
 
 	type TrendData struct {
-		CycleCount       int32   `gologix:"CycleCount"`
-		CycleCountEighth float32 `gologix:"CycleFloatEighth"`
-		CycleCount2      int32   `gologix:"CycleCount2"`
+		CycleCount int32 `gologix:"CycleCount"`
+		//CycleCountEighth float32 `gologix:"CycleFloatEighth"`
+		//CycleCount2      int32   `gologix:"CycleCount2"`
 	}
 
-	t, err := gologix.NewStructTrend[TrendData](client, time.Millisecond*10, 1000)
+	t, err := gologix.NewStructTrend[TrendData](client, time.Millisecond*10, 1000, false)
 	if err != nil {
 		log.Fatalf("Error setting trend attributes: %v", err)
 	}

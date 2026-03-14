@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-const Prefix1 = true
-
 // dataTableTypeSize maps a CIPType to the raw byte count used by the datatable
 // protocol's dataTypeSize field (LE16). This is a byte count, not a CIP type code.
 //
@@ -77,6 +75,7 @@ func decodeDataTableValue(cipType CIPType, raw []byte) (any, error) {
 type PLCStructTrend[T any] struct {
 	instanceID CIPInstance
 	client     *Client
+	Prefix1    bool // true to use the single-tag timestamped mode.  false to use the multi-tag mode without timestamps.
 }
 
 type StructTrendSample[T any] struct {
@@ -93,9 +92,10 @@ func (trend *PLCStructTrend[T]) Path() (*bytes.Buffer, error) {
 }
 
 // A samplerate of 0 means you will only get a single sample every time you read.
-func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize uint16, args ...any) (*PLCStructTrend[T], error) {
+func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize uint16, prefix bool, args ...any) (*PLCStructTrend[T], error) {
 	var trend = new(PLCStructTrend[T])
 	trend.client = client
+	trend.Prefix1 = prefix
 
 	var str T
 
@@ -216,7 +216,7 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 	msgData := make([]byte, 0, capacity)
 
 	// Header: 02 00 01 01
-	if Prefix1 {
+	if trend.Prefix1 {
 		msgData = append(msgData, 0x01, 0x00, 0x01) // - this prefix gives you a timestamp but only allows one tag.  No data type size is required.
 	} else {
 		msgData = append(msgData, 0x02, 0x00, 0x01, 0x01) // - this prefix allows multiple tags but you don't get a timestamp.  You also have to include each data type size before the IOI.
@@ -231,8 +231,8 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 		if err != nil {
 			return nil, fmt.Errorf("could not resolve type size for tag %q: %w", tagList[i], err)
 		}
-		binary.LittleEndian.PutUint16(sizeBytes, s)
-		if !Prefix1 {
+		if !trend.Prefix1 {
+			binary.LittleEndian.PutUint16(sizeBytes, s)
 			msgData = append(msgData, sizeBytes...)
 		}
 		// Per-tag: IOI length in 16-bit words
@@ -315,7 +315,7 @@ func (trend *PLCStructTrend[T]) ReadAll() ([]StructTrendSample[T], error) {
 	results := make([]StructTrendSample[T], 0)
 	for {
 		// Read until we run out of data or hit an error. Each read should give us a full struct's worth of data.
-		str, err := decodeStructTrendValue[T](resp)
+		str, err := decodeStructTrendValue[T](resp, trend.Prefix1)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break // no more complete structs to read
@@ -328,7 +328,7 @@ func (trend *PLCStructTrend[T]) ReadAll() ([]StructTrendSample[T], error) {
 	return results, nil
 }
 
-func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) {
+func decodeStructTrendValue[T any](resp *CIPItem, timestamp bool) (StructTrendSample[T], error) {
 	var str T
 	var result StructTrendSample[T]
 	Typ := reflect.TypeOf(str)
@@ -350,7 +350,7 @@ func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) 
 		return result, fmt.Errorf("unexpected index in response: got %d, want 1", dtIndex)
 	}
 
-	if Prefix1 {
+	if timestamp {
 		ts, err := resp.Uint32()
 		if err != nil {
 			return result, fmt.Errorf("could not read timestamp from response: %w", err)
