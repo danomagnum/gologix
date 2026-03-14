@@ -38,6 +38,7 @@ func main() {
 	type TrendData struct {
 		CycleCount       int32   `gologix:"CycleCount"`
 		CycleCountEighth float32 `gologix:"CycleFloatEighth"`
+		CycleCount2      int32   `gologix:"CycleCount2"`
 	}
 
 	t, err := gologix.NewStructTrend[TrendData](client, time.Millisecond*10, 1000)
@@ -59,6 +60,9 @@ func main() {
 			log.Fatalf("Error updating trend: %v", err)
 		}
 		fmt.Printf("Trend data count: %d\n", len(dat))
+		if len(dat) > 0 {
+			fmt.Printf("Latest data: %+v\n", dat[len(dat)-1])
+		}
 		delay *= 2
 	}
 
