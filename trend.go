@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const Prefix1 = true
+
 // dataTableTypeSize maps a CIPType to the raw byte count used by the datatable
 // protocol's dataTypeSize field (LE16). This is a byte count, not a CIP type code.
 //
@@ -78,7 +80,7 @@ type PLCStructTrend[T any] struct {
 }
 
 type StructTrendSample[T any] struct {
-	Timestamp time.Time
+	Timestamp time.Duration
 	Data      T
 }
 
@@ -214,7 +216,11 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 	msgData := make([]byte, 0, capacity)
 
 	// Header: 02 00 01 01
-	msgData = append(msgData, 0x02, 0x00, 0x01, 0x01)
+	if Prefix1 {
+		msgData = append(msgData, 0x01, 0x00, 0x01) // - this prefix gives you a timestamp but only allows one tag.  No data type size is required.
+	} else {
+		msgData = append(msgData, 0x02, 0x00, 0x01, 0x01) // - this prefix allows multiple tags but you don't get a timestamp.  You also have to include each data type size before the IOI.
+	}
 	// Tag count
 	msgData = append(msgData, byte(len(iois)))
 
@@ -226,7 +232,9 @@ func NewStructTrend[T any](client *Client, sampleRate time.Duration, bufferSize 
 			return nil, fmt.Errorf("could not resolve type size for tag %q: %w", tagList[i], err)
 		}
 		binary.LittleEndian.PutUint16(sizeBytes, s)
-		msgData = append(msgData, sizeBytes...)
+		if !Prefix1 {
+			msgData = append(msgData, sizeBytes...)
+		}
 		// Per-tag: IOI length in 16-bit words
 		msgData = append(msgData, byte(len(e)/2))
 		// Per-tag: IOI EPath bytes
@@ -342,6 +350,14 @@ func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) 
 		return result, fmt.Errorf("unexpected index in response: got %d, want 1", dtIndex)
 	}
 
+	if Prefix1 {
+		ts, err := resp.Uint32()
+		if err != nil {
+			return result, fmt.Errorf("could not read timestamp from response: %w", err)
+		}
+		result.Timestamp = time.Duration(ts) * time.Microsecond
+	}
+
 	for i := range vf {
 		field := vf[i]
 		tagPath, ok := field.Tag.Lookup("gologix")
@@ -351,7 +367,13 @@ func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) 
 		ct, elements := GoVarToCIPType(v.Field(i).Interface())
 		if elements > 1 {
 			for j := 0; j < int(elements); j++ {
-				value, err := decodeDataTableValue(ct, resp.Data[resp.Pos:])
+				value, err := decodeDataTableValue( /*
+						ts, err := resp.Uint32()
+						if err != nil {
+							return result, fmt.Errorf("could not read timestamp from response: %w", err)
+						}
+						result.Timestamp = time.Unix(int64(ts)*1000/128, 0)
+					*/ct, resp.Data[resp.Pos:])
 				if err != nil {
 					return result, fmt.Errorf("could not decode value for field %q element %d: %w", field.Name, j, err)
 				}
@@ -368,13 +390,6 @@ func decodeStructTrendValue[T any](resp *CIPItem) (StructTrendSample[T], error) 
 		}
 	}
 
-	/*
-		ts, err := resp.Uint32()
-		if err != nil {
-			return result, fmt.Errorf("could not read timestamp from response: %w", err)
-		}
-		result.Timestamp = time.Unix(int64(ts)*1000/128, 0)
-	*/
 	result.Data = str
 	return result, nil
 }
