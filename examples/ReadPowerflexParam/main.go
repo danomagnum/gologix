@@ -21,15 +21,17 @@ func main() {
 
 	defer c.Disconnect()
 
-	ParamNo := 44 // param 44 = maximum hertz * 100
-
-	path, err := gologix.Serialize(
-		gologix.CipObject_Parameter,
-		gologix.CIPInstance(ParamNo),
-		gologix.CIPAttribute(1),
-	)
-	if err != nil {
-		log.Printf("could not serialize path: %v", err)
+	//path, err := gologix.Serialize(
+	//gologix.CipObject_Parameter,
+	//gologix.CIPInstance(ParamNo),
+	//gologix.CIPAttribute(1),
+	//)
+	path := (&gologix.PathBuilder{}).
+		Class(gologix.CipObject_Parameter).
+		Instance(44). // param 44 = maximum hertz * 100
+		Attribute(1)
+	if path.Err != nil {
+		log.Printf("could not serialize path: %v", path.Err)
 		return
 	}
 
@@ -45,10 +47,10 @@ func main() {
 		log.Fatalf("Failed to parse response: %v", err)
 	}
 	maxhz := float64(val) / 100
-	fmt.Printf("Parameter %d: %3.2f\n", ParamNo, maxhz)
+	fmt.Printf("Parameter 44: %3.2f\n", maxhz)
 
 	// you can also read multiple parameters at once using the GetAttributeList service
-	path, err = gologix.Serialize(gologix.CipObject_DPIParams, gologix.CIPInstance(0))
+	path2, err := gologix.Serialize(gologix.CipObject_DPIParams, gologix.CIPInstance(0))
 	if err != nil {
 		log.Printf("could not serialize path: %v", err)
 		return
@@ -71,7 +73,7 @@ func main() {
 		return
 	}
 
-	r, err := c.GenericCIPMessage(gologix.CIPService_ScatteredRead, path.Bytes(), params.Bytes())
+	r, err := c.GenericCIPMessage(gologix.CIPService_ScatteredRead, path2.Bytes(), params.Bytes())
 
 	if err != nil {
 		log.Fatalf("Failed to read parameters: %v", err)

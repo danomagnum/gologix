@@ -114,7 +114,7 @@ func (client *Client) Connect() error {
 
 	// default path is back plane -> slot 0
 	if client.Controller.Path == nil {
-		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, cipAddress(0))
+		client.Controller.Path, err = Serialize(CIPPort{PortNo: 1}, CIPAddress(0))
 		if err != nil {
 			msg := "cannot setup default path"
 			client.Logger.Error(msg, slog.Any("err", err))

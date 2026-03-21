@@ -74,7 +74,7 @@ func TestPathBuild(t *testing.T) {
 		},
 		{
 			name: "backplane to slot 0",
-			path: []any{CIPPort{PortNo: 1}, cipAddress(0)},
+			path: []any{CIPPort{PortNo: 1}, CIPAddress(0)},
 			want: []byte{0x01, 0x00},
 		},
 		{
@@ -107,6 +107,59 @@ func TestPathBuild(t *testing.T) {
 			}
 			if !check_bytes(have.Bytes(), tt.want) {
 				t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", have.Bytes(), tt.want)
+			}
+		})
+	}
+
+}
+
+func TestPathBuilder(t *testing.T) {
+
+	tests := []struct {
+		name string
+		path *PathBuilder
+		want []byte
+	}{
+		{
+			name: "connection manager only",
+			path: (&PathBuilder{}).Class(CipObject_ConnectionManager),
+			want: []byte{0x20, 0x06},
+		},
+		{
+			name: "backplane to slot 0",
+			path: (&PathBuilder{}).Port(1).Slot(0),
+			want: []byte{0x01, 0x00},
+		},
+		{
+			name: "connection manager instance 1",
+			path: (&PathBuilder{}).Class(CipObject_ConnectionManager).Instance(1),
+			want: []byte{0x20, 0x06, 0x24, 0x01},
+		},
+		{
+			name: "Symbol Object Instance 0",
+			path: (&PathBuilder{}).Class(CipObject_Symbol).Instance(0),
+			want: []byte{0x20, 0x6B, 0x24, 0x00},
+		},
+		{
+			name: "Symbol Object Instance 0 of tag 'Program:MainProgram'",
+			path: (&PathBuilder{}).Symbolic("program:mainprogram").Class(CipObject_Symbol).Instance(0),
+			want: []byte{0x91, 0x13, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x3a, 0x6d, 0x61, 0x69,
+				0x6e, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x00, 0x20, 0x6B, 0x24, 0x00},
+		},
+		{
+			name: "Template Attributes Instance 0x02E9",
+			path: (&PathBuilder{}).Class(CipObject_Template).Instance(0x02E9),
+			want: []byte{0x20, 0x6C, 0x25, 0x00, 0xE9, 0x02},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pb := tt.path
+			if pb.Err != nil {
+				t.Errorf("Problem building path. %v", pb.Err)
+			}
+			if !check_bytes(pb.Bytes(), tt.want) {
+				t.Errorf("ResultMismatch.\n Have %v\n Want %v\n", pb.Bytes(), tt.want)
 			}
 		})
 	}
