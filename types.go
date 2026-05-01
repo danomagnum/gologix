@@ -293,6 +293,12 @@ func readValue(t CIPType, r io.Reader) (any, error) {
 		var trueval [86]byte
 		err = binary.Read(r, binary.LittleEndian, &trueval)
 		value = trueval
+	case CIPTypeSTRING_UNKNOWN:
+		var strLen int16
+		err = binary.Read(r, binary.LittleEndian, &strLen)
+		dat := make([]byte, strLen)
+		err = binary.Read(r, binary.LittleEndian, &dat)
+		value = dat
 	default:
 		return nil, fmt.Errorf("default (unknown) type %d", t)
 		//panic(fmt.Sprintf("Default type %d", t))
