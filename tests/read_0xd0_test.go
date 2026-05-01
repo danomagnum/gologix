@@ -8,12 +8,12 @@ import (
 )
 
 type str struct {
-	Dat [2]byte
+	// hard code this length to the length of the string for this to work.
+	Dat [0]byte
 }
 
 func TestRead0xd0(t *testing.T) {
 	// This test is for a specific case where the tag definition has a type of 0xd0 (unknown string type)
-	// and an element count of 4. We want to ensure that the code can handle this case without error.
 
 	client := gologix.NewClient("localhost")
 	err := client.Connect()
