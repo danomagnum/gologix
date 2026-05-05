@@ -271,7 +271,8 @@ func GetTypeComments(types map[string]*DataTypeType, typeName string) map[string
 				continue // skip this member
 			}
 			pos := member.BitNumberAttr + num
-			// This is assinine.
+			// TODO: fix this.  It is a bad assumption that only works for UDTs where the bit packed field starts at bit 0 without any other fields first.
+			//       It looks like it's actually the "field index" as the trailing zzz member name and not the bit position
 			switch num {
 			case 9:
 				pos--
@@ -279,6 +280,14 @@ func GetTypeComments(types map[string]*DataTypeType, typeName string) map[string
 				pos -= 2
 			case 27:
 				pos -= 3
+			case 36:
+				pos -= 4
+			case 45:
+				pos -= 5
+			case 54:
+				pos -= 6
+			case 63:
+				pos -= 7
 			}
 			name = fmt.Sprintf("%s<%d>", member.NameAttr, pos)
 		}
