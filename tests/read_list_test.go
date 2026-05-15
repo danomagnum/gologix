@@ -143,3 +143,62 @@ func TestReadMultiWithString(t *testing.T) {
 	}
 
 }
+
+// bug report (issue 59): ReadList batch fails with []string types when reading
+// more than one element. The single-element STRING path was already handled
+// (issue 8); the multi-element branch fell through to the generic readValue,
+// which returns "don't know what to do with a struct" for CIPTypeStruct.
+func TestReadListWithStringArray(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			tags := []string{"program:gologix_tests.ReadStrings"}
+			types := []any{make([]string, 10)}
+			elements := []int{10}
+
+			vals, err := client.ReadList(tags, types, elements)
+			if err != nil {
+				t.Errorf("ReadList shouldn't have failed but did: %v", err)
+				return
+			}
+
+			if len(vals) != 1 {
+				t.Fatalf("expected 1 result, got %d", len(vals))
+			}
+
+			got, ok := vals[0].([]any)
+			if !ok {
+				t.Fatalf("expected []any, got %T", vals[0])
+			}
+
+			want := []string{"a", "b", "cd", "efg", "hijk", "lmnop", "qrstuvw", "xyz123", "0123456789", "9876543210"}
+			if len(got) != len(want) {
+				t.Fatalf("expected %d strings, got %d", len(want), len(got))
+			}
+
+			for i, w := range want {
+				g, ok := got[i].(string)
+				if !ok {
+					t.Errorf("element %d: expected string, got %T", i, got[i])
+					continue
+				}
+				if g != w {
+					t.Errorf("element %d: expected %q, got %q", i, w, g)
+				}
+			}
+		})
+	}
+}
