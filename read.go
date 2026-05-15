@@ -964,6 +964,27 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				}
 			}
 
+		} else if tags[i].TagType == CIPTypeSTRING {
+			// multi-element STRING array. Each element is a fixed 88-byte slot
+			// (cipStringHeader + 82 bytes of data) regardless of the actual
+			// string length. Reading only Length bytes would misalign the next
+			// element. This mirrors the per-element loop used in Read for
+			// arrays of strings (see read.go above).
+			val := make([]any, tags[i].Elements)
+			for respIndex := 0; respIndex < tags[i].Elements; respIndex++ {
+				str_hdr := cipStringHeader{}
+				err = binary.Read(myBytes, binary.LittleEndian, &str_hdr)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack string header for tag %v element %d: %w", tags[i], respIndex, err)
+				}
+				str := make([]byte, 82)
+				err = binary.Read(myBytes, binary.LittleEndian, str)
+				if err != nil {
+					return nil, fmt.Errorf("couldn't unpack string data for tag %v element %d: %w", tags[i], respIndex, err)
+				}
+				val[respIndex] = string(str[:str_hdr.Length])
+			}
+			result_values[i] = val
 		} else {
 			// multi-element type.
 			val := make([]any, tags[i].Elements)
