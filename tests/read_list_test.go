@@ -165,9 +165,14 @@ func TestReadListWithStringArray(t *testing.T) {
 				}
 			}()
 
+			count := 10
+			if client.ConnectionSize < 600 {
+				count = 5
+			}
+
 			tags := []string{"program:gologix_tests.ReadStrings"}
-			types := []any{make([]string, 10)}
-			elements := []int{10}
+			types := []any{make([]string, count)}
+			elements := []int{count}
 
 			vals, err := client.ReadList(tags, types, elements)
 			if err != nil {
@@ -185,16 +190,63 @@ func TestReadListWithStringArray(t *testing.T) {
 			}
 
 			want := []string{"a", "b", "cd", "efg", "hijk", "lmnop", "qrstuvw", "xyz123", "0123456789", "9876543210"}
-			if len(got) != len(want) {
-				t.Fatalf("expected %d strings, got %d", len(want), len(got))
+			if len(got) != count {
+				t.Fatalf("expected %d strings, got %d", count, len(got))
 			}
 
-			for i, w := range want {
+			for i, w := range want[:count] {
 				g, ok := got[i].(string)
 				if !ok {
 					t.Errorf("element %d: expected string, got %T", i, got[i])
 					continue
 				}
+				if g != w {
+					t.Errorf("element %d: expected %q, got %q", i, w, g)
+				}
+			}
+		})
+	}
+}
+
+// TODO: When partial transfer continuations are implemented, add the ability to read all 10 strings.  Right now,
+// when the PLC gets a small forward open, you can't read them all (looking at you v20 enbt)
+func TestReadWithStringArray(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			count := 10
+			if client.ConnectionSize < 600 {
+				count = 5
+			}
+			tag := "program:gologix_tests.ReadStrings"
+			got := make([]string, count)
+
+			err = client.Read(tag, got)
+			if err != nil {
+				t.Errorf("ReadList shouldn't have failed but did: %v", err)
+				return
+			}
+
+			want := []string{"a", "b", "cd", "efg", "hijk", "lmnop", "qrstuvw", "xyz123", "0123456789", "9876543210"}
+			if len(got) != len(want[:count]) {
+				t.Fatalf("expected %d strings, got %d", count, len(got))
+			}
+
+			for i, w := range want[:count] {
+				g := got[i]
 				if g != w {
 					t.Errorf("element %d: expected %q, got %q", i, w, g)
 				}
