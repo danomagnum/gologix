@@ -59,7 +59,13 @@ func main() {
 	p1.TagWrite("testtag3", []int32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 	p1.TagWrite("testdint", int32(12))
 	p1.TagWrite("testint", int16(3))
+
+	// STRING tags. External CIP clients (pylogix, Kepware, Ignition, MSG
+	// instructions from a controller) read and write these as the Logix
+	// STRING UDT (LEN: DINT, DATA: SINT[82], StructTypeCRC 0x0FCE). See
+	// pylogix_interop.py for a working external client check.
 	p1.TagWrite("teststring", "Hello World")
+	p1.TagWrite("writestring", "")
 
 	// a different memory based tag provider at slot 1 on the virtual "backplane" this would be "2,xxx.xxx.xxx.xxx,1,1" in the msg connection path
 	p2 := gologix.MapTagProvider{}
