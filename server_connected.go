@@ -271,17 +271,22 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 	return h.sendConnectedReply(CIPService_MultipleService, seq, connection.OT, response...)
 }
 
-func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
+// connectedRead handles both CIPService_Read (0x4C) and CIPService_FragRead
+// (0x52). Callers MUST pass the request service so reply and error frames
+// echo the matching response code (0xCC for Read, 0xD2 for FragRead) — some
+// CIP clients (pylogix on older firmware paths) tolerate a mismatched code,
+// but Logix MSG instructions and stricter SCADA stacks reject it.
+func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) error {
 	items[0].Reset()
 	var connID uint32
 	err := items[0].DeSerialize(&connID)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, 0, 0, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, 0, 0, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("couldn't get connection ID from item 0: %w / %v", err, err2)
 	}
 	connection, err := h.server.ConnMgr.GetByOT(connID)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, 0, 0, CIPStatus_ConnectionLost, 0)
+		err2 := h.sendConnectedError(reqSvc, 0, 0, CIPStatus_ConnectionLost, 0)
 		return fmt.Errorf("couldn't get connection with ID %v: %w /%v", connID, err, err2)
 	}
 
@@ -291,24 +296,24 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	var seq uint16
 	err = item.DeSerialize(&seq)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting sequence ID: %w / %v", err, err2)
 	}
 	var pathlen uint16
 	err = item.DeSerialize(&pathlen)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting path len: %w / %v", err, err2)
 	}
 	tag, err := getTagFromPath(&item)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("couldn't parse path: %w / %v", err, err2)
 	}
 	var qty uint16
 	err = item.DeSerialize(&qty)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting write qty: %w / %v", err, err2)
 	}
 
@@ -316,13 +321,13 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_PathDestinationUnknown, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_PathDestinationUnknown, 0)
 		return fmt.Errorf("problem finding tag provider for %v. %w: %v", path, err, err2)
 	}
 	p := provider
 	result, err := p.TagRead(tag, int16(qty))
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidMemberID, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidMemberID, 0)
 		return fmt.Errorf("problem getting data from provider. %w / %v", err, err2)
 	}
 	typ, _ := GoVarToCIPType(result)
@@ -330,12 +335,12 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
 		if !ok {
-			err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
+			err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
 			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 		}
-		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, cipStringPacker(res_str))
+		return h.sendConnectedReply(reqSvc, seq, connection.OT, cipStringPacker(res_str))
 	} else {
-		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+		return h.sendConnectedReply(reqSvc, seq, connection.OT, typ, byte(0), result)
 	}
 }
 
