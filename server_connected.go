@@ -339,18 +339,40 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	}
 }
 
+// cipStringStructCRC is the StructTypeCRC the Logix STRING UDT serializes
+// with on the wire (see lgxtypes.STRING.TypeAbbr). External CIP clients
+// (pylogix, Kepware, Ignition, MSG instructions) tag both reads and
+// writes of native STRINGs with this value, prefixed by the 0xA0
+// CIPTypeStruct byte.
+const cipStringStructCRC uint16 = 0x0FCE
+
+// cipStringDataLen is the fixed DATA buffer width of a Logix STRING UDT
+// (SINT[82]). The wire payload always carries 82 bytes regardless of the
+// real string length, padded with zeros past LEN. External clients treat
+// anything shorter as malformed and silently fail to extract the value.
+const cipStringDataLen = 82
+
+// cipStringSlotLen is the full per-element wire footprint of a STRING:
+// 4-byte type segment (0xA0 0x02 + StructTypeCRC LE) + 4-byte LEN +
+// 82-byte DATA = 90 bytes.
+const cipStringSlotLen = 4 + 4 + cipStringDataLen
+
 type cipStringPacker string
 
 func (c cipStringPacker) Len() int {
-	return 8 + len(c)
+	return cipStringSlotLen
 }
 func (c cipStringPacker) Bytes() []byte {
-	l := len(c)
-	b := make([]byte, 8+l)
+	b := make([]byte, cipStringSlotLen)
 	b[0] = 0xA0
 	b[1] = 0x02
-	b[2] = 0xCE
-	b[3] = 0x0F
+	binary.LittleEndian.PutUint16(b[2:], cipStringStructCRC)
+	// LEN reflects the real string length, clamped to the 82-byte payload
+	// so the header never claims more bytes than the slot can carry.
+	l := len(c)
+	if l > cipStringDataLen {
+		l = cipStringDataLen
+	}
 	binary.LittleEndian.PutUint32(b[4:], uint32(l))
 	copy(b[8:], c)
 	return b
