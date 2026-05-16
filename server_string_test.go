@@ -1,11 +1,93 @@
 package gologix
 
 import (
+	"bytes"
 	"encoding/binary"
 	"net"
 	"testing"
 	"time"
 )
+
+// TestParseWriteValuesString crafts the exact byte sequence a Logix STRING
+// write request carries on the wire (matching what pylogix sends — see
+// .pi/test-evidence/2026-05-15/37-wire-stage3b.log) and verifies the
+// parser extracts a Go string with the trimmed payload. Locks in the
+// type_info_length-in-bytes interpretation that bit us during external
+// validation.
+func TestParseWriteValuesString(t *testing.T) {
+	const want = "pylogix-round-trip-check"
+
+	var buf bytes.Buffer
+	buf.WriteByte(0xA0)                            // typ = CIPTypeStruct
+	buf.WriteByte(0x02)                            // type_info_length = 2 bytes
+	_ = binary.Write(&buf, binary.LittleEndian, cipStringStructCRC)
+	_ = binary.Write(&buf, binary.LittleEndian, uint16(1)) // qty
+	_ = binary.Write(&buf, binary.LittleEndian, uint32(len(want)))
+	data := make([]byte, cipStringDataLen)
+	copy(data, want)
+	buf.Write(data)
+
+	item := CIPItem{Data: buf.Bytes()}
+	results, err := parseWriteValues(&item)
+	if err != nil {
+		t.Fatalf("parseWriteValues: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("got %d elements; want 1", len(results))
+	}
+	got, ok := results[0].(string)
+	if !ok {
+		t.Fatalf("element 0 type = %T; want string", results[0])
+	}
+	if got != want {
+		t.Fatalf("element 0 = %q; want %q", got, want)
+	}
+}
+
+// TestParseWriteValuesAtomic confirms the historic atomic path keeps
+// working — type_info_length is the 0x00 high byte of the uint16 DataType
+// the gologix client serializes; parser must treat that as "no type info"
+// and fall back to readValue.
+func TestParseWriteValuesAtomic(t *testing.T) {
+	var buf bytes.Buffer
+	buf.WriteByte(byte(CIPTypeDINT))                          // typ = DINT (0xC4)
+	buf.WriteByte(0x00)                                       // high byte of uint16 DataType
+	_ = binary.Write(&buf, binary.LittleEndian, uint16(2))    // qty
+	_ = binary.Write(&buf, binary.LittleEndian, int32(42))    // element 0
+	_ = binary.Write(&buf, binary.LittleEndian, int32(-1337)) // element 1
+
+	item := CIPItem{Data: buf.Bytes()}
+	results, err := parseWriteValues(&item)
+	if err != nil {
+		t.Fatalf("parseWriteValues: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("got %d elements; want 2", len(results))
+	}
+	if got, want := results[0].(int32), int32(42); got != want {
+		t.Fatalf("element 0 = %d; want %d", got, want)
+	}
+	if got, want := results[1].(int32), int32(-1337); got != want {
+		t.Fatalf("element 1 = %d; want %d", got, want)
+	}
+}
+
+// TestParseWriteValuesUnknownStruct rejects struct writes whose CRC does
+// not match the Logix STRING UDT. Anything else (custom UDTs) is out of
+// scope for this fix and should surface as an explicit error rather than
+// the historic silent-success.
+func TestParseWriteValuesUnknownStruct(t *testing.T) {
+	var buf bytes.Buffer
+	buf.WriteByte(0xA0)                                       // typ = CIPTypeStruct
+	buf.WriteByte(0x02)                                       // type_info_length = 2 bytes
+	_ = binary.Write(&buf, binary.LittleEndian, uint16(0xBEEF))
+	_ = binary.Write(&buf, binary.LittleEndian, uint16(1))
+
+	item := CIPItem{Data: buf.Bytes()}
+	if _, err := parseWriteValues(&item); err == nil {
+		t.Fatal("expected error for non-STRING struct CRC; got nil")
+	}
+}
 
 // TestCipStringPackerShape locks in the per-element STRING wire layout the
 // Logix STRING UDT puts on the wire: 4-byte type segment (0xA0 0x02 +

@@ -19,29 +19,11 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 		return fmt.Errorf("problem deserializing tag bytes %w", err)
 	}
 
-	var typ CIPType
-	err = item.DeSerialize(&typ)
+	results, err := parseWriteValues(&item)
 	if err != nil {
-		return fmt.Errorf("problem deserializing cip type %w", err)
+		return fmt.Errorf("problem parsing write values for tag %s: %w", tag, err)
 	}
-	var reserved byte
-	err = item.DeSerialize(&reserved)
-	if err != nil {
-		return fmt.Errorf("problem deserializing reserved byte %w", err)
-	}
-	var qty uint16
-	err = item.DeSerialize(&qty)
-	if err != nil {
-		return fmt.Errorf("problem deserializing element count %w", err)
-	}
-
-	results := make([]any, qty)
-	for i := 0; i < int(qty); i++ {
-		results[i], err = typ.readValue(&item)
-		if err != nil {
-			return fmt.Errorf("problem reading element %d: %w", i, err)
-		}
-	}
+	qty := uint16(len(results))
 	h.server.Logger.Debug("write", "tag", tag, "value", results)
 
 	if items[0].Header.ID != cipItem_ConnectionAddress {
@@ -381,6 +363,84 @@ func (c cipStringPacker) Bytes() []byte {
 	binary.LittleEndian.PutUint32(b[4:], uint32(l))
 	copy(b[8:], c)
 	return b
+}
+
+// parseWriteValues decodes the payload portion of a CIP write request after
+// the path has been consumed. The wire is laid out as:
+//
+//	[typ: byte] [type_info_length_bytes: byte]
+//	[type_info: type_info_length_bytes bytes]      -- only for struct types
+//	[qty: uint16]
+//	for each element:
+//	    atomic: typ.readValue
+//	    STRING struct (CRC 0x0FCE): [LEN: uint32] [DATA: 82 bytes]
+//
+// For atomic writes type_info_length_bytes is 0 — the field doubles as the
+// high byte of the uint16 DataType the gologix client serializes — so the
+// parser falls back to the historic readValue loop. For structured writes
+// (typ == CIPTypeStruct) the segment carries 2 bytes of StructTypeCRC; only
+// the Logix STRING UDT (0x0FCE) is supported here. Other UDTs return an
+// error rather than the previous silent success or readValue panic.
+//
+// Both cipConnectedWrite and unconnectedServiceWrite go through this helper
+// so the wire format stays in one place.
+func parseWriteValues(item *CIPItem) ([]any, error) {
+	var typ CIPType
+	if err := item.DeSerialize(&typ); err != nil {
+		return nil, fmt.Errorf("error reading write type: %w", err)
+	}
+	var typeInfoLen byte
+	if err := item.DeSerialize(&typeInfoLen); err != nil {
+		return nil, fmt.Errorf("error reading type-info length: %w", err)
+	}
+
+	// Read whatever type info bytes the segment declares before qty.
+	var structCRC uint16
+	if typeInfoLen > 0 {
+		typeInfo := make([]byte, int(typeInfoLen))
+		if err := item.DeSerialize(&typeInfo); err != nil {
+			return nil, fmt.Errorf("error reading %d bytes of type info: %w", len(typeInfo), err)
+		}
+		if typ == CIPTypeStruct && len(typeInfo) >= 2 {
+			structCRC = binary.LittleEndian.Uint16(typeInfo[0:2])
+		}
+	}
+
+	var qty uint16
+	if err := item.DeSerialize(&qty); err != nil {
+		return nil, fmt.Errorf("error reading element count: %w", err)
+	}
+
+	results := make([]any, qty)
+	if typ == CIPTypeStruct {
+		if structCRC != cipStringStructCRC {
+			return nil, fmt.Errorf("server only supports STRING struct writes (CRC 0x%04X); got CRC 0x%04X", cipStringStructCRC, structCRC)
+		}
+		for i := 0; i < int(qty); i++ {
+			var slen uint32
+			if err := item.DeSerialize(&slen); err != nil {
+				return nil, fmt.Errorf("error reading STRING LEN for element %d: %w", i, err)
+			}
+			data := make([]byte, cipStringDataLen)
+			if err := item.DeSerialize(&data); err != nil {
+				return nil, fmt.Errorf("error reading STRING DATA for element %d: %w", i, err)
+			}
+			if slen > cipStringDataLen {
+				slen = cipStringDataLen
+			}
+			results[i] = string(data[:slen])
+		}
+		return results, nil
+	}
+
+	for i := 0; i < int(qty); i++ {
+		val, err := typ.readValue(item)
+		if err != nil {
+			return nil, fmt.Errorf("error reading element %d: %w", i, err)
+		}
+		results[i] = val
+	}
+	return results, nil
 }
 
 func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
