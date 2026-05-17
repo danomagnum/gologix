@@ -237,6 +237,11 @@ func (h *serverTCPHandler) serve(srv *Server) error {
 			if err != nil {
 				return fmt.Errorf("problem with sendListServices %w", err)
 			}
+		case cipCommandListIdentity:
+			err = h.sendListIdentityReply(eipHdr)
+			if err != nil {
+				return fmt.Errorf("problem with sendListIdentity %w", err)
+			}
 
 		}
 	}
