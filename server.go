@@ -474,6 +474,16 @@ func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
 		h.OTConnectionID = fwd_open.OTConnectionID
 	}
 	fwd_open.OTConnectionID = h.OTConnectionID
+	// Echo the requested RPI back as the Actual Packet Interval (API). CIP
+	// spec ODVA Vol 1 §3-5.6 allows the target to commit to a different API
+	// than what was requested, but it MUST report a non-zero value the
+	// originator can honor. Real Logix controllers always echo the requested
+	// RPI verbatim for Class 3 explicit messaging connections.
+	//
+	// Previously this was hardcoded to 0, which caused real ControlLogix
+	// MSG instructions to silently discard responses on connected reads (the
+	// firmware-level scheduler treats API=0 as invalid timing and tears
+	// down the response path even though the connection itself stays open).
 	fwOpenRespHdr := msgEIPForwardOpen_Standard_Reply{
 		Service:                fwd_open.Service.AsResponse(),
 		OTConnectionID:         h.OTConnectionID,
@@ -481,8 +491,8 @@ func (h *serverTCPHandler) largeForwardOpen(i CIPItem) error {
 		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
 		VendorID:               fwd_open.VendorID,
 		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
-		OTApi:                  0,
-		TOApi:                  0,
+		OTApi:                  fwd_open.OTRPI,
+		TOApi:                  fwd_open.TORPI,
 	}
 
 	err = items[1].Serialize(fwOpenRespHdr)
@@ -558,6 +568,10 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 		h.OTConnectionID = fwd_open.OTConnectionID
 	}
 	fwd_open.OTConnectionID = h.OTConnectionID
+	// See largeForwardOpen above for why API must echo the requested RPI
+	// instead of zero. Same fix applies to the standard (small) Forward
+	// Open path because real Logix MSG instructions hit this code path for
+	// any read/write that fits in the standard connection size envelope.
 	fwOpenRespHdr := msgEIPForwardOpen_Standard_Reply{
 		Service:                fwd_open.Service.AsResponse(),
 		OTConnectionID:         h.OTConnectionID,
@@ -565,8 +579,8 @@ func (h *serverTCPHandler) forwardOpen(i CIPItem) error {
 		ConnectionSerialNumber: fwd_open.ConnectionSerialNumber,
 		VendorID:               fwd_open.VendorID,
 		OriginatorSerialNumber: fwd_open.OriginatorSerialNumber,
-		OTApi:                  0,
-		TOApi:                  0,
+		OTApi:                  fwd_open.OTRPI,
+		TOApi:                  fwd_open.TORPI,
 	}
 
 	err = items[1].Serialize(fwOpenRespHdr)
