@@ -1,6 +1,8 @@
 package gologix
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 )
 
@@ -30,6 +32,16 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 		err = h.forwardClose(item)
 		if err != nil {
 			return fmt.Errorf("problem handling forward close. %w", err)
+		}
+
+	// CIPService_GetAttributeAll arrives as a direct UCMM request (not wrapped
+	// in an UnconnectedSend) from clients such as FactoryTalk Linx and
+	// pycomm3.LogixDriver, which probe Identity Class 0x01 Instance 1 before
+	// they accept further communication with the device.
+	case CIPService_GetAttributeAll:
+		err = h.unconnectedGetAttributeAll(item)
+		if err != nil {
+			return fmt.Errorf("problem handling get attributes all. %w", err)
 		}
 
 	case 0x52:
@@ -66,14 +78,132 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 			return h.unconnectedServiceRead(item)
 		case CIPService_GetAttributeSingle:
 			return h.unconnectedServiceGetAttrSingle(item)
-		//case cipService_GetAttributeAll:
-		//return h.unconnectedServiceGetAttrAll(item)
+		case CIPService_GetAttributeAll:
+			return h.unconnectedGetAttributeAll(item)
 		default:
 			return fmt.Errorf("don't know how to handle service '%v'", emService)
 
 		}
 	}
 	return nil
+}
+
+// unconnectedGetAttributeAll handles CIP Get_Attributes_All (service 0x01).
+// External CIP clients (FactoryTalk Linx shortcut bind, pycomm3
+// LogixDriver.open(), RSLogix MSG path browse) probe Identity Object
+// (Class 0x01 Instance 1) immediately after RegisterSession and refuse to
+// proceed if no response arrives. The caller has already consumed the
+// service byte; the remaining wire layout is `pathSize:byte` followed by
+// `pathSize*2` bytes of EPATH segments.
+func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
+	var pathSize byte
+	if err := item.DeSerialize(&pathSize); err != nil {
+		return fmt.Errorf("get_attributes_all: read path size: %w", err)
+	}
+	pathBytes := make([]byte, int(pathSize)*2)
+	if err := item.DeSerialize(&pathBytes); err != nil {
+		return fmt.Errorf("get_attributes_all: read path: %w", err)
+	}
+
+	class, instance, ok := parseClassInstancePath(pathBytes)
+	if !ok {
+		return fmt.Errorf("get_attributes_all: unsupported path segments % x", pathBytes)
+	}
+	if class != uint16(CipObject_Identity) || instance != 1 {
+		return fmt.Errorf("get_attributes_all: only Class 0x01 Instance 1 supported, got class %d instance %d", class, instance)
+	}
+
+	payload, err := buildIdentityGetAttributesAllResponse(h.server.Attributes)
+	if err != nil {
+		return fmt.Errorf("get_attributes_all: build response: %w", err)
+	}
+	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeAll, payload)
+}
+
+// parseClassInstancePath decodes a 4-byte EPATH carrying an 8-bit Class
+// followed by an 8-bit Instance segment (`0x20 <class> 0x24 <instance>` —
+// the canonical Identity Object probe shape). Anything else falls outside
+// the scope of this minimal implementation and is rejected by the caller.
+func parseClassInstancePath(p []byte) (class, instance uint16, ok bool) {
+	if len(p) != 4 {
+		return 0, 0, false
+	}
+	if p[0] != 0x20 || p[2] != 0x24 {
+		return 0, 0, false
+	}
+	return uint16(p[1]), uint16(p[3]), true
+}
+
+// buildIdentityGetAttributesAllResponse renders the payload portion of a
+// Get_Attributes_All reply on the Identity Object (attributes 1..7 in the
+// order the spec mandates). The Attributes map is the same one the existing
+// Get_Attribute_Single handler reads from — the field types match the
+// historic int16/uint32/string layout NewServer seeds.
+//
+// Wire layout:
+//
+//	VendorID    UINT  (2)
+//	DeviceType  UINT  (2)
+//	ProductCode UINT  (2)
+//	Revision    USINT,USINT (2)
+//	Status      WORD  (2)
+//	Serial      UDINT (4)
+//	ProductName SHORT_STRING (1 + N)
+func buildIdentityGetAttributesAllResponse(attrs map[CIPAttribute]any) ([]byte, error) {
+	vendor, ok := attrs[1].(int16)
+	if !ok {
+		return nil, fmt.Errorf("attribute 1 (VendorID) missing or wrong type: %T", attrs[1])
+	}
+	deviceType, ok := attrs[2].(int16)
+	if !ok {
+		return nil, fmt.Errorf("attribute 2 (DeviceType) missing or wrong type: %T", attrs[2])
+	}
+	productCode, ok := attrs[3].(int16)
+	if !ok {
+		return nil, fmt.Errorf("attribute 3 (ProductCode) missing or wrong type: %T", attrs[3])
+	}
+	revision, ok := attrs[4].(int16)
+	if !ok {
+		return nil, fmt.Errorf("attribute 4 (Revision) missing or wrong type: %T", attrs[4])
+	}
+	status, ok := attrs[5].(int16)
+	if !ok {
+		return nil, fmt.Errorf("attribute 5 (Status) missing or wrong type: %T", attrs[5])
+	}
+	serial, ok := attrs[6].(uint32)
+	if !ok {
+		return nil, fmt.Errorf("attribute 6 (SerialNumber) missing or wrong type: %T", attrs[6])
+	}
+	productName, ok := attrs[7].(string)
+	if !ok {
+		return nil, fmt.Errorf("attribute 7 (ProductName) missing or wrong type: %T", attrs[7])
+	}
+	if len(productName) > 255 {
+		productName = productName[:255]
+	}
+
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.LittleEndian, vendor); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(&buf, binary.LittleEndian, deviceType); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(&buf, binary.LittleEndian, productCode); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(&buf, binary.LittleEndian, revision); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(&buf, binary.LittleEndian, status); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(&buf, binary.LittleEndian, serial); err != nil {
+		return nil, err
+	}
+	buf.WriteByte(byte(len(productName)))
+	buf.WriteString(productName)
+	return buf.Bytes(), nil
 }
 
 func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
