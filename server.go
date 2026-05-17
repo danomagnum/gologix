@@ -320,6 +320,17 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 		if err != nil {
 			return fmt.Errorf("problem handling connected getAttributesAll %w", err)
 		}
+	case CIPService_GetInstanceAttributeList:
+		// CIP Symbol Object (Class 0x6B) Service 0x55 — every Logix client
+		// that wants to enumerate tags by name lands here. FactoryTalk View
+		// Tag Browser, pycomm3.LogixDriver tags discovery, and Studio 5000
+		// "Get Tags from Controller" all rely on this service. We answer
+		// with one Symbol Object instance per tag exposed by the active
+		// TagProvider (provided it implements the TagLister interface).
+		err = h.connectedSymbolList(items)
+		if err != nil {
+			return fmt.Errorf("problem handling connected symbol list %w", err)
+		}
 	default:
 		// Any other service that lands here would have silently dropped
 		// before, leaving strict CIP clients (FactoryTalk Linx, Studio
@@ -412,6 +423,48 @@ func (h *serverTCPHandler) connectedGetAttributeAll(items []CIPItem) error {
 		h.server.Logger.Warn("connected GAA: class not implemented", "class", class, "instance", instance)
 		return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
 	}
+}
+
+// connectedSymbolList handles CIP Symbol Object (Class 0x6B) service 0x55
+// Get_Instance_Attribute_List on a Class 3 connection. This is the
+// service every Logix client uses to enumerate tags by name (FactoryTalk
+// View Tag Browser, pycomm3 .tags discovery, Studio 5000 import). The
+// request layout we accept:
+//
+//	[seq u16] [service 0x55 byte] [path size u8]
+//	[path bytes: 0x20 0x6b 0x25 0x00 <start_instance u16>]
+//	[num_attrs u16] [attr u16] ... (typically 2: Symbol Name + Symbol Type)
+//
+// The response is a list of {InstanceID u32, NameLen u16, Name bytes, Type u16}
+// triplets — the standard Logix wire format that pycomm3.LogixDriver
+// expects in its _get_symbols_from_controller() loop.
+func (h *serverTCPHandler) connectedSymbolList(items []CIPItem) error {
+	items[0].Reset()
+	var connID uint32
+	if err := items[0].DeSerialize(&connID); err != nil {
+		return fmt.Errorf("symbol list: conn ID: %w", err)
+	}
+	conn, err := h.server.ConnMgr.GetByOT(connID)
+	if err != nil {
+		return fmt.Errorf("symbol list: conn lookup: %w", err)
+	}
+	provider, err := h.server.Router.Resolve(conn.Path)
+	if err != nil {
+		return fmt.Errorf("symbol list: provider lookup: %w", err)
+	}
+
+	// Type-assert to the optional TagLister interface. A provider that
+	// doesn't implement it can still serve point reads/writes but will
+	// look empty in the Tag Browser — same behaviour as a Logix
+	// controller whose tags are flagged ExternalAccess=None.
+	lister, ok := provider.(TagLister)
+	if !ok {
+		h.server.Logger.Warn("symbol list: provider does not implement TagLister; returning empty list")
+		return h.sendUnitDataReplyWithPayload(CIPService_GetInstanceAttributeList, nil)
+	}
+
+	payload := buildSymbolObjectInstanceListResponse(lister.TagList(), 0)
+	return h.sendUnitDataReplyWithPayload(CIPService_GetInstanceAttributeList, payload)
 }
 
 // sendUnitDataReplyWithPayload is sendUnitDataReply with an additional

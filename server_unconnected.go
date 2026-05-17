@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"sort"
 )
 
 func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
@@ -172,6 +173,41 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 	}
 }
 
+// buildSymbolObjectInstanceListResponse renders the payload for the
+// Symbol Object (Class 0x6B) Get_Instance_Attribute_List service (0x55).
+// Logix exposes every tag as one instance of Class 0x6B. The response
+// is a stream of {InstanceID uint32, SymbolName SHORT_STRING, SymbolType
+// uint16} triplets in instance-id order. We synthesize stable
+// instance IDs from the alphabetical position of the tag name so the
+// same provider produces the same IDs across restarts — clients cache
+// these IDs for subsequent reads.
+//
+// startInstance lets callers iterate when the response would exceed the
+// transport limit (~500 bytes). For now Server_Class3 exposes only a
+// handful of tags so we emit everything in one reply, but the loop is
+// written so a future paginator can drop in without restructuring.
+func buildSymbolObjectInstanceListResponse(tags []ServerTagInfo, startInstance uint32) []byte {
+	// Stable ordering keeps instance IDs deterministic across reads.
+	sort.Slice(tags, func(i, j int) bool { return tags[i].Name < tags[j].Name })
+
+	var buf bytes.Buffer
+	for i, tag := range tags {
+		instanceID := uint32(i + 1) // CIP instances are 1-based
+		if instanceID < startInstance {
+			continue
+		}
+		_ = binary.Write(&buf, binary.LittleEndian, instanceID)
+		name := tag.Name
+		if len(name) > 255 {
+			name = name[:255]
+		}
+		_ = binary.Write(&buf, binary.LittleEndian, uint16(len(name)))
+		buf.WriteString(name)
+		_ = binary.Write(&buf, binary.LittleEndian, uint16(tag.Type))
+	}
+	return buf.Bytes()
+}
+
 // buildProgramObjectGetAttributesAllResponse renders the payload for
 // Get_Attributes_All on Class 0x64 (Logix Program Object) Instance 1. The
 // wire layout that pycomm3.get_plc_name() expects is a SHORT_STRING holding
@@ -191,18 +227,33 @@ func buildProgramObjectGetAttributesAllResponse(attrs map[CIPAttribute]any) ([]b
 	return buf.Bytes(), nil
 }
 
-// parseClassInstancePath decodes a 4-byte EPATH carrying an 8-bit Class
-// followed by an 8-bit Instance segment (`0x20 <class> 0x24 <instance>` —
-// the canonical Identity Object probe shape). Anything else falls outside
-// the scope of this minimal implementation and is rejected by the caller.
+// parseClassInstancePath decodes the CIP EPATH segments commonly used to
+// address a Class + Instance: an 8-bit Logical Class segment followed by
+// either an 8-bit Logical Instance segment (the canonical Identity probe
+// `0x20 <class> 0x24 <instance>` = 4 bytes) or a 16-bit Logical Instance
+// segment (`0x20 <class> 0x25 0x00 <instance_lo> <instance_hi>` = 6
+// bytes) that pycomm3.LogixDriver and the Symbol Object iterator both
+// emit. Returning ok=false on anything else lets the caller respond
+// with a formal PathSegmentError instead of silently dropping the
+// request.
+//
+// Reference: ODVA Vol 1 §C-1.4.2 (logical segments).
 func parseClassInstancePath(p []byte) (class, instance uint16, ok bool) {
-	if len(p) != 4 {
-		return 0, 0, false
+	switch len(p) {
+	case 4:
+		if p[0] != 0x20 || p[2] != 0x24 {
+			return 0, 0, false
+		}
+		return uint16(p[1]), uint16(p[3]), true
+	case 6:
+		// 8-bit class + 16-bit instance: `20 <class> 25 00 <inst_lo> <inst_hi>`
+		if p[0] != 0x20 || p[2] != 0x25 || p[3] != 0x00 {
+			return 0, 0, false
+		}
+		instance = uint16(p[4]) | uint16(p[5])<<8
+		return uint16(p[1]), instance, true
 	}
-	if p[0] != 0x20 || p[2] != 0x24 {
-		return 0, 0, false
-	}
-	return uint16(p[1]), uint16(p[3]), true
+	return 0, 0, false
 }
 
 // buildIdentityGetAttributesAllResponse renders the payload portion of a
@@ -326,15 +377,17 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 
 func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 
-	// Original wire layout (embedded in UnconnectedSend): uint16 path_size
-	// followed by `path_size*2` bytes of EPATH. Keeping the uint16 read keeps
-	// the existing dispatch via `case 0x52` byte-compatible. The direct UCMM
-	// path now also routes here; CIP devices in the wild appear to encode
-	// path_size as a uint16 with high byte zero in both shapes, so the
-	// existing length check passes for both. If a request with a different
-	// path_size arrives we still reply with a formal error (below) instead of
-	// silently dropping, which is the core upstream issue.
-	pathSize, err := item.Uint16()
+	// CIP wire format for Get_Attribute_Single requests: 1-byte path size in
+	// words followed by `pathSize*2` bytes of EPATH segments. This is the
+	// same shape in both the direct UCMM case (where the dispatcher just
+	// consumed the service byte) and the embedded-in-UnconnectedSend case
+	// (where the wrapper's outer fields were already drained before reaching
+	// here). The previous `item.Uint16()` read silently consumed an extra
+	// byte and only happened to match `!= 3` because nothing else was read
+	// from the item after `attr.Read`; the moment FactoryTalk Linx started
+	// probing real Identity attributes (0x15, 0x16, ...) it tripped the
+	// "Path segment error" branch instead of looking up the attribute.
+	pathSize, err := item.Byte()
 	if err != nil {
 		return fmt.Errorf("couldn't read path size: %w", err)
 	}

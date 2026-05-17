@@ -127,3 +127,39 @@ func (p *MapTagProvider) TagWrite(tag string, value any) error {
 	p.Data[tag] = value
 	return nil
 }
+
+// TagList implements the optional TagLister interface and returns a snapshot
+// of every tag this provider exposes, along with its CIP type code. Used by
+// the Symbol Object (Class 0x6B) GetInstanceAttributeList handler so external
+// clients (pycomm3, FactoryTalk View Tag Browser, Studio 5000) can discover
+// tag names without prior knowledge — i.e., what every Logix controller
+// exposes by default and what gologix Server_Class3 was missing before.
+func (p *MapTagProvider) TagList() []ServerTagInfo {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
+	if p.Data == nil {
+		return nil
+	}
+	tags := make([]ServerTagInfo, 0, len(p.Data))
+	for name, val := range p.Data {
+		typ, _ := GoVarToCIPType(val)
+		tags = append(tags, ServerTagInfo{Name: name, Type: typ})
+	}
+	return tags
+}
+
+// ServerTagInfo is the minimum metadata the server needs to render a Symbol Object
+// instance: the user-visible tag name and the wire-level CIP type code.
+type ServerTagInfo struct {
+	Name string
+	Type CIPType
+}
+
+// TagLister is an optional interface a CIPEndpoint can implement to expose
+// its full tag set for Symbol Object enumeration. Providers that don't
+// implement it (e.g., handler-style endpoints with no static map) simply
+// won't show up in the Tag Browser, which mirrors the behaviour of a real
+// Logix controller with all symbols hidden by external-access settings.
+type TagLister interface {
+	TagList() []ServerTagInfo
+}
