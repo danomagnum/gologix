@@ -311,11 +311,132 @@ func (h *serverTCPHandler) sendUnitData(hdr eipHeader) error {
 		if err != nil {
 			return fmt.Errorf("problem handling getAttrSingle %w", err)
 		}
+	case CIPService_GetAttributeAll:
+		// pycomm3.LogixDriver.get_plc_name() and similar clients probe
+		// Class 0x64 (Program Object) Instance 1 over the established
+		// connection after Forward Open. Previously this fell through to
+		// the silent default which left the client hanging until timeout.
+		err = h.connectedGetAttributeAll(items)
+		if err != nil {
+			return fmt.Errorf("problem handling connected getAttributesAll %w", err)
+		}
 	default:
-		h.server.Logger.Warn("Got unknown service at send unit data handler", "service", service)
+		// Any other service that lands here would have silently dropped
+		// before, leaving strict CIP clients (FactoryTalk Linx, Studio
+		// 5000, pycomm3) waiting forever for a reply. Send a formal CIP
+		// error response so the client sees "alive but service not
+		// supported" and can recover gracefully.
+		h.server.Logger.Warn("connected: unsupported service", "service", service)
+		return h.sendUnitDataErrorReply(service, CIPStatus_ServiceNotSupported)
 	}
 	h.server.Logger.Debug("send unit data service requested", "service", service)
 	return nil
+}
+
+// sendUnitDataErrorReply emits a CIP error response on an established
+// connection (SendUnitData transport) so the client sees a formal status
+// code instead of silence. Mirrors sendUnitDataReply but populates the
+// non-zero CIPStatus required for error semantics.
+func (h *serverTCPHandler) sendUnitDataErrorReply(s CIPService, status CIPStatus) error {
+	items := make([]CIPItem, 2)
+	items[0] = newItem(cipItem_ConnectionAddress, h.TOConnectionID)
+	items[1] = newItem(cipItem_ConnectedData, nil)
+	resp := msgWriteResultHeader{
+		SequenceCount: h.UnitDataSequencer,
+		Service:       s.AsResponse(),
+		Status:        status,
+	}
+	if err := items[1].Serialize(resp); err != nil {
+		return fmt.Errorf("serialize connected error header: %w", err)
+	}
+	itemData, err := serializeItems(items)
+	if err != nil {
+		return fmt.Errorf("serialize connected error items: %w", err)
+	}
+	return h.send(cipCommandSendUnitData, itemData)
+}
+
+// connectedGetAttributeAll handles CIP Get_Attributes_All (service 0x01)
+// arriving on an already established Class 3 connection. The Logix
+// Program Object (Class 0x64) Instance 1 path is the one pycomm3 probes
+// after Forward Open to learn the controller name; routing that through
+// the same Identity attribute map we already expose keeps a single
+// source of truth for the device's product name string.
+func (h *serverTCPHandler) connectedGetAttributeAll(items []CIPItem) error {
+	items[1].Reset()
+	item := items[1]
+
+	if _, err := item.Uint16(); err != nil {
+		return fmt.Errorf("connected GAA: read seq: %w", err)
+	}
+	if _, err := item.Byte(); err != nil {
+		return fmt.Errorf("connected GAA: read service byte: %w", err)
+	}
+	pathSize, err := item.Byte()
+	if err != nil {
+		return fmt.Errorf("connected GAA: read path size: %w", err)
+	}
+	pathBytes := make([]byte, int(pathSize)*2)
+	if err := item.DeSerialize(&pathBytes); err != nil {
+		return fmt.Errorf("connected GAA: read path: %w", err)
+	}
+
+	class, instance, ok := parseClassInstancePath(pathBytes)
+	if !ok {
+		h.server.Logger.Warn("connected GAA: malformed path", "bytes", pathBytes)
+		return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathSegmentError)
+	}
+
+	switch class {
+	case uint16(CipObject_Identity):
+		if instance != 1 {
+			return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
+		}
+		payload, err := buildIdentityGetAttributesAllResponse(h.server.Attributes)
+		if err != nil {
+			return fmt.Errorf("connected GAA identity: %w", err)
+		}
+		return h.sendUnitDataReplyWithPayload(CIPService_GetAttributeAll, payload)
+
+	case 0x64:
+		if instance != 1 {
+			return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
+		}
+		payload, err := buildProgramObjectGetAttributesAllResponse(h.server.Attributes)
+		if err != nil {
+			return fmt.Errorf("connected GAA program: %w", err)
+		}
+		return h.sendUnitDataReplyWithPayload(CIPService_GetAttributeAll, payload)
+
+	default:
+		h.server.Logger.Warn("connected GAA: class not implemented", "class", class, "instance", instance)
+		return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
+	}
+}
+
+// sendUnitDataReplyWithPayload is sendUnitDataReply with an additional
+// raw payload appended after the standard write-result header. Used by
+// the connected Get_Attributes_All handler to ship the Identity /
+// Program Object attribute bytes back to the client.
+func (h *serverTCPHandler) sendUnitDataReplyWithPayload(s CIPService, payload []byte) error {
+	items := make([]CIPItem, 2)
+	items[0] = newItem(cipItem_ConnectionAddress, h.TOConnectionID)
+	items[1] = newItem(cipItem_ConnectedData, nil)
+	resp := msgWriteResultHeader{
+		SequenceCount: h.UnitDataSequencer,
+		Service:       s.AsResponse(),
+	}
+	if err := items[1].Serialize(resp); err != nil {
+		return fmt.Errorf("serialize connected reply header: %w", err)
+	}
+	if err := items[1].Serialize(payload); err != nil {
+		return fmt.Errorf("serialize connected reply payload: %w", err)
+	}
+	itemData, err := serializeItems(items)
+	if err != nil {
+		return fmt.Errorf("serialize connected reply items: %w", err)
+	}
+	return h.send(cipCommandSendUnitData, itemData)
 }
 
 func (h *serverTCPHandler) sendUnitDataReply(s CIPService) error {
