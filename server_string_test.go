@@ -91,10 +91,10 @@ func TestParseWriteValuesUnknownStruct(t *testing.T) {
 
 // TestCipStringPackerShape locks in the per-element STRING wire layout the
 // Logix STRING UDT puts on the wire: 4-byte type segment (0xA0 0x02 +
-// StructTypeCRC LE) + 4-byte LEN + 82-byte fixed DATA = 90 bytes total.
-// External CIP clients (pylogix, MSG instructions, FactoryTalk) refuse to
-// extract values when DATA is shorter than 82 bytes, so the fixed slot is
-// non-negotiable.
+// StructTypeCRC LE) + 88-byte Tag Data (4 LEN + 82 DATA + 2 DINT-alignment
+// padding) = 92 bytes total. The 88-byte Tag Data matches structure_size
+// in the controller's data-type registry; responses shorter than that are
+// rejected by ControlLogix MSG instructions with extended status 0x2107.
 func TestCipStringPackerShape(t *testing.T) {
 	cases := []struct {
 		name string
@@ -121,11 +121,53 @@ func TestCipStringPackerShape(t *testing.T) {
 			if got := binary.LittleEndian.Uint32(b[4:8]); got != tc.want {
 				t.Fatalf("LEN = %d; want %d", got, tc.want)
 			}
-			// DATA region (after LEN) is exactly 82 bytes by construction.
-			if len(b[8:]) != cipStringDataLen {
-				t.Fatalf("DATA region = %d bytes; want %d", len(b[8:]), cipStringDataLen)
+			// DATA region is exactly 82 bytes; the 2 bytes that follow are
+			// DINT-alignment padding that must stay zero.
+			dataEnd := 8 + cipStringDataLen
+			if got := dataEnd - 8; got != cipStringDataLen {
+				t.Fatalf("DATA region = %d bytes; want %d", got, cipStringDataLen)
+			}
+			if pad := b[dataEnd:]; len(pad) != cipStringStructPad {
+				t.Fatalf("padding region = %d bytes; want %d", len(pad), cipStringStructPad)
+			}
+			for i, p := range b[dataEnd:] {
+				if p != 0 {
+					t.Errorf("padding byte %d = 0x%02X; want 0x00", i, p)
+				}
 			}
 		})
+	}
+}
+
+// TestCipStringPackerTagDataSize locks in the total Tag Data size (88 bytes)
+// against the controller's structure_size for the STRING UDT. This guards
+// the wire contract against future "simplification" that would reintroduce
+// the connectedRead hang against ControlLogix MSG clients.
+func TestCipStringPackerTagDataSize(t *testing.T) {
+	const wantTagData = 88
+	if cipStringTagDataLen != wantTagData {
+		t.Fatalf("cipStringTagDataLen = %d; want %d (matches controller structure_size for STRING)", cipStringTagDataLen, wantTagData)
+	}
+	// Tag Data starts after the 4-byte type segment (TagType + StructHandle).
+	b := cipStringPacker("anything").Bytes()
+	if got := len(b) - 4; got != wantTagData {
+		t.Fatalf("Tag Data length = %d bytes; want %d", got, wantTagData)
+	}
+}
+
+// TestCipStringPackerOverlongDoesNotLeakBytes guarantees that a source string
+// longer than DATA never spills bytes into the alignment padding region.
+// Regression guard for the destination-clamping rule inside Bytes().
+func TestCipStringPackerOverlongDoesNotLeakBytes(t *testing.T) {
+	in := make([]byte, cipStringDataLen+cipStringStructPad+5)
+	for i := range in {
+		in[i] = 0xCC
+	}
+	b := cipStringPacker(string(in)).Bytes()
+	for i, p := range b[8+cipStringDataLen:] {
+		if p != 0 {
+			t.Errorf("padding byte %d leaked 0x%02X (must stay zero)", i, p)
+		}
 	}
 }
 

@@ -339,10 +339,24 @@ const cipStringStructCRC uint16 = 0x0FCE
 // anything shorter as malformed and silently fail to extract the value.
 const cipStringDataLen = 82
 
+// cipStringStructPad is the DINT-alignment padding that follows DATA inside
+// the Logix STRING UDT. Read Tag Service responses from a ControlLogix or
+// CompactLogix include these 2 bytes so the total Tag Data matches the
+// in-memory structure size (88 bytes: 4 LEN + 82 DATA + 2 pad). Responses
+// missing this padding are rejected wholesale by the controller with
+// CIP extended status 0x2107 ("data type to be transferred has a length
+// not matching the length defined in the host PLC").
+const cipStringStructPad = 2
+
+// cipStringTagDataLen is the in-memory size of a Logix STRING as the
+// controller reports it via the data type template — equal to the value
+// of structure_size in the controller's data-type registry.
+const cipStringTagDataLen = 4 + cipStringDataLen + cipStringStructPad
+
 // cipStringSlotLen is the full per-element wire footprint of a STRING:
-// 4-byte type segment (0xA0 0x02 + StructTypeCRC LE) + 4-byte LEN +
-// 82-byte DATA = 90 bytes.
-const cipStringSlotLen = 4 + 4 + cipStringDataLen
+// 4-byte type segment (0xA0 0x02 + StructTypeCRC LE) + 88-byte Tag Data
+// = 92 bytes.
+const cipStringSlotLen = 4 + cipStringTagDataLen
 
 type cipStringPacker string
 
@@ -361,7 +375,10 @@ func (c cipStringPacker) Bytes() []byte {
 		l = cipStringDataLen
 	}
 	binary.LittleEndian.PutUint32(b[4:], uint32(l))
-	copy(b[8:], c)
+	// Copy at most cipStringDataLen bytes into the DATA region. The 2
+	// alignment-padding bytes that follow DATA stay zero (their fixed
+	// position is enforced by TestCipStringPackerShape).
+	copy(b[8:8+cipStringDataLen], c)
 	return b
 }
 
