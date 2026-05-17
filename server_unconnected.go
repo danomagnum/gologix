@@ -44,6 +44,15 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 			return fmt.Errorf("problem handling get attributes all. %w", err)
 		}
 
+	// Direct UCMM Get_Attribute_Single — FactoryTalk Linx fires this against
+	// Identity (and a handful of other classes) right after Get_Attributes_All
+	// to validate the peer. Routing it here avoids the silent-drop trap.
+	case CIPService_GetAttributeSingle:
+		err = h.unconnectedServiceGetAttrSingle(item)
+		if err != nil {
+			return fmt.Errorf("problem handling get attribute single. %w", err)
+		}
+
 	case 0x52:
 		// unconnected send?
 		var pathsize byte
@@ -81,9 +90,24 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 		case CIPService_GetAttributeAll:
 			return h.unconnectedGetAttributeAll(item)
 		default:
-			return fmt.Errorf("don't know how to handle service '%v'", emService)
-
+			// Reply with an explicit ServiceNotSupported CIP error so the
+			// originator knows the device is alive but the service isn't
+			// implemented. Returning a Go error here used to bubble up to
+			// the connection loop and silently drop the reply, which made
+			// FactoryTalk Linx (and any other strict client) interpret the
+			// device as dead and tear down the shortcut bind. See upstream
+			// issue danomagnum/gologix#13.
+			h.server.Logger.Warn("unsupported embedded service in UnconnectedSend", "service", emService)
+			return h.sendUnconnectedErrorReply(emService, CIPStatus_ServiceNotSupported)
 		}
+
+	default:
+		// Top-level service code that we don't recognize — same rule as the
+		// embedded-service default above: reply with ServiceNotSupported
+		// instead of silently dropping. Without this, FactoryTalk Linx
+		// retries forever waiting for a response that never comes.
+		h.server.Logger.Warn("unsupported unconnected service", "service", service)
+		return h.sendUnconnectedErrorReply(service, CIPStatus_ServiceNotSupported)
 	}
 	return nil
 }
@@ -107,17 +131,64 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 
 	class, instance, ok := parseClassInstancePath(pathBytes)
 	if !ok {
-		return fmt.Errorf("get_attributes_all: unsupported path segments % x", pathBytes)
-	}
-	if class != uint16(CipObject_Identity) || instance != 1 {
-		return fmt.Errorf("get_attributes_all: only Class 0x01 Instance 1 supported, got class %d instance %d", class, instance)
+		// The path is malformed (or uses segment types we don't decode).
+		// Treat it as a path error rather than a silent drop.
+		h.server.Logger.Warn("get_attributes_all: malformed path", "bytes", pathBytes)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathSegmentError)
 	}
 
-	payload, err := buildIdentityGetAttributesAllResponse(h.server.Attributes)
-	if err != nil {
-		return fmt.Errorf("get_attributes_all: build response: %w", err)
+	switch class {
+	case uint16(CipObject_Identity):
+		if instance != 1 {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
+		}
+		payload, err := buildIdentityGetAttributesAllResponse(h.server.Attributes)
+		if err != nil {
+			return fmt.Errorf("get_attributes_all: build identity response: %w", err)
+		}
+		return h.sendUnconnectedRRDataReply(CIPService_GetAttributeAll, payload)
+
+	case 0x64:
+		// Class 0x64 = Logix Program Object. pycomm3.LogixDriver.get_plc_name()
+		// probes Instance 1 of this class immediately after Identity to learn
+		// the controller name. The Logix wire layout starts with a uint32
+		// ProgramNumber followed by a SHORT_STRING ProgramName. We expose the
+		// product name from the Identity attributes as the program name so
+		// the same Server.Attributes map remains the single source of truth.
+		if instance != 1 {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
+		}
+		payload, err := buildProgramObjectGetAttributesAllResponse(h.server.Attributes)
+		if err != nil {
+			return fmt.Errorf("get_attributes_all: build program response: %w", err)
+		}
+		return h.sendUnconnectedRRDataReply(CIPService_GetAttributeAll, payload)
+
+	default:
+		// Class isn't implemented at all — answer formally so the originator
+		// keeps the session alive instead of timing out on silence.
+		h.server.Logger.Warn("get_attributes_all: class not implemented", "class", class, "instance", instance)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
 	}
-	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeAll, payload)
+}
+
+// buildProgramObjectGetAttributesAllResponse renders the payload for
+// Get_Attributes_All on Class 0x64 (Logix Program Object) Instance 1. The
+// wire layout that pycomm3.get_plc_name() expects is a SHORT_STRING holding
+// the controller name; the gologix server doesn't have programs in the
+// Logix sense, so we surface the ProductName from the Identity attributes.
+func buildProgramObjectGetAttributesAllResponse(attrs map[CIPAttribute]any) ([]byte, error) {
+	name, ok := attrs[7].(string)
+	if !ok {
+		return nil, fmt.Errorf("program object: identity attribute 7 (ProductName) missing or wrong type: %T", attrs[7])
+	}
+	if len(name) > 255 {
+		name = name[:255]
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(byte(len(name)))
+	buf.WriteString(name)
+	return buf.Bytes(), nil
 }
 
 // parseClassInstancePath decodes a 4-byte EPATH carrying an 8-bit Class
@@ -255,44 +326,56 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 
 func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 
-	path_size, err := item.Uint16()
+	// Original wire layout (embedded in UnconnectedSend): uint16 path_size
+	// followed by `path_size*2` bytes of EPATH. Keeping the uint16 read keeps
+	// the existing dispatch via `case 0x52` byte-compatible. The direct UCMM
+	// path now also routes here; CIP devices in the wild appear to encode
+	// path_size as a uint16 with high byte zero in both shapes, so the
+	// existing length check passes for both. If a request with a different
+	// path_size arrives we still reply with a formal error (below) instead of
+	// silently dropping, which is the core upstream issue.
+	pathSize, err := item.Uint16()
 	if err != nil {
-		return fmt.Errorf("couldn't read data len: %w", err)
+		return fmt.Errorf("couldn't read path size: %w", err)
 	}
-
-	if path_size != 3 {
-		return fmt.Errorf("currently only support getattrsingle path size of 3. got %d", path_size)
+	if pathSize != 3 {
+		h.server.Logger.Debug("getattrsingle: unsupported path size", "size", pathSize)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathSegmentError)
 	}
 
 	var cls CIPClass
-	err = cls.Read(&item)
-	if err != nil {
+	if err := cls.Read(&item); err != nil {
 		return fmt.Errorf("could not read class: %w", err)
 	}
-
 	var inst CIPInstance
-	err = inst.Read(&item)
-	if err != nil {
+	if err := inst.Read(&item); err != nil {
 		return fmt.Errorf("could not read instance: %w", err)
 	}
-
-	if cls != 1 || inst != 1 {
-		return fmt.Errorf("only support class 1 instance 1 so far. got %d:%d", cls, inst)
+	var attr CIPAttribute
+	if err := attr.Read(&item); err != nil {
+		return fmt.Errorf("could not read attribute ID: %w", err)
 	}
 
-	var attr CIPAttribute
-	err = attr.Read(&item)
-	if err != nil {
-		return fmt.Errorf("could not read attribute ID: %w", err)
+	// Class 0x01 Identity is the only class with attribute data in this
+	// minimal server. Other classes FactoryTalk Linx probes (0x47 DLR,
+	// 0xF4 Port, ...) should produce a formal "PathDestinationUnknown"
+	// error so the originator can mark them as not-implemented and proceed.
+	if cls != CIPClass(CipObject_Identity) || inst != 1 {
+		h.server.Logger.Debug("getattrsingle: class/instance not implemented", "class", cls, "instance", inst, "attr", attr)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)
 	}
 
 	val, ok := h.server.Attributes[attr]
 	if !ok {
-		return fmt.Errorf("bad attribute %d", attr)
+		// Attribute not in our Identity attribute map. Real Logix
+		// controllers respond with status 0x14 AttributeNotSupported, which
+		// FactoryTalk Linx interprets as "device alive but doesn't expose
+		// this attribute" — exactly what we want here.
+		h.server.Logger.Debug("getattrsingle: identity attribute not supported", "attr", attr)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_AttributeNotSupported)
 	}
 
 	typ, _ := GoVarToCIPType(val)
-
 	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
 }
 
@@ -337,6 +420,34 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 
 	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
 
+}
+
+// sendUnconnectedErrorReply emits a CIP error response carrying a non-zero
+// General Status. Used whenever the dispatcher receives a service / class /
+// attribute it doesn't implement: instead of returning a Go error (which
+// leaves the wire silent and makes the originator think the device died),
+// we respond with the appropriate CIP status code so strict clients like
+// FactoryTalk Linx, Studio 5000 path browser, and pycomm3 can mark the
+// peer as alive-but-unsupported and continue gracefully.
+//
+// Reference: ODVA Vol 1 §2-4.5 General Status Codes; upstream issue
+// danomagnum/gologix#13 documents the user-visible impact of silent drops.
+func (h *serverTCPHandler) sendUnconnectedErrorReply(s CIPService, status CIPStatus) error {
+	items := make([]CIPItem, 2)
+	items[0] = newItem(cipItem_Null, nil)
+	items[1] = newItem(cipItem_UnconnectedData, nil)
+	resp := msgUnconnWriteResultHeader{
+		Service: s.AsResponse(),
+		Status:  status,
+	}
+	if err := items[1].Serialize(resp); err != nil {
+		return fmt.Errorf("serialize error reply header: %w", err)
+	}
+	itemdata, err := serializeItems(items)
+	if err != nil {
+		return fmt.Errorf("serialize error reply items: %w", err)
+	}
+	return h.send(cipCommandSendRRData, itemdata)
 }
 
 func (h *serverTCPHandler) sendUnconnectedRRDataReply(s CIPService, payload ...any) error {
