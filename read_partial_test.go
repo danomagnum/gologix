@@ -415,3 +415,58 @@ func TestReadPartialTransfer(t *testing.T) {
 		})
 	}
 }
+
+// TestReadPartialTransferStructIsRejected locks in the explicit scope guard:
+// when the first response indicates a structured tag type (Type=0xA0) AND
+// status=0x06, Read_single must surface a clear error instead of attempting
+// the FragRead loop. Struct partial transfer requires per-fragment
+// StructHandle deduplication that this PR does not implement; surfacing an
+// error keeps callers from silently consuming corrupt bytes.
+func TestReadPartialTransferStructIsRejected(t *testing.T) {
+	client, fs := newFakeCIPClient(t)
+
+	type result struct {
+		val any
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		v, e := client.Read_single("MyStructArray", CIPTypeStruct, 4)
+		done <- result{v, e}
+	}()
+
+	// Reply with status=0x06 and a struct type marker (Type=0xA0). The data
+	// portion is arbitrary — the guard fires before any byte parsing.
+	req := fs.awaitRequest(time.Second)
+	if req.service != CIPService_Read {
+		t.Fatalf("expected service Read, got %v", req.service)
+	}
+	fs.replyConnectedRead(CIPService_Read, req.seq, byte(CIPStatus_PartialTransfer), CIPTypeStruct, []byte{0xCE, 0x0F, 0x01, 0x02, 0x03})
+
+	select {
+	case r := <-done:
+		if r.err == nil {
+			t.Fatalf("expected struct partial-transfer to be rejected, got value %v", r.val)
+		}
+		if !contains(r.err.Error(), "structured tag types are not yet supported") {
+			t.Errorf("error message did not mention scope guard: %v", r.err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Read_single hung instead of returning the scope-guard error")
+	}
+}
+
+// contains is a tiny substring helper to keep error-message assertions readable
+// without importing strings into every test case.
+func contains(s, substr string) bool {
+	return len(substr) == 0 || (len(s) >= len(substr) && indexOf(s, substr) >= 0)
+}
+
+func indexOf(s, substr string) int {
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
+}

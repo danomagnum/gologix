@@ -461,6 +461,15 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	// follow up with FragRead requests until the controller returns 0x00. Any
 	// other non-zero general status is a hard error to surface immediately.
 	if hdr2.Status[1] == byte(CIPStatus_PartialTransfer) {
+		// Struct tag-data carries a 2-byte StructHandle that the controller
+		// repeats in every FragRead response; deduplicating that across
+		// fragments needs wire evidence we do not have yet, so refuse the
+		// operation explicitly instead of returning garbled bytes. Atomic
+		// types splice cleanly because their Tag Data has no per-fragment
+		// prefix.
+		if hdr2.Type == CIPTypeStruct {
+			return nil, fmt.Errorf("partial transfer read of %s: structured tag types are not yet supported in fragmented reads", tag)
+		}
 		merged, err := client.readFragmented(ioi, elements, items[1].Data[items[1].Pos:])
 		if err != nil {
 			return nil, fmt.Errorf("partial transfer read of %s: %w", tag, err)
