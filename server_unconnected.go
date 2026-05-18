@@ -53,6 +53,15 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 		if err != nil {
 			return fmt.Errorf("problem handling get attribute single. %w", err)
 		}
+	// Direct UCMM Set_Attribute_Single — used by SCADA clients writing back
+	// through the custom Class 0xC8 tag-attribute bridge. FactoryTalk View
+	// in CIP Object mode emits Service 0x10 when a numeric/string input
+	// pushes a new value to a bound CIA expression.
+	case CIPService_SetAttributeSingle:
+		err = h.unconnectedServiceSetAttrSingle(item)
+		if err != nil {
+			return fmt.Errorf("problem handling set attribute single. %w", err)
+		}
 
 	case 0x52:
 		// unconnected send?
@@ -409,10 +418,42 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 		return fmt.Errorf("could not read attribute ID: %w", err)
 	}
 
-	// Class 0x01 Identity is the only class with attribute data in this
-	// minimal server. Other classes FactoryTalk Linx probes (0x47 DLR,
-	// 0xF4 Port, ...) should produce a formal "PathDestinationUnknown"
-	// error so the originator can mark them as not-implemented and proceed.
+	// Custom class 0xC8: per-tag attribute container — see
+	// resolveSymbolicTagFromCustomClass. This is the bridge that lets
+	// FactoryTalk View (and any other Get_Attribute_Single client) read
+	// the gologix server's symbolic tags through plain CIA notation
+	// (`CIA:C8:<instance>:1`) without going through the Rockwell-only
+	// Service 0x4B/0x64 tag-browsing extension.
+	if cls == 0xC8 {
+		tagName, found := h.resolveSymbolicTagFromCustomClass(uint16(inst))
+		if !found {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)
+		}
+		if attr != 1 {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_AttributeNotSupported)
+		}
+		provider, err := h.server.Router.Resolve(defaultLocalPath)
+		if err != nil {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)
+		}
+		val, err := provider.TagRead(tagName, 1)
+		if err != nil {
+			return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_ObjectDoesNotExist)
+		}
+		typ, _ := GoVarToCIPType(val)
+		if typ == CIPTypeSTRING {
+			if s, ok := val.(string); ok {
+				return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, cipStringPacker(s))
+			}
+		}
+		return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
+	}
+
+	// Class 0x01 Identity is the only standard class with attribute data
+	// in this minimal server. Other classes FactoryTalk Linx probes
+	// (0x47 DLR, 0xF4 Port, ...) should produce a formal
+	// "PathDestinationUnknown" error so the originator can mark them as
+	// not-implemented and proceed.
 	if cls != CIPClass(CipObject_Identity) || inst != 1 {
 		h.server.Logger.Debug("getattrsingle: class/instance not implemented", "class", cls, "instance", inst, "attr", attr)
 		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)
@@ -430,6 +471,102 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 
 	typ, _ := GoVarToCIPType(val)
 	return h.sendUnconnectedRRDataReply(CIPService_GetAttributeSingle, typ, byte(0), val)
+}
+
+// unconnectedServiceSetAttrSingle handles CIP Set_Attribute_Single (0x10)
+// in the direct UCMM path. The only class we currently surface for write
+// is the custom 0xC8 tag-attribute bridge — Identity attributes are
+// considered read-only here. SCADA clients writing back to symbolic tags
+// via CIA paths land here.
+func (h *serverTCPHandler) unconnectedServiceSetAttrSingle(item CIPItem) error {
+	pathSize, err := item.Byte()
+	if err != nil {
+		return fmt.Errorf("couldn't read path size: %w", err)
+	}
+	if pathSize != 3 {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_PathSegmentError)
+	}
+	var cls CIPClass
+	if err := cls.Read(&item); err != nil {
+		return fmt.Errorf("could not read class: %w", err)
+	}
+	var inst CIPInstance
+	if err := inst.Read(&item); err != nil {
+		return fmt.Errorf("could not read instance: %w", err)
+	}
+	var attr CIPAttribute
+	if err := attr.Read(&item); err != nil {
+		return fmt.Errorf("could not read attribute ID: %w", err)
+	}
+
+	if cls != 0xC8 {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_PathDestinationUnknown)
+	}
+	if attr != 1 {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_AttributeNotSupported)
+	}
+	tagName, found := h.resolveSymbolicTagFromCustomClass(uint16(inst))
+	if !found {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_PathDestinationUnknown)
+	}
+
+	// Parse the incoming value. Layout matches the Get_Attribute_Single
+	// response payload: [CIPType:u8][reserved:u8][data ...] for atomic,
+	// or the cipStringPacker shape (`0xA0 0x02 <CRC2> <LEN u32> <DATA[82]>
+	// <padding[2]>`) for STRING. This is the same wire format the gologix
+	// client itself emits for writes, so existing tests cover most of the
+	// parsing edge cases via parseWriteValues.
+	values, err := parseWriteValues(&item)
+	if err != nil {
+		return fmt.Errorf("set_attr_single: parse value: %w", err)
+	}
+	if len(values) == 0 {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_NotEnoughData)
+	}
+
+	provider, err := h.server.Router.Resolve(defaultLocalPath)
+	if err != nil {
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_PathDestinationUnknown)
+	}
+	value := values[0]
+	if err := provider.TagWrite(tagName, value); err != nil {
+		h.server.Logger.Warn("set_attr_single: tag write failed", "tag", tagName, "err", err)
+		return h.sendUnconnectedErrorReply(CIPService_SetAttributeSingle, CIPStatus_InvalidAttributeValue)
+	}
+	return h.sendUnconnectedRRDataReply(CIPService_SetAttributeSingle)
+}
+
+// defaultLocalPath is the routing path that the gologix sample server uses
+// to register its in-process tag provider. We use it as the canonical
+// lookup key whenever a CIP request for the custom Class 0xC8 arrives,
+// since these requests don't carry a backplane path of their own.
+var defaultLocalPath = []byte{1, 0}
+
+// resolveSymbolicTagFromCustomClass returns the symbolic tag name that
+// maps to a given CIP instance of the custom Class 0xC8. The mapping is
+// derived from the active TagProvider's TagList() output in stable
+// alphabetical order so the same tag always lands on the same instance
+// across restarts — clients need this stability to wire SCADA tags
+// against CIA paths.
+//
+// Returns ok=false if the provider doesn't implement TagLister (no
+// browsable tag set), if the instance is out of range, or if the index
+// arithmetic underflows.
+func (h *serverTCPHandler) resolveSymbolicTagFromCustomClass(instance uint16) (string, bool) {
+	provider, err := h.server.Router.Resolve(defaultLocalPath)
+	if err != nil {
+		return "", false
+	}
+	lister, ok := provider.(TagLister)
+	if !ok {
+		return "", false
+	}
+	tags := lister.TagList()
+	sort.Slice(tags, func(i, j int) bool { return tags[i].Name < tags[j].Name })
+	if instance == 0 || int(instance) > len(tags) {
+		return "", false
+	}
+	return tags[instance-1].Name, true
 }
 
 func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
