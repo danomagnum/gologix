@@ -250,7 +250,7 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 		response[2+i] = results[i]
 	}
 
-	return h.sendConnectedReply(CIPService_MultipleService, seq, connection.OT, response...)
+	return h.sendConnectedReply(CIPService_MultipleService, seq, connection.TO, response...)
 }
 
 // connectedRead handles both CIPService_Read (0x4C) and CIPService_FragRead
@@ -278,24 +278,24 @@ func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) err
 	var seq uint16
 	err = item.DeSerialize(&seq)
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting sequence ID: %w / %v", err, err2)
 	}
 	var pathlen uint16
 	err = item.DeSerialize(&pathlen)
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting path len: %w / %v", err, err2)
 	}
 	tag, err := getTagFromPath(&item)
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("couldn't parse path: %w / %v", err, err2)
 	}
 	var qty uint16
 	err = item.DeSerialize(&qty)
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting write qty: %w / %v", err, err2)
 	}
 
@@ -303,13 +303,13 @@ func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) err
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_PathDestinationUnknown, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_PathDestinationUnknown, 0)
 		return fmt.Errorf("problem finding tag provider for %v. %w: %v", path, err, err2)
 	}
 	p := provider
 	result, err := p.TagRead(tag, int16(qty))
 	if err != nil {
-		err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidMemberID, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidMemberID, 0)
 		return fmt.Errorf("problem getting data from provider. %w / %v", err, err2)
 	}
 	typ, _ := GoVarToCIPType(result)
@@ -317,12 +317,12 @@ func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) err
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
 		if !ok {
-			err2 := h.sendConnectedError(reqSvc, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
+			err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidAttributeValue, 0)
 			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 		}
-		return h.sendConnectedReply(reqSvc, seq, connection.OT, cipStringPacker(res_str))
+		return h.sendConnectedReply(reqSvc, seq, connection.TO, cipStringPacker(res_str))
 	} else {
-		return h.sendConnectedReply(reqSvc, seq, connection.OT, typ, byte(0), result)
+		return h.sendConnectedReply(reqSvc, seq, connection.TO, typ, byte(0), result)
 	}
 }
 
@@ -570,6 +570,6 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, result)
+	return h.sendConnectedReply(CIPService_FragRead, seq, connection.TO, result)
 
 }
