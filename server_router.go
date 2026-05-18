@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -87,7 +88,12 @@ func (p *MapTagProvider) IOWrite(items []CIPItem) error {
 	return errors.New("not implemented")
 }
 
-// this is a thread-safe way to get the value for a tag.
+// this is a thread-safe way to get the value for a tag. Supports
+// element addressing of the form `name[N]` — the path parser in
+// ioi.go already extracts the index segment and rebuilds it as a
+// suffix on the tag name, so when an external client asks for
+// `realarr[2]` we look up `realarr` here and return the third
+// element rather than failing with "tag not in map".
 func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	tag = strings.ToLower(tag)
 	p.Mutex.Lock()
@@ -96,12 +102,33 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 		p.Data = make(map[string]any)
 	}
 
-	val, ok := p.Data[tag]
+	baseName, elemIdx, hasElem := parseElementTag(tag)
+
+	val, ok := p.Data[baseName]
 	if !ok {
 		return nil, fmt.Errorf("tag %v not in map", tag)
 	}
 
 	t := reflect.ValueOf(val)
+
+	if hasElem {
+		if t.Kind() != reflect.Slice {
+			return nil, fmt.Errorf("tag %v: element access on non-slice (%T)", tag, val)
+		}
+		if elemIdx < 0 || elemIdx >= t.Len() {
+			return nil, fmt.Errorf("tag %v: element index %d out of range [0..%d)", tag, elemIdx, t.Len())
+		}
+		// Read a contiguous slice starting at elemIdx for `qty` elements,
+		// matching how CIP Read Tag handles array element addressing.
+		end := elemIdx + int(qty)
+		if end > t.Len() {
+			return nil, fmt.Errorf("tag %v: requested %d elements from index %d but array has %d total", tag, qty, elemIdx, t.Len())
+		}
+		if qty == 1 {
+			return t.Index(elemIdx).Interface(), nil
+		}
+		return t.Slice(elemIdx, end).Interface(), nil
+	}
 
 	if t.Kind() == reflect.Slice {
 		if int(qty) <= t.Len() {
@@ -115,7 +142,13 @@ func (p *MapTagProvider) TagRead(tag string, qty int16) (any, error) {
 	return val, nil
 }
 
-// this is a thread-safe way to write a value to a tag.
+// this is a thread-safe way to write a value to a tag. Like TagRead, it
+// supports element addressing (`name[N]`) AND preserves the underlying
+// element type of an existing typed slice when the caller hands us a
+// `[]any` from a CIP write (pylogix and pycomm3 both deserialize array
+// payloads as []any in their generic encoding paths). Without that
+// conversion, the next read of the tag explodes with
+// `binary.Write: some values are not fixed-sized in type []interface {}`.
 func (p *MapTagProvider) TagWrite(tag string, value any) error {
 
 	tag = strings.ToLower(tag)
@@ -124,8 +157,89 @@ func (p *MapTagProvider) TagWrite(tag string, value any) error {
 	if p.Data == nil {
 		p.Data = make(map[string]any)
 	}
-	p.Data[tag] = value
+
+	baseName, elemIdx, hasElem := parseElementTag(tag)
+
+	if hasElem {
+		existing, ok := p.Data[baseName]
+		if !ok {
+			return fmt.Errorf("tag %v: cannot write element of non-existent array", tag)
+		}
+		ev := reflect.ValueOf(existing)
+		if ev.Kind() != reflect.Slice {
+			return fmt.Errorf("tag %v: element write on non-slice (%T)", tag, existing)
+		}
+		if elemIdx < 0 || elemIdx >= ev.Len() {
+			return fmt.Errorf("tag %v: element index %d out of range [0..%d)", tag, elemIdx, ev.Len())
+		}
+		converted, err := convertToElement(value, ev.Type().Elem())
+		if err != nil {
+			return fmt.Errorf("tag %v: %w", tag, err)
+		}
+		// Slices are reference types — mutating in place is safe under the
+		// lock and matches the in-place semantics of a Logix array write.
+		ev.Index(elemIdx).Set(reflect.ValueOf(converted))
+		return nil
+	}
+
+	// Full-tag write. If the new value is `[]any` AND the existing tag is a
+	// typed slice, coerce element-by-element to preserve the original type
+	// so subsequent reads still serialize cleanly.
+	if existing, ok := p.Data[baseName]; ok {
+		ev := reflect.ValueOf(existing)
+		nv := reflect.ValueOf(value)
+		if ev.Kind() == reflect.Slice && nv.Kind() == reflect.Slice &&
+			nv.Type().Elem().Kind() == reflect.Interface {
+			elemType := ev.Type().Elem()
+			out := reflect.MakeSlice(reflect.SliceOf(elemType), nv.Len(), nv.Len())
+			for i := 0; i < nv.Len(); i++ {
+				converted, err := convertToElement(nv.Index(i).Interface(), elemType)
+				if err != nil {
+					return fmt.Errorf("tag %v element %d: %w", tag, i, err)
+				}
+				out.Index(i).Set(reflect.ValueOf(converted))
+			}
+			p.Data[baseName] = out.Interface()
+			return nil
+		}
+	}
+
+	p.Data[baseName] = value
 	return nil
+}
+
+// parseElementTag splits a tag name on the trailing `[N]` element
+// indexer that ioi.go's getTagFromPath appends when a CIP request
+// addresses a specific array element. Returns hasElem=false when the
+// tag name has no element suffix or it doesn't parse as an integer.
+func parseElementTag(tag string) (base string, idx int, hasElem bool) {
+	if !strings.HasSuffix(tag, "]") {
+		return tag, 0, false
+	}
+	open := strings.LastIndex(tag, "[")
+	if open < 0 {
+		return tag, 0, false
+	}
+	n, err := strconv.Atoi(tag[open+1 : len(tag)-1])
+	if err != nil {
+		return tag, 0, false
+	}
+	return tag[:open], n, true
+}
+
+// convertToElement coerces a CIP-decoded scalar (often arriving as
+// int32 / float32 / string regardless of the destination slice type)
+// into the element type of an existing typed slice. Returns the
+// converted value or an error if the cast isn't representable.
+func convertToElement(value any, target reflect.Type) (any, error) {
+	v := reflect.ValueOf(value)
+	if v.Type() == target {
+		return value, nil
+	}
+	if v.Type().ConvertibleTo(target) {
+		return v.Convert(target).Interface(), nil
+	}
+	return nil, fmt.Errorf("cannot convert %T to %v", value, target)
 }
 
 // TagList implements the optional TagLister interface and returns a snapshot

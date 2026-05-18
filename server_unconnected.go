@@ -97,6 +97,14 @@ func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
 			return h.unconnectedServiceRead(item)
 		case CIPService_GetAttributeSingle:
 			return h.unconnectedServiceGetAttrSingle(item)
+		case CIPService_SetAttributeSingle:
+			// Reached via FactoryTalk View's CIP Object write path: the
+			// request is wrapped in UnconnectedSend (0x52) instead of going
+			// straight as a direct UCMM SetAttributeSingle. Without this
+			// case the wrapped write fell through to the default branch and
+			// FT View saw "Service not supported", which surfaced in its
+			// Diagnostics List as "Problem writing value ... to item ...".
+			return h.unconnectedServiceSetAttrSingle(item)
 		case CIPService_GetAttributeAll:
 			return h.unconnectedGetAttributeAll(item)
 		default:
@@ -607,6 +615,25 @@ func (h *serverTCPHandler) unconnectedServiceRead(item CIPItem) error {
 	}
 	h.server.Logger.Debug("Read", "tag", tag, "path", path, "qty", qty, "results", result)
 	typ, _ := GoVarToCIPType(result)
+
+	// STRING values need the Logix STRING UDT wire format (type segment
+	// `0xA0 0x02 0x0FCE` + LEN + DATA[82] + alignment padding) instead of
+	// raw bytes, otherwise external clients (pylogix, FT Linx, MSG read on
+	// a real Logix controller) can't decode the reply. Mirror the special
+	// branch the connected read path already had, so a single STRING tag
+	// and a STRING element of an array both deserialize cleanly.
+	if typ == CIPTypeSTRING {
+		if s, ok := result.(string); ok {
+			return h.sendUnconnectedRRDataReply(CIPService_Read, cipStringPacker(s))
+		}
+		if ss, ok := result.([]string); ok {
+			payloads := make([]any, 0, len(ss))
+			for _, s := range ss {
+				payloads = append(payloads, cipStringPacker(s))
+			}
+			return h.sendUnconnectedRRDataReply(CIPService_Read, payloads...)
+		}
+	}
 
 	return h.sendUnconnectedRRDataReply(CIPService_Read, typ, byte(0), result)
 
