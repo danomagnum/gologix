@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Mon Jan 05 20:23:33 2026" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="gologix_tests" TargetType="Program" ContainsContext="true" Owner="Windows User" ExportDate="Mon May 18 22:40:09 2026" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="L27">
 <DataTypes Use="Context">
 <DataType Name="BigString" Family="StringFamily" Class="User">
@@ -416,7 +416,7 @@
 </Tag>
 <Tag Name="CounterBytes" TagType="Base" DataType="SINT" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,0,0,0,0,10,0,0,-128,12,0,0,-128,-92,114,57,-15,-4,28,0,0]]]>
+<![CDATA[[0,0,0,8,-89,-106,8,0,120,2,0,0,0,0,0,0,10,0,0,-128,12,0,0,-128,-92,114,57,-15,-12,39,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="32" Radix="Decimal">
@@ -448,8 +448,8 @@
 <Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="-4"/>
-<Element Index="[29]" Value="28"/>
+<Element Index="[28]" Value="-12"/>
+<Element Index="[29]" Value="39"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 </Array>
@@ -1569,7 +1569,7 @@
 </Tag>
 <Tag Name="TestTimer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[3214320,2345,0]]]>
+<![CDATA[[414830,2345,0]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -1619,14 +1619,14 @@
 </Tag>
 <Tag Name="TimerBytes" TagType="Base" DataType="SINT" Dimensions="64" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data Format="L5K">
-<![CDATA[[-16,11,49,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-76,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		,0,0,0,0,0]]]>
+<![CDATA[[110,84,6,0,41,9,0,0,0,0,0,0,0,0,0,0,10,0,0,-128,8,0,0,-128,-92,114,57,-15,-84,40,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		,0,0,0,0]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="SINT" Dimensions="64" Radix="Decimal">
-<Element Index="[0]" Value="-16"/>
-<Element Index="[1]" Value="11"/>
-<Element Index="[2]" Value="49"/>
+<Element Index="[0]" Value="110"/>
+<Element Index="[1]" Value="84"/>
+<Element Index="[2]" Value="6"/>
 <Element Index="[3]" Value="0"/>
 <Element Index="[4]" Value="41"/>
 <Element Index="[5]" Value="9"/>
@@ -1652,8 +1652,8 @@
 <Element Index="[25]" Value="114"/>
 <Element Index="[26]" Value="57"/>
 <Element Index="[27]" Value="-15"/>
-<Element Index="[28]" Value="-76"/>
-<Element Index="[29]" Value="29"/>
+<Element Index="[28]" Value="-84"/>
+<Element Index="[29]" Value="40"/>
 <Element Index="[30]" Value="0"/>
 <Element Index="[31]" Value="0"/>
 <Element Index="[32]" Value="0"/>
@@ -1829,6 +1829,105 @@
 <Element Index="[7]" Value="0"/>
 <Element Index="[8]" Value="0"/>
 <Element Index="[9]" Value="0"/>
+</Array>
+</Data>
+</Tag>
+<Tag Name="WriteStrings" TagType="Base" DataType="STRING" Dimensions="10" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[[50,'W2Cj892i23mffvcuKEGoxbAy0Au3FlHNsn3ylFjTr8wPRV59Fn$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[3,'7wz$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[78,'7YKxNTYp6sgISeUlIr7Yq0fTM2uDxcTDJyCOZKH4X4oXBob17ZvUVYjQBFhntmjcxkJ1JgT0W3jgWd$00$00$00$00'
+		],[9,'ak1gWCNb4$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[52,'tUsWHucprpfUkd0AhL0fXoXfh8JnHikvZQqm0PwPCArBOfKHpPBl$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[74,'1yrMrlmthniZ2vy0qnXOreGVWXP82FIQKupmZGtOpXRDCbxalu2Bo6VUp3eabfyWOSfGP8G4RI$00$00$00$00$00$00$00$00'
+		],[6,'502oi3$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[44,'468sza0SWbYnUg4JfYWvk9jKxpCmQM1s9xFHTSEtBHrl$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[6,'E65Us6$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		],[13,'qGqgaTzhWNg0g$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'
+		]]]]>
+</Data>
+<Data Format="Decorated">
+<Array DataType="STRING" Dimensions="10">
+<Element Index="[0]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="50"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['W2Cj892i23mffvcuKEGoxbAy0Au3FlHNsn3ylFjTr8wPRV59Fn']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="3"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['7wz']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="78"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['7YKxNTYp6sgISeUlIr7Yq0fTM2uDxcTDJyCOZKH4X4oXBob17ZvUVYjQBFhntmjcxkJ1JgT0W3jgWd']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[3]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="9"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['ak1gWCNb4']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[4]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="52"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['tUsWHucprpfUkd0AhL0fXoXfh8JnHikvZQqm0PwPCArBOfKHpPBl']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[5]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="74"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['1yrMrlmthniZ2vy0qnXOreGVWXP82FIQKupmZGtOpXRDCbxalu2Bo6VUp3eabfyWOSfGP8G4RI']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[6]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="6"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['502oi3']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[7]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="44"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['468sza0SWbYnUg4JfYWvk9jKxpCmQM1s9xFHTSEtBHrl']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[8]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="6"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['E65Us6']]>
+</DataValueMember>
+</Structure>
+</Element>
+<Element Index="[9]">
+<Structure DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="13"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA['qGqgaTzhWNg0g']]>
+</DataValueMember>
+</Structure>
+</Element>
 </Array>
 </Data>
 </Tag>
