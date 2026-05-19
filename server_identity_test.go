@@ -14,24 +14,26 @@ func TestParseClassInstancePath(t *testing.T) {
 	cases := []struct {
 		name     string
 		in       []byte
-		class    uint16
-		instance uint16
+		class    CIPClass
+		instance CIPInstance
 		ok       bool
 	}{
 		{name: "Identity Class 1 Instance 1", in: []byte{0x20, 0x01, 0x24, 0x01}, class: 1, instance: 1, ok: true},
 		{name: "MessageRouter Class 2 Instance 1", in: []byte{0x20, 0x02, 0x24, 0x01}, class: 2, instance: 1, ok: true},
 		{name: "wrong length", in: []byte{0x20, 0x01}, ok: false},
-		{name: "16-bit class segment", in: []byte{0x21, 0x00, 0x01, 0x00, 0x24, 0x01}, ok: false},
+		{name: "16-bit class segment", in: []byte{0x21, 0x00, 0x01, 0x00, 0x24, 0x01}, class: 1, instance: 1, ok: true},
+		{name: "16-bit class segment and instance", in: []byte{0x21, 0x00, 0x01, 0x00, 0x25, 0x00, 0x01, 0x00}, class: 1, instance: 1, ok: true},
 		{name: "missing class header", in: []byte{0x00, 0x01, 0x24, 0x01}, ok: false},
 		{name: "missing instance header", in: []byte{0x20, 0x01, 0x00, 0x01}, ok: false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			class, instance, ok := parseClassInstancePath(tc.in)
-			if ok != tc.ok {
-				t.Fatalf("ok=%v; want %v", ok, tc.ok)
+			class, instance, err := parseClassInstancePath(bytes.NewBuffer(tc.in))
+			wasok := err == nil
+			if wasok != tc.ok {
+				t.Fatalf("ok=%v; want %v got %v", !wasok, tc.ok, err)
 			}
-			if !ok {
+			if !tc.ok {
 				return
 			}
 			if class != tc.class || instance != tc.instance {

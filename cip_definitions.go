@@ -172,6 +172,10 @@ func (p *CIPInstance) Read(r io.Reader) error {
 		*p = CIPInstance(val)
 		return nil
 	case cipInstance_16bit:
+		_, err = io.CopyN(io.Discard, r, 1) // skip the padding byte
+		if err != nil {
+			return fmt.Errorf("error skipping instance padding byte: %w", err)
+		}
 		var val uint16
 		err = binary.Read(r, binary.LittleEndian, &val)
 		if err != nil {
@@ -180,6 +184,10 @@ func (p *CIPInstance) Read(r io.Reader) error {
 		*p = CIPInstance(val)
 		return nil
 	case cipInstance_32bit:
+		_, err = io.CopyN(io.Discard, r, 1) // skip the padding byte
+		if err != nil {
+			return fmt.Errorf("error skipping instance padding byte: %w", err)
+		}
 		err = binary.Read(r, binary.LittleEndian, p)
 		if err != nil {
 			return fmt.Errorf("error reading 32 bit instance: %w", err)
@@ -247,6 +255,10 @@ func (p *CIPClass) Read(r io.Reader) error {
 		*p = CIPClass(val)
 		return nil
 	case cipClass_16bit:
+		_, err = io.CopyN(io.Discard, r, 1) // skip the padding byte
+		if err != nil {
+			return fmt.Errorf("error skipping class padding byte: %w", err)
+		}
 		err = binary.Read(r, binary.LittleEndian, p)
 		if err != nil {
 			return fmt.Errorf("error reading 16 bit class: %w", err)

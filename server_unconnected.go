@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
@@ -129,8 +130,8 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 		return fmt.Errorf("get_attributes_all: read path: %w", err)
 	}
 
-	class, instance, ok := parseClassInstancePath(pathBytes)
-	if !ok {
+	class, instance, err := parseClassInstancePath(bytes.NewBuffer(pathBytes))
+	if err != nil {
 		// The path is malformed (or uses segment types we don't decode).
 		// Treat it as a path error rather than a silent drop.
 		h.server.Logger.Warn("get_attributes_all: malformed path", "bytes", pathBytes)
@@ -138,7 +139,7 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 	}
 
 	switch class {
-	case uint16(CipObject_Identity):
+	case CipObject_Identity:
 		if instance != 1 {
 			return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
 		}
@@ -191,18 +192,20 @@ func buildProgramObjectGetAttributesAllResponse(attrs map[CIPAttribute]any) ([]b
 	return buf.Bytes(), nil
 }
 
-// parseClassInstancePath decodes a 4-byte EPATH carrying an 8-bit Class
-// followed by an 8-bit Instance segment (`0x20 <class> 0x24 <instance>` —
-// the canonical Identity Object probe shape). Anything else falls outside
-// the scope of this minimal implementation and is rejected by the caller.
-func parseClassInstancePath(p []byte) (class, instance uint16, ok bool) {
-	if len(p) != 4 {
-		return 0, 0, false
+// parseClassInstancePath decodes an EPATH carrying a Class followed by an
+// Instance segment
+func parseClassInstancePath(p io.Reader) (CIPClass, CIPInstance, error) {
+	var cls CIPClass
+	err := cls.Read(p)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read class: %w", err)
 	}
-	if p[0] != 0x20 || p[2] != 0x24 {
-		return 0, 0, false
+	var inst CIPInstance
+	err = inst.Read(p)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read instance: %w", err)
 	}
-	return uint16(p[1]), uint16(p[3]), true
+	return cls, inst, nil
 }
 
 // buildIdentityGetAttributesAllResponse renders the payload portion of a
