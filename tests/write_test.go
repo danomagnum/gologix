@@ -1,6 +1,7 @@
 package gologix_tests
 
 import (
+	"fmt"
 	"log"
 	"testing"
 
@@ -376,6 +377,75 @@ func TestWriteUdt(t *testing.T) {
 				t.Errorf("success writing wrong udt: %v", err)
 			}
 
+		})
+	}
+}
+
+// bug: Write/WriteMulti/WriteMap with a []string field fail with
+//   binary.Write: some values are not fixed-sized in type []string
+// because items.Serialize had no case for []string and fell through
+// to binary.Write, which rejects slices of strings.
+// This test writes a []string then reads each element back via the
+// single-tag Read path (which already works) to verify the wire format.
+// The original ReadStrings values are restored element-by-element via
+// the scalar Write path so a regression in the new code can never
+// corrupt the L5X test data.
+func TestWriteStringArray(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			const tag = "program:gologix_tests.ReadStrings"
+
+			// Step 1: backup current values via the working single-tag Read.
+			backup := make([]string, 10)
+			if err := client.Read(tag, backup); err != nil {
+				t.Fatalf("backup read failed: %v", err)
+			}
+
+			// Deferred cleanup (runs after Step 3 below): always restore
+			// originals one-by-one via the scalar write path, which is
+			// independent of the code under test so a regression in the
+			// new code cannot permanently corrupt the L5X dataset.
+			defer func() {
+				for i, v := range backup {
+					idxTag := fmt.Sprintf("%s[%d]", tag, i)
+					if werr := client.Write(idxTag, v); werr != nil {
+						t.Errorf("restore %s failed: %v", idxTag, werr)
+					}
+				}
+			}()
+
+			// Step 2: write a []string with mixed lengths so any per-element
+			// alignment bug surfaces immediately on the read-back.
+			want := []string{"x1", "yy2", "zzz3", "wwww4", "v5", "u66", "t777", "s8888", "r9", "q00"}
+			if err := client.Write(tag, want); err != nil {
+				t.Fatalf("Write([]string) failed: %v", err)
+			}
+
+			// Step 3: read back via the single-tag Read path (already
+			// supports arrays of strings) and verify each element matches.
+			got := make([]string, 10)
+			if err := client.Read(tag, got); err != nil {
+				t.Fatalf("read-back failed: %v", err)
+			}
+			for i := range want {
+				if got[i] != want[i] {
+					t.Errorf("element %d: want %q got %q", i, want[i], got[i])
+				}
+			}
 		})
 	}
 }

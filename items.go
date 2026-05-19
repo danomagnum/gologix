@@ -231,6 +231,41 @@ func (item *CIPItem) Serialize(strs ...any) error {
 				return fmt.Errorf("problem writing string payload: %v", err)
 			}
 
+		case []string:
+			// Each STRING element on the wire is a fixed 88-byte slot:
+			// 4-byte LEN (uint32) + 84-byte data buffer, the same layout
+			// the controller emits when reading a STRING array.
+			//
+			// Empty or nil slice contributes zero bytes for this argument.
+			// continue keeps the outer variadic loop processing any
+			// remaining arguments instead of returning early.
+			if len(x) == 0 {
+				continue
+			}
+			for _, s := range x {
+				// Clamp the LEN header to the 84-byte payload so the
+				// receiver never sees a header claiming more bytes than
+				// the slot actually carries. copy() below truncates the
+				// payload to 84 bytes; without clamping the header a
+				// >84-byte input would desync the receiver. This is
+				// stricter than the single-string case above, which
+				// writes the raw len(s) into the LEN header even when
+				// the payload gets truncated — out of scope to change
+				// here.
+				strLen := uint32(len(s))
+				if strLen > 84 {
+					strLen = 84
+				}
+				if err := binary.Write(item, binary.LittleEndian, strLen); err != nil {
+					return fmt.Errorf("problem writing string header: %v", err)
+				}
+				b := make([]byte, 84)
+				copy(b, s)
+				if err := binary.Write(item, binary.LittleEndian, b); err != nil {
+					return fmt.Errorf("problem writing string payload: %v", err)
+				}
+			}
+
 		case Serializable:
 			err := binary.Write(item, binary.LittleEndian, x.Bytes())
 			if err != nil {
