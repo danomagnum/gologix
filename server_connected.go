@@ -19,29 +19,11 @@ func (h *serverTCPHandler) cipConnectedWrite(items []CIPItem) error {
 		return fmt.Errorf("problem deserializing tag bytes %w", err)
 	}
 
-	var typ CIPType
-	err = item.DeSerialize(&typ)
+	results, err := parseWriteValues(&item)
 	if err != nil {
-		return fmt.Errorf("problem deserializing cip type %w", err)
+		return fmt.Errorf("problem parsing write values for tag %s: %w", tag, err)
 	}
-	var reserved byte
-	err = item.DeSerialize(&reserved)
-	if err != nil {
-		return fmt.Errorf("problem deserializing reserved byte %w", err)
-	}
-	var qty uint16
-	err = item.DeSerialize(&qty)
-	if err != nil {
-		return fmt.Errorf("problem deserializing element count %w", err)
-	}
-
-	results := make([]any, qty)
-	for i := 0; i < int(qty); i++ {
-		results[i], err = typ.readValue(&item)
-		if err != nil {
-			return fmt.Errorf("problem reading element %d: %w", i, err)
-		}
-	}
+	qty := uint16(len(results))
 	h.server.Logger.Debug("write", "tag", tag, "value", results)
 
 	if items[0].Header.ID != cipItem_ConnectionAddress {
@@ -268,20 +250,25 @@ func (h *serverTCPHandler) connectedMulti(items []CIPItem) error {
 		response[2+i] = results[i]
 	}
 
-	return h.sendConnectedReply(CIPService_MultipleService, seq, connection.OT, response...)
+	return h.sendConnectedReply(CIPService_MultipleService, seq, connection.TO, response...)
 }
 
-func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
+// connectedRead handles both CIPService_Read (0x4C) and CIPService_FragRead
+// (0x52). Callers MUST pass the request service so reply and error frames
+// echo the matching response code (0xCC for Read, 0xD2 for FragRead) — some
+// CIP clients (pylogix on older firmware paths) tolerate a mismatched code,
+// but Logix MSG instructions and stricter SCADA stacks reject it.
+func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) error {
 	items[0].Reset()
 	var connID uint32
 	err := items[0].DeSerialize(&connID)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, 0, 0, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, 0, 0, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("couldn't get connection ID from item 0: %w / %v", err, err2)
 	}
 	connection, err := h.server.ConnMgr.GetByOT(connID)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, 0, 0, CIPStatus_ConnectionLost, 0)
+		err2 := h.sendConnectedError(reqSvc, 0, 0, CIPStatus_ConnectionLost, 0)
 		return fmt.Errorf("couldn't get connection with ID %v: %w /%v", connID, err, err2)
 	}
 
@@ -291,24 +278,24 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	var seq uint16
 	err = item.DeSerialize(&seq)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting sequence ID: %w / %v", err, err2)
 	}
 	var pathlen uint16
 	err = item.DeSerialize(&pathlen)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting path len: %w / %v", err, err2)
 	}
 	tag, err := getTagFromPath(&item)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("couldn't parse path: %w / %v", err, err2)
 	}
 	var qty uint16
 	err = item.DeSerialize(&qty)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidParameter, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidParameter, 0)
 		return fmt.Errorf("error getting write qty: %w / %v", err, err2)
 	}
 
@@ -316,13 +303,13 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 
 	provider, err := h.server.Router.Resolve(path)
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_PathDestinationUnknown, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_PathDestinationUnknown, 0)
 		return fmt.Errorf("problem finding tag provider for %v. %w: %v", path, err, err2)
 	}
 	p := provider
 	result, err := p.TagRead(tag, int16(qty))
 	if err != nil {
-		err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidMemberID, 0)
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidMemberID, 0)
 		return fmt.Errorf("problem getting data from provider. %w / %v", err, err2)
 	}
 	typ, _ := GoVarToCIPType(result)
@@ -330,30 +317,147 @@ func (h *serverTCPHandler) connectedRead(items []CIPItem) error {
 	if typ == CIPTypeSTRING {
 		res_str, ok := result.(string)
 		if !ok {
-			err2 := h.sendConnectedError(CIPService_FragRead, seq, connection.OT, CIPStatus_InvalidAttributeValue, 0)
+			err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidAttributeValue, 0)
 			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 		}
-		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, cipStringPacker(res_str))
+		return h.sendConnectedReply(reqSvc, seq, connection.TO, cipStringPacker(res_str))
 	} else {
-		return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, typ, byte(0), result)
+		return h.sendConnectedReply(reqSvc, seq, connection.TO, typ, byte(0), result)
 	}
 }
+
+// cipStringStructCRC is the StructTypeCRC the Logix STRING UDT serializes
+// with on the wire (see lgxtypes.STRING.TypeAbbr). External CIP clients
+// (pylogix, Kepware, Ignition, MSG instructions) tag both reads and
+// writes of native STRINGs with this value, prefixed by the 0xA0
+// CIPTypeStruct byte.
+const cipStringStructCRC uint16 = 0x0FCE
+
+// cipStringDataLen is the fixed DATA buffer width of a Logix STRING UDT
+// (SINT[82]). The wire payload always carries 82 bytes regardless of the
+// real string length, padded with zeros past LEN. External clients treat
+// anything shorter as malformed and silently fail to extract the value.
+const cipStringDataLen = 82
+
+// cipStringStructPad is the DINT-alignment padding that follows DATA inside
+// the Logix STRING UDT. Read Tag Service responses from a ControlLogix or
+// CompactLogix include these 2 bytes so the total Tag Data matches the
+// in-memory structure size (88 bytes: 4 LEN + 82 DATA + 2 pad). Responses
+// missing this padding are rejected wholesale by the controller with
+// CIP extended status 0x2107 ("data type to be transferred has a length
+// not matching the length defined in the host PLC").
+const cipStringStructPad = 2
+
+// cipStringTagDataLen is the in-memory size of a Logix STRING as the
+// controller reports it via the data type template — equal to the value
+// of structure_size in the controller's data-type registry.
+const cipStringTagDataLen = 4 + cipStringDataLen + cipStringStructPad
+
+// cipStringSlotLen is the full per-element wire footprint of a STRING:
+// 4-byte type segment (0xA0 0x02 + StructTypeCRC LE) + 88-byte Tag Data
+// = 92 bytes.
+const cipStringSlotLen = 4 + cipStringTagDataLen
 
 type cipStringPacker string
 
 func (c cipStringPacker) Len() int {
-	return 8 + len(c)
+	return cipStringSlotLen
 }
 func (c cipStringPacker) Bytes() []byte {
-	l := len(c)
-	b := make([]byte, 8+l)
+	b := make([]byte, cipStringSlotLen)
 	b[0] = 0xA0
 	b[1] = 0x02
-	b[2] = 0xCE
-	b[3] = 0x0F
+	binary.LittleEndian.PutUint16(b[2:], cipStringStructCRC)
+	// LEN reflects the real string length, clamped to the 82-byte payload
+	// so the header never claims more bytes than the slot can carry.
+	l := len(c)
+	if l > cipStringDataLen {
+		l = cipStringDataLen
+	}
 	binary.LittleEndian.PutUint32(b[4:], uint32(l))
-	copy(b[8:], c)
+	// Copy at most cipStringDataLen bytes into the DATA region. The 2
+	// alignment-padding bytes that follow DATA stay zero (their fixed
+	// position is enforced by TestCipStringPackerShape).
+	copy(b[8:8+cipStringDataLen], c)
 	return b
+}
+
+// parseWriteValues decodes the payload portion of a CIP write request after
+// the path has been consumed. The wire is laid out as:
+//
+//	[typ: byte] [type_info_length_bytes: byte]
+//	[type_info: type_info_length_bytes bytes]      -- only for struct types
+//	[qty: uint16]
+//	for each element:
+//	    atomic: typ.readValue
+//	    STRING struct (CRC 0x0FCE): [LEN: uint32] [DATA: 82 bytes]
+//
+// For atomic writes type_info_length_bytes is 0 — the field doubles as the
+// high byte of the uint16 DataType the gologix client serializes — so the
+// parser falls back to the historic readValue loop. For structured writes
+// (typ == CIPTypeStruct) the segment carries 2 bytes of StructTypeCRC; only
+// the Logix STRING UDT (0x0FCE) is supported here. Other UDTs return an
+// error rather than the previous silent success or readValue panic.
+//
+// Both cipConnectedWrite and unconnectedServiceWrite go through this helper
+// so the wire format stays in one place.
+func parseWriteValues(item *CIPItem) ([]any, error) {
+	var typ CIPType
+	if err := item.DeSerialize(&typ); err != nil {
+		return nil, fmt.Errorf("error reading write type: %w", err)
+	}
+	var typeInfoLen byte
+	if err := item.DeSerialize(&typeInfoLen); err != nil {
+		return nil, fmt.Errorf("error reading type-info length: %w", err)
+	}
+
+	// Read whatever type info bytes the segment declares before qty.
+	var structCRC uint16
+	if typeInfoLen > 0 {
+		typeInfo := make([]byte, int(typeInfoLen))
+		if err := item.DeSerialize(&typeInfo); err != nil {
+			return nil, fmt.Errorf("error reading %d bytes of type info: %w", len(typeInfo), err)
+		}
+		if typ == CIPTypeStruct && len(typeInfo) >= 2 {
+			structCRC = binary.LittleEndian.Uint16(typeInfo[0:2])
+		}
+	}
+
+	var qty uint16
+	if err := item.DeSerialize(&qty); err != nil {
+		return nil, fmt.Errorf("error reading element count: %w", err)
+	}
+
+	results := make([]any, qty)
+	if typ == CIPTypeStruct {
+		if structCRC != cipStringStructCRC {
+			return nil, fmt.Errorf("server only supports STRING struct writes (CRC 0x%04X); got CRC 0x%04X", cipStringStructCRC, structCRC)
+		}
+		for i := 0; i < int(qty); i++ {
+			var slen uint32
+			if err := item.DeSerialize(&slen); err != nil {
+				return nil, fmt.Errorf("error reading STRING LEN for element %d: %w", i, err)
+			}
+			data := make([]byte, cipStringDataLen)
+			if err := item.DeSerialize(&data); err != nil {
+				return nil, fmt.Errorf("error reading STRING DATA for element %d: %w", i, err)
+			}
+			if slen > cipStringDataLen {
+				slen = cipStringDataLen
+			}
+			results[i] = string(data[:slen])
+		}
+		return results, nil
+	}
+
+	for i := 0; i < int(qty); i++ {
+		val, err := typ.readValue(item)
+		if err != nil {
+			return nil, fmt.Errorf("error reading element %d: %w", i, err)
+		}
+		results[i] = val
+	}
+	return results, nil
 }
 
 func (h *serverTCPHandler) sendConnectedReply(s CIPService, seq uint16, connID uint32, payload ...any) error {
@@ -466,6 +570,6 @@ func (h *serverTCPHandler) getAttrSingle(connection *serverConnection, item CIPI
 		return fmt.Errorf("bad attribute %d", attr)
 	}
 
-	return h.sendConnectedReply(CIPService_FragRead, seq, connection.OT, result)
+	return h.sendConnectedReply(CIPService_FragRead, seq, connection.TO, result)
 
 }

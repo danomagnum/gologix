@@ -86,32 +86,11 @@ func (h *serverTCPHandler) unconnectedServiceWrite(item CIPItem) error {
 	if err != nil {
 		return fmt.Errorf("couldn't parse path. %w", err)
 	}
-	var typ CIPType
-	err = item.DeSerialize(&typ)
+	results, err := parseWriteValues(&item)
 	if err != nil {
-		return fmt.Errorf("error getting write type. %w", err)
+		return fmt.Errorf("problem parsing write values for tag %s: %w", tag, err)
 	}
-	var pad byte
-	err = item.DeSerialize(&pad)
-	if err != nil {
-		return fmt.Errorf("error getting pad. %w", err)
-	}
-	var qty uint16
-	err = item.DeSerialize(&qty)
-	if err != nil {
-		return fmt.Errorf("error getting write qty. %w", err)
-	}
-	// TODO: read structs gracefully.
-	if typ == CIPTypeStruct {
-		return h.sendUnconnectedRRDataReply(CIPService_Write)
-	}
-	results := make([]any, qty)
-	for i := 0; i < int(qty); i++ {
-		results[i], err = typ.readValue(&item)
-		if err != nil {
-			return fmt.Errorf("problem reading element %d: %w", i, err)
-		}
-	}
+	qty := uint16(len(results))
 	var path_size uint16
 	err = item.DeSerialize(&path_size)
 	if err != nil {
