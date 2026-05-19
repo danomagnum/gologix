@@ -61,6 +61,10 @@ func (p *CIPAttribute) Read(r io.Reader) error {
 		*p = CIPAttribute(val)
 		return nil
 	case cipAttribute_16bit:
+		_, err = io.CopyN(io.Discard, r, 1) // skip the padding byte
+		if err != nil {
+			return fmt.Errorf("error skipping attribute padding byte: %w", err)
+		}
 		err := binary.Read(r, binary.LittleEndian, p)
 		if err != nil {
 			return fmt.Errorf("error reading 16 bit attribute: %w", err)
