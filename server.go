@@ -381,14 +381,14 @@ func (h *serverTCPHandler) connectedGetAttributeAll(items []CIPItem) error {
 		return fmt.Errorf("connected GAA: read path: %w", err)
 	}
 
-	class, instance, ok := parseClassInstancePath(pathBytes)
-	if !ok {
-		h.server.Logger.Warn("connected GAA: malformed path", "bytes", pathBytes)
+	class, instance, err := parseClassInstancePath(bytes.NewBuffer(pathBytes))
+	if err != nil {
+		h.server.Logger.Warn("connected GAA: malformed path", "bytes", pathBytes, "error", err)
 		return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathSegmentError)
 	}
 
 	switch class {
-	case uint16(CipObject_Identity):
+	case CipObject_Identity:
 		if instance != 1 {
 			return h.sendUnitDataErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
 		}
