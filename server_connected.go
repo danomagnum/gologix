@@ -315,12 +315,26 @@ func (h *serverTCPHandler) connectedRead(reqSvc CIPService, items []CIPItem) err
 	typ, _ := GoVarToCIPType(result)
 
 	if typ == CIPTypeSTRING {
-		res_str, ok := result.(string)
-		if !ok {
-			err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidAttributeValue, 0)
-			return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
+		// Single STRING — the common case for atomic tag reads.
+		if res_str, ok := result.(string); ok {
+			return h.sendConnectedReply(reqSvc, seq, connection.TO, cipStringPacker(res_str))
 		}
-		return h.sendConnectedReply(reqSvc, seq, connection.TO, cipStringPacker(res_str))
+		// STRING array — emit one cipStringPacker block per element, back
+		// to back. The L24ER MSG and pylogix both unpack the wire as N×90
+		// contiguous STRING slots when the request asks for multiple
+		// elements of a STRING tag. Without this branch, full-array reads
+		// of `strarr` failed with "Invalid Attribute" because the generic
+		// fallback below tried binary.Write on a Go `[]string`, which is
+		// not fixed-size and explodes inside the serializer.
+		if res_strs, ok := result.([]string); ok {
+			payloads := make([]any, 0, len(res_strs))
+			for _, s := range res_strs {
+				payloads = append(payloads, cipStringPacker(s))
+			}
+			return h.sendConnectedReply(reqSvc, seq, connection.TO, payloads...)
+		}
+		err2 := h.sendConnectedError(reqSvc, seq, connection.TO, CIPStatus_InvalidAttributeValue, 0)
+		return fmt.Errorf("was expecting a string but didn't get one: %w", err2)
 	} else {
 		return h.sendConnectedReply(reqSvc, seq, connection.TO, typ, byte(0), result)
 	}
