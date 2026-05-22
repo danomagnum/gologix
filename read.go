@@ -456,6 +456,30 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		return 0, fmt.Errorf("problem reading item 2's header. %w", err)
 	}
 
+	// hdr2.Status is [Reserved, GeneralStatus, AdditionalStatusSize].
+	// 0x06 (PartialTransfer) means the response only carries part of the array;
+	// follow up with FragRead requests until the controller returns 0x00. Any
+	// other non-zero general status is a hard error to surface immediately.
+	if hdr2.Status[1] == byte(CIPStatus_PartialTransfer) {
+		// Struct tag-data carries a 2-byte StructHandle that the controller
+		// repeats in every FragRead response; deduplicating that across
+		// fragments needs wire evidence we do not have yet, so refuse the
+		// operation explicitly instead of returning garbled bytes. Atomic
+		// types splice cleanly because their Tag Data has no per-fragment
+		// prefix.
+		if hdr2.Type == CIPTypeStruct {
+			return nil, fmt.Errorf("partial transfer read of %s: structured tag types are not yet supported in fragmented reads", tag)
+		}
+		merged, err := client.readFragmented(ioi, elements, items[1].Data[items[1].Pos:])
+		if err != nil {
+			return nil, fmt.Errorf("partial transfer read of %s: %w", tag, err)
+		}
+		items[1].Data = merged
+		items[1].Pos = 0
+	} else if hdr2.Status[1] != 0 {
+		return nil, fmt.Errorf("read of %s returned status %v", tag, CIPStatus(hdr2.Status[1]))
+	}
+
 	if hdr2.Type == CIPTypeStruct {
 		if datatype == CIPTypeSTRING {
 			if elements == 1 {
@@ -1130,4 +1154,75 @@ func (client *Client) ReadMap(m map[string]any) error {
 	}
 
 	return nil
+}
+
+// readFragmented completes a partial-transfer read by emitting FragRead
+// (CIPService_FragRead, 0x52) requests with a cumulative byte offset until the
+// controller returns CIPStatus_OK. initialData is the data portion that
+// arrived with the first (non-FragRead) response — the returned slice is the
+// full concatenation of every fragment's data section, ready to feed into the
+// existing per-type parsing path.
+func (client *Client) readFragmented(ioi *tagIOI, elements uint16, initialData []byte) ([]byte, error) {
+	accumulated := bytes.NewBuffer(append([]byte(nil), initialData...))
+	for {
+		offset := uint32(accumulated.Len())
+		fragData, status, err := client.sendFragReadRequest(ioi, elements, offset)
+		if err != nil {
+			return nil, err
+		}
+		accumulated.Write(fragData)
+		if status == 0 {
+			return accumulated.Bytes(), nil
+		}
+		if status != byte(CIPStatus_PartialTransfer) {
+			return nil, fmt.Errorf("FragRead at offset %d returned status %v", offset, CIPStatus(status))
+		}
+	}
+}
+
+// sendFragReadRequest emits a single FragRead request for the given tag IOI,
+// requested element count, and byte offset. It returns the data portion of the
+// response (everything after the type+unknown header), the general status byte,
+// and any transport-level error.
+func (client *Client) sendFragReadRequest(ioi *tagIOI, elements uint16, offset uint32) ([]byte, byte, error) {
+	reqItems := make([]CIPItem, 2)
+	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
+
+	readMsg := msgCIPConnectedServiceReq{
+		SequenceCount: uint16(sequencer()),
+		Service:       CIPService_FragRead,
+		PathLength:    byte(len(ioi.Bytes()) / 2),
+	}
+	reqItems[1] = newItem(cipItem_ConnectedData, readMsg)
+	if err := reqItems[1].Serialize(ioi, elements, offset); err != nil {
+		return nil, 0, fmt.Errorf("problem serializing FragRead path: %w", err)
+	}
+
+	itemData, err := serializeItems(reqItems)
+	if err != nil {
+		return nil, 0, fmt.Errorf("problem serializing FragRead items: %w", err)
+	}
+
+	_, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	if err != nil {
+		return nil, 0, fmt.Errorf("transport: %w", err)
+	}
+
+	var resultHdr msgCIPResultHeader
+	if err := binary.Read(data, binary.LittleEndian, &resultHdr); err != nil {
+		return nil, 0, fmt.Errorf("FragRead result header: %w", err)
+	}
+	items, err := readItems(data)
+	if err != nil {
+		return nil, 0, fmt.Errorf("FragRead items: %w", err)
+	}
+	if len(items) != 2 {
+		return nil, 0, fmt.Errorf("FragRead expected 2 items, got %d", len(items))
+	}
+
+	var hdr2 msgCIPReadResultData
+	if err := items[1].DeSerialize(&hdr2); err != nil {
+		return nil, 0, fmt.Errorf("FragRead inner header: %w", err)
+	}
+	return items[1].Data[items[1].Pos:], hdr2.Status[1], nil
 }

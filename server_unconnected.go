@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sort"
+	"io"
 )
 
 func (h *serverTCPHandler) unconnectedData(item CIPItem) error {
@@ -147,8 +148,8 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 		return fmt.Errorf("get_attributes_all: read path: %w", err)
 	}
 
-	class, instance, ok := parseClassInstancePath(pathBytes)
-	if !ok {
+	class, instance, err := parseClassInstancePath(bytes.NewBuffer(pathBytes))
+	if err != nil {
 		// The path is malformed (or uses segment types we don't decode).
 		// Treat it as a path error rather than a silent drop.
 		h.server.Logger.Warn("get_attributes_all: malformed path", "bytes", pathBytes)
@@ -156,7 +157,7 @@ func (h *serverTCPHandler) unconnectedGetAttributeAll(item CIPItem) error {
 	}
 
 	switch class {
-	case uint16(CipObject_Identity):
+	case CipObject_Identity:
 		if instance != 1 {
 			return h.sendUnconnectedErrorReply(CIPService_GetAttributeAll, CIPStatus_PathDestinationUnknown)
 		}
@@ -244,33 +245,20 @@ func buildProgramObjectGetAttributesAllResponse(attrs map[CIPAttribute]any) ([]b
 	return buf.Bytes(), nil
 }
 
-// parseClassInstancePath decodes the CIP EPATH segments commonly used to
-// address a Class + Instance: an 8-bit Logical Class segment followed by
-// either an 8-bit Logical Instance segment (the canonical Identity probe
-// `0x20 <class> 0x24 <instance>` = 4 bytes) or a 16-bit Logical Instance
-// segment (`0x20 <class> 0x25 0x00 <instance_lo> <instance_hi>` = 6
-// bytes) that pycomm3.LogixDriver and the Symbol Object iterator both
-// emit. Returning ok=false on anything else lets the caller respond
-// with a formal PathSegmentError instead of silently dropping the
-// request.
-//
-// Reference: ODVA Vol 1 §C-1.4.2 (logical segments).
-func parseClassInstancePath(p []byte) (class, instance uint16, ok bool) {
-	switch len(p) {
-	case 4:
-		if p[0] != 0x20 || p[2] != 0x24 {
-			return 0, 0, false
-		}
-		return uint16(p[1]), uint16(p[3]), true
-	case 6:
-		// 8-bit class + 16-bit instance: `20 <class> 25 00 <inst_lo> <inst_hi>`
-		if p[0] != 0x20 || p[2] != 0x25 || p[3] != 0x00 {
-			return 0, 0, false
-		}
-		instance = uint16(p[4]) | uint16(p[5])<<8
-		return uint16(p[1]), instance, true
+// parseClassInstancePath decodes an EPATH carrying a Class followed by an
+// Instance segment
+func parseClassInstancePath(p io.Reader) (CIPClass, CIPInstance, error) {
+	var cls CIPClass
+	err := cls.Read(p)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read class: %w", err)
 	}
-	return 0, 0, false
+	var inst CIPInstance
+	err = inst.Read(p)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read instance: %w", err)
+	}
+	return cls, inst, nil
 }
 
 // buildIdentityGetAttributesAllResponse renders the payload portion of a
@@ -462,6 +450,15 @@ func (h *serverTCPHandler) unconnectedServiceGetAttrSingle(item CIPItem) error {
 	// (0x47 DLR, 0xF4 Port, ...) should produce a formal
 	// "PathDestinationUnknown" error so the originator can mark them as
 	// not-implemented and proceed.
+	if cls != CIPClass(CipObject_Identity) || inst != 1 {
+		h.server.Logger.Debug("getattrsingle: class/instance not implemented", "class", cls, "instance", inst, "attr", attr)
+		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)
+	}
+
+	// Class 0x01 Identity is the only class with attribute data in this
+	// minimal server. Other classes FactoryTalk Linx probes (0x47 DLR,
+	// 0xF4 Port, ...) should produce a formal "PathDestinationUnknown"
+	// error so the originator can mark them as not-implemented and proceed.
 	if cls != CIPClass(CipObject_Identity) || inst != 1 {
 		h.server.Logger.Debug("getattrsingle: class/instance not implemented", "class", cls, "instance", inst, "attr", attr)
 		return h.sendUnconnectedErrorReply(CIPService_GetAttributeSingle, CIPStatus_PathDestinationUnknown)

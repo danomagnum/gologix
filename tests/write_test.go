@@ -2,6 +2,7 @@ package gologix_tests
 
 import (
 	"log"
+	"math/rand"
 	"testing"
 
 	"github.com/danomagnum/gologix"
@@ -378,4 +379,70 @@ func TestWriteUdt(t *testing.T) {
 
 		})
 	}
+}
+
+// bug: Write/WriteMulti/WriteMap with a []string field fail with
+//
+//	binary.Write: some values are not fixed-sized in type []string
+//
+// because items.Serialize had no case for []string and fell through
+// to binary.Write, which rejects slices of strings.
+// This test writes a []string then reads each element back via the
+// single-tag Read path (which already works) to verify the wire format.
+func TestWriteStringArray(t *testing.T) {
+	tcs := getTestConfig()
+	for _, tc := range tcs.TagReadWriteTests {
+		t.Run(tc.PlcAddress, func(t *testing.T) {
+			client := gologix.NewClient(tc.PlcAddress)
+			err := client.Connect()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer func() {
+				err := client.Disconnect()
+				if err != nil {
+					t.Errorf("problem disconnecting. %v", err)
+				}
+			}()
+
+			const tag = "program:gologix_tests.writestrings"
+
+			size := 10
+			if client.ConnectionSize < 88*10 {
+				size = 4
+			}
+
+			// Step 2: write a []string with mixed lengths so any per-element
+			// alignment bug surfaces immediately on the read-back.
+			want := make([]string, size)
+			for i := range want {
+				want[i] = randString(1 + rand.Intn(80))
+			}
+			if err := client.Write(tag, want); err != nil {
+				t.Fatalf("Write([]string) failed: %v", err)
+			}
+
+			// Step 3: read back via the single-tag Read path (already
+			// supports arrays of strings) and verify each element matches.
+			got := make([]string, size)
+			if err := client.Read(tag, got); err != nil {
+				t.Fatalf("read-back failed: %v", err)
+			}
+			for i := range want {
+				if got[i] != want[i] {
+					t.Errorf("element %d: want %q got %q", i, want[i], got[i])
+				}
+			}
+		})
+	}
+}
+
+func randString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
