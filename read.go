@@ -945,8 +945,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				}
 				val, err := getBit(rHdr.Type, value, iois[i].BitPosition)
 				if err != nil {
-					client.Logger.Warn("problem reading value for this guy")
-					continue
+					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
 				}
 				result_values[i] = val
 			} else if tags[i].TagType == CIPTypeSTRING {
