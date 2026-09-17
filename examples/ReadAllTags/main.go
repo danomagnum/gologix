@@ -82,7 +82,7 @@ func main() {
 		}
 
 		// Read and display the value of each tag
-		val, err := client.Read_single(tagname, tag.Info.Type, qty)
+		val, err := client.ReadSingle(tagname, tag.Info.Type, qty)
 		if err != nil {
 			log.Printf("Error!  Problem reading tag %s. %v", tagname, err)
 			continue

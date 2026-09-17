@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 )
@@ -115,7 +116,7 @@ func (client *Client) Disconnect() error {
 			slog.Any("err", err),
 		)
 	} else {
-		header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
+		header, data, err := client.send_recv_data(context.Background(), cipCommandSendRRData, itemData)
 		if err != nil {
 			client.Logger.Error(
 				"error sending disconnect request",

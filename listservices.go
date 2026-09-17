@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 )
@@ -38,9 +39,14 @@ import (
 //
 // Note: The device must be connected before calling this function.
 func (client *Client) ListServices() ([]CIPListService, error) {
+	return client.ListServicesWithContext(context.Background())
+}
+
+// ListServicesWithContext is ListServices with a caller-supplied context.
+func (client *Client) ListServicesWithContext(ctx context.Context) ([]CIPListService, error) {
 	client.Logger.Debug("listing services")
 
-	_, data, err := client.send_recv_data(cipCommandListServices)
+	_, data, err := client.send_recv_data(ctx, cipCommandListServices)
 	if err != nil {
 		return nil, err
 	}

@@ -371,7 +371,7 @@ func TestReadPartialTransfer(t *testing.T) {
 			}
 			done := make(chan result, 1)
 			go func() {
-				v, e := client.Read_single("MyDintArray", CIPTypeDINT, uint16(tc.wantLen))
+				v, e := client.ReadSingle("MyDintArray", CIPTypeDINT, uint16(tc.wantLen))
 				done <- result{v, e}
 			}()
 
@@ -431,7 +431,7 @@ func TestReadPartialTransferStructIsRejected(t *testing.T) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		v, e := client.Read_single("MyStructArray", CIPTypeStruct, 4)
+		v, e := client.ReadSingle("MyStructArray", CIPTypeStruct, 4)
 		done <- result{v, e}
 	}()
 

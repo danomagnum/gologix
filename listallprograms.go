@@ -1,11 +1,17 @@
 package gologix
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
 
 func (client *Client) ListAllPrograms() error {
+	return client.ListAllProgramsWithContext(context.Background())
+}
+
+// ListAllProgramsWithContext is ListAllPrograms with a caller-supplied context.
+func (client *Client) ListAllProgramsWithContext(ctx context.Context) error {
 	client.Logger.Debug("listing all programs")
 
 	// for generic messages we need to create the cip path ourselves.  The serialize function can be used to do this.
@@ -23,7 +29,7 @@ func (client *Client) ListAllPrograms() error {
 		return err
 	}
 
-	resp, err := client.GenericCIPMessage(CIPService_GetInstanceAttributeList, path.Bytes(), msg_data.Bytes())
+	resp, err := client.GenericCIPMessageWithContext(ctx, CIPService_GetInstanceAttributeList, path.Bytes(), msg_data.Bytes())
 	if err != nil {
 		client.Logger.Warn("problem reading programs directly  Some controllers don't support this method. Use ListAllTags to attempt fallback.", "error", err)
 		return fmt.Errorf("problem reading programs: %w", err)

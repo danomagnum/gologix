@@ -1,6 +1,7 @@
 package gologix
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 )
@@ -135,7 +136,7 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(context.Background(), cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	hdr, data, err := client.send_recv_data(context.Background(), cipCommandSendUnitData, itemData)
 
 	if err != nil {
 		return nil, err
@@ -419,6 +420,11 @@ func (e CIPStatusError) Error() string {
 // Note: This function is intended for advanced users who need direct CIP protocol
 // access. For standard tag operations, use Read(), Write(), and related functions.
 func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byte) (*CIPItem, error) {
+	return client.GenericCIPMessageWithContext(context.Background(), service, path, msg_data)
+}
+
+// GenericCIPMessageWithContext is GenericCIPMessage with a caller-supplied context.
+func (client *Client) GenericCIPMessageWithContext(ctx context.Context, service CIPService, path, msg_data []byte) (*CIPItem, error) {
 
 	reqitems := make([]CIPItem, 2)
 	//reqitems[0] = cipItem{Header: cipItemHeader{ID: cipItem_Null}}
@@ -444,7 +450,7 @@ func (client *Client) GenericCIPMessage(service CIPService, path, msg_data []byt
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -113,6 +114,11 @@ type msgListInstanceHeader struct {
 // The function automatically calls ListAllPrograms() first when start_instance is 0
 // to ensure program-scoped tags are properly discovered and categorized.
 func (client *Client) ListAllTags(start_instance uint32) error {
+	return client.ListAllTagsWithContext(context.Background(), start_instance)
+}
+
+// ListAllTagsWithContext is ListAllTags with a caller-supplied context.
+func (client *Client) ListAllTagsWithContext(ctx context.Context, start_instance uint32) error {
 	const minimumTagValue = 1
 	if start_instance < minimumTagValue {
 		start_instance = minimumTagValue
@@ -122,7 +128,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	// if we are starting from scratch, we should list all the programs first so we have
 	// their instance IDs when we come across program scoped tags.
 	if start_instance == 1 {
-		err := client.ListAllPrograms()
+		err := client.ListAllProgramsWithContext(ctx)
 		if err != nil {
 			var cipErr CIPStatusError
 			if errors.As(err, &cipErr) {
@@ -133,7 +139,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 			}
 		}
 		for _, p := range client.KnownPrograms {
-			_, err := client.ListSubTags(p, 1)
+			_, err := client.ListSubTagsWithContext(ctx, p, 1)
 			if err != nil {
 				return fmt.Errorf("problem listing sub tags for %s: %w", p.Name, err)
 			}
@@ -183,7 +189,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	if err != nil {
 		return fmt.Errorf("problem serializing items: %w", err)
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
 	if err != nil {
 		return err
 	}
@@ -278,7 +284,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 				}
 				p := &KnownProgram{Name: progName}
 				client.KnownPrograms[strings.ToLower(p.Name)] = p
-				_, err := client.ListSubTags(p, 1)
+				_, err := client.ListSubTagsWithContext(ctx, p, 1)
 				if err != nil {
 					return fmt.Errorf("problem listing sub tags for %s: %w", p.Name, err)
 				}
@@ -292,7 +298,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 
 		if tag_ftr.Template_ID() != 0 { //&& !tag_ftr.PreDefined() {
 			client.Logger.Debug("Looking up template", "tag name", tag_string)
-			u, err := client.ListMembers(uint32(tag_ftr.Template_ID()))
+			u, err := client.ListMembersWithContext(ctx, uint32(tag_ftr.Template_ID()))
 			if err != nil {
 				client.Logger.Error("problem reading member list",
 					"string", tag_string,
@@ -314,7 +320,7 @@ func (client *Client) ListAllTags(start_instance uint32) error {
 	}
 
 	if data_hdr.Status == uint16(CIPStatus_PartialTransfer) { //} && start_instance < 200 {
-		err = client.ListAllTags(start_instance)
+		err = client.ListAllTagsWithContext(ctx, start_instance)
 		if err != nil {
 			return err
 		}

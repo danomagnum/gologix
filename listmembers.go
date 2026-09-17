@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -43,6 +44,11 @@ type msgGetTemplateAttrListResponse struct {
 }
 
 func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTemplateAttrListResponse, error) {
+	return client.GetTemplateInstanceAttrWithContext(context.Background(), str_instance)
+}
+
+// GetTemplateInstanceAttrWithContext is GetTemplateInstanceAttr with a caller-supplied context.
+func (client *Client) GetTemplateInstanceAttrWithContext(ctx context.Context, str_instance uint32) (msgGetTemplateAttrListResponse, error) {
 	client.Logger.Debug("list members", "instance", str_instance)
 
 	// have to start at 1.
@@ -99,7 +105,7 @@ func (client *Client) GetTemplateInstanceAttr(str_instance uint32) (msgGetTempla
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, fmt.Errorf("problem serializing item data: %w", err)
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
@@ -152,6 +158,11 @@ func (m msgMemberInfo) CIPType() CIPType {
 // exactly, but V32 it works and V20 it does not.  I suspect v24 or v28 since they were pretty substantial
 // changes, but v21 could also be the version since that is the swap from rslogix to studio
 func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
+	return client.ListMembersWithContext(context.Background(), str_instance)
+}
+
+// ListMembersWithContext is ListMembers with a caller-supplied context.
+func (client *Client) ListMembersWithContext(ctx context.Context, str_instance uint32) (UDTDescriptor, error) {
 	client.Logger.Debug("list members", "instance", str_instance)
 
 	d, ok := client.KnownTypesByID[str_instance]
@@ -159,7 +170,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 		return d, nil
 	}
 
-	template_info, err := client.GetTemplateInstanceAttr(str_instance)
+	template_info, err := client.GetTemplateInstanceAttrWithContext(ctx, str_instance)
 
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("couldn't get template info. %w", err)
@@ -203,7 +214,7 @@ func (client *Client) ListMembers(str_instance uint32) (UDTDescriptor, error) {
 	if err != nil {
 		return UDTDescriptor{}, fmt.Errorf("problem serializing item data: %w", err)
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return UDTDescriptor{}, err
 	}

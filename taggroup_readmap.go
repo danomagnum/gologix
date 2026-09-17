@@ -1,6 +1,9 @@
 package gologix
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // ReadTagGroup reads all tags defined in the TagGroup in a single network
 // call (or the minimum number of calls if tags exceed the connection size
@@ -19,6 +22,11 @@ import "fmt"
 //	rate, _ := result.Float32("RATE[1]")
 //	stats, _ := result.Int32Slice("STATS[1,0]")
 func (client *Client) ReadTagGroup(group *TagGroup, args ...any) (*TagGroupResult, error) {
+	return client.ReadTagGroupWithContext(context.Background(), group, args...)
+}
+
+// ReadTagGroupWithContext is ReadTagGroup with a caller-supplied context.
+func (client *Client) ReadTagGroupWithContext(ctx context.Context, group *TagGroup, args ...any) (*TagGroupResult, error) {
 	err := client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not start tag group read: %w", err)
@@ -31,7 +39,7 @@ func (client *Client) ReadTagGroup(group *TagGroup, args ...any) (*TagGroupResul
 		m[name] = zeroValueForTagDef(def)
 	}
 
-	err = client.ReadMap(m)
+	err = client.ReadMapWithContext(ctx, m)
 	if err != nil {
 		return nil, fmt.Errorf("tag group read failed: %w", err)
 	}

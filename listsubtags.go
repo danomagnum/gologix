@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -13,6 +14,11 @@ import (
 // see 1756-PM020H-EN-P March 2022 page 39
 // also see https://forums.mrclient.com/index.php?/topic/40626-reading-and-writing-io-tags-in-plc/
 func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) ([]KnownTag, error) {
+	return client.ListSubTagsWithContext(context.Background(), Program, start_instance)
+}
+
+// ListSubTagsWithContext is ListSubTags with a caller-supplied context.
+func (client *Client) ListSubTagsWithContext(ctx context.Context, Program *KnownProgram, start_instance uint32) ([]KnownTag, error) {
 
 	new_kts := make([]KnownTag, 0, 100)
 	client.Logger.Debug("readall", "start id", start_instance)
@@ -58,7 +64,7 @@ func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) 
 	if err != nil {
 		return nil, fmt.Errorf("problem serializing items: %w", err)
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return new_kts, err
 	}
@@ -143,7 +149,7 @@ func (client *Client) ListSubTags(Program *KnownProgram, start_instance uint32) 
 	}
 
 	if data_hdr.Status == uint16(CIPStatus_PartialTransfer) {
-		_, err = client.ListSubTags(Program, start_instance)
+		_, err = client.ListSubTagsWithContext(ctx, Program, start_instance)
 		if err != nil {
 			return new_kts, fmt.Errorf("problem listing subtags. %w", err)
 		}
