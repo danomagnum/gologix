@@ -488,7 +488,11 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 				}
-				str := make([]byte, str_hdr.Length)
+				strLen, err := str_hdr.dataLen(len(items[1].Data) - items[1].Pos)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %s: %w", tag, err)
+				}
+				str := make([]byte, strLen)
 				err = items[1].DeSerialize(&str)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
@@ -503,12 +507,16 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct header. %w", err)
 				}
-				str := make([]byte, 82)
+				strLen, err := str_hdr.dataLen(cipStringDataLen)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %s: %w", tag, err)
+				}
+				str := make([]byte, cipStringDataLen)
 				err = items[1].DeSerialize(&str)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
 				}
-				response[i] = str[:str_hdr.Length]
+				response[i] = str[:strLen]
 			}
 			return response, nil
 		}
@@ -639,6 +647,18 @@ type cipStringHeader struct {
 	Unknown uint16
 	Length  uint32
 }
+
+// dataLen validates the wire-supplied Length against the bytes actually
+// available before it is used as an allocation size or slice bound. When the
+// tag is really some other UDT these bytes are user data, and taking them at
+// face value can ask for a 4 GiB allocation or panic on a slice bound.
+func (h cipStringHeader) dataLen(available int) (int, error) {
+	if available < 0 || uint64(h.Length) > uint64(available) {
+		return 0, fmt.Errorf("string length %d exceeds the %d bytes available", h.Length, available)
+	}
+	return int(h.Length), nil
+}
+
 type cipStructHeader struct {
 	StructTypeCRC uint16
 }
@@ -955,7 +975,11 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack string struct header. %w", err)
 				}
-				str := make([]byte, str_hdr.Length)
+				strLen, err := str_hdr.dataLen(myBytes.Len())
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %v: %w", tags[i], err)
+				}
+				str := make([]byte, strLen)
 				err = binary.Read(myBytes, binary.LittleEndian, str)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack struct data. %w", err)
@@ -1001,12 +1025,16 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack string header for tag %v element %d: %w", tags[i], respIndex, err)
 				}
-				str := make([]byte, 82)
+				strLen, err := str_hdr.dataLen(cipStringDataLen)
+				if err != nil {
+					return nil, fmt.Errorf("problem reading tag %v element %d: %w", tags[i], respIndex, err)
+				}
+				str := make([]byte, cipStringDataLen)
 				err = binary.Read(myBytes, binary.LittleEndian, str)
 				if err != nil {
 					return nil, fmt.Errorf("couldn't unpack string data for tag %v element %d: %w", tags[i], respIndex, err)
 				}
-				val[respIndex] = string(str[:str_hdr.Length])
+				val[respIndex] = string(str[:strLen])
 			}
 			result_values[i] = val
 		} else {
