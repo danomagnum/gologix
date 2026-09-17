@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"strings"
 	"testing"
@@ -151,7 +152,7 @@ func TestReadListStringRoundTrip(t *testing.T) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		vals, err := client.readList([]tagDesc{{TagName: "MyString", TagType: CIPTypeSTRING, Elements: 1}})
+		vals, err := client.readList(context.Background(), []tagDesc{{TagName: "MyString", TagType: CIPTypeSTRING, Elements: 1}})
 		done <- result{vals, err}
 	}()
 
@@ -174,7 +175,7 @@ func TestReadListStringRejectsBogusLength(t *testing.T) {
 
 			done := make(chan error, 1)
 			go func() {
-				_, err := client.readList([]tagDesc{{TagName: "MyString", TagType: CIPTypeSTRING, Elements: 1}})
+				_, err := client.readList(context.Background(), []tagDesc{{TagName: "MyString", TagType: CIPTypeSTRING, Elements: 1}})
 				done <- err
 			}()
 
@@ -195,7 +196,7 @@ func TestReadListStringArrayRoundTrip(t *testing.T) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		vals, err := client.readList([]tagDesc{{TagName: "MyStrings", TagType: CIPTypeSTRING, Elements: 2}})
+		vals, err := client.readList(context.Background(), []tagDesc{{TagName: "MyStrings", TagType: CIPTypeSTRING, Elements: 2}})
 		done <- result{vals, err}
 	}()
 
@@ -221,7 +222,7 @@ func TestReadListStringArrayRejectsBogusLength(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		_, err := client.readList([]tagDesc{{TagName: "MyStrings", TagType: CIPTypeSTRING, Elements: 2}})
+		_, err := client.readList(context.Background(), []tagDesc{{TagName: "MyStrings", TagType: CIPTypeSTRING, Elements: 2}})
 		done <- err
 	}()
 

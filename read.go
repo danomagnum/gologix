@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -36,90 +37,95 @@ import (
 //
 // Returns an error if the connection fails, the tag doesn't exist, or there's a type mismatch.
 func (client *Client) Read(tag string, data any) error {
+	return client.ReadWithContext(context.Background(), tag, data)
+}
+
+// ReadWithContext is Read with a caller-supplied context.
+func (client *Client) ReadWithContext(ctx context.Context, tag string, data any) error {
 	err := client.checkConnection()
 	if err != nil {
 		return fmt.Errorf("could not start read: %w", err)
 	}
 	switch data := data.(type) {
 	case *bool:
-		v, err := read[bool](client, tag)
+		v, err := read[bool](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *byte:
-		v, err := read[byte](client, tag)
+		v, err := read[byte](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int8:
-		v, err := read[int8](client, tag)
+		v, err := read[int8](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int16:
-		v, err := read[int16](client, tag)
+		v, err := read[int16](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint16:
-		v, err := read[uint16](client, tag)
+		v, err := read[uint16](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int32:
-		v, err := read[int32](client, tag)
+		v, err := read[int32](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint32:
-		v, err := read[uint32](client, tag)
+		v, err := read[uint32](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *int64:
-		v, err := read[int64](client, tag)
+		v, err := read[int64](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *uint64:
-		v, err := read[uint64](client, tag)
+		v, err := read[uint64](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *float32:
-		v, err := read[float32](client, tag)
+		v, err := read[float32](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *float64:
-		v, err := read[float64](client, tag)
+		v, err := read[float64](ctx, client, tag)
 		if err != nil {
 			return err
 		}
 		*data = v
 		return nil
 	case *string:
-		v, err := read[string](client, tag)
+		v, err := read[string](ctx, client, tag)
 		if err != nil {
 			return err
 		}
@@ -133,7 +139,7 @@ func (client *Client) Read(tag string, data any) error {
 			return fmt.Errorf("slice length must be a multiple of 32 for []bool, got %d", elements)
 		}
 		if count == 1 { // special case for 1 element slice - have to read it as an atomic uint32
-			v, err := read[uint32](client, tag)
+			v, err := read[uint32](ctx, client, tag)
 			if err != nil {
 				return err
 			}
@@ -142,7 +148,7 @@ func (client *Client) Read(tag string, data any) error {
 			}
 			return nil
 		}
-		v, err := readArray[uint32](client, tag, uint16(count))
+		v, err := readArray[uint32](ctx, client, tag, uint16(count))
 		if err != nil {
 			return err
 		}
@@ -158,7 +164,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []byte:
 		elements := len(data)
-		v, err := readArray[byte](client, tag, uint16(elements))
+		v, err := readArray[byte](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -171,7 +177,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int8:
 		elements := len(data)
-		v, err := readArray[int8](client, tag, uint16(elements))
+		v, err := readArray[int8](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -184,7 +190,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int16:
 		elements := len(data)
-		v, err := readArray[int16](client, tag, uint16(elements))
+		v, err := readArray[int16](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -197,7 +203,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint16:
 		elements := len(data)
-		v, err := readArray[uint16](client, tag, uint16(elements))
+		v, err := readArray[uint16](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -210,7 +216,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int32:
 		elements := len(data)
-		v, err := readArray[int32](client, tag, uint16(elements))
+		v, err := readArray[int32](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -223,7 +229,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint32:
 		elements := len(data)
-		v, err := readArray[uint32](client, tag, uint16(elements))
+		v, err := readArray[uint32](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -236,7 +242,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []int64:
 		elements := len(data)
-		v, err := readArray[int64](client, tag, uint16(elements))
+		v, err := readArray[int64](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -249,7 +255,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []uint64:
 		elements := len(data)
-		v, err := readArray[uint64](client, tag, uint16(elements))
+		v, err := readArray[uint64](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -262,7 +268,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []float32:
 		elements := len(data)
-		v, err := readArray[float32](client, tag, uint16(elements))
+		v, err := readArray[float32](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -275,7 +281,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []float64:
 		elements := len(data)
-		v, err := readArray[float64](client, tag, uint16(elements))
+		v, err := readArray[float64](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -288,7 +294,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case []string:
 		elements := len(data)
-		v, err := readArray[string](client, tag, uint16(elements))
+		v, err := readArray[string](ctx, client, tag, uint16(elements))
 		if err != nil {
 			return err
 		}
@@ -301,7 +307,7 @@ func (client *Client) Read(tag string, data any) error {
 		return nil
 	case *any:
 		// could be anything?
-		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		val, err := client.ReadSingleWithContext(ctx, tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
 		}
@@ -311,7 +317,7 @@ func (client *Client) Read(tag string, data any) error {
 
 	case []interface{}:
 		// a pointer to a struct.
-		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		val, err := client.ReadSingleWithContext(ctx, tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
 		}
@@ -331,7 +337,7 @@ func (client *Client) Read(tag string, data any) error {
 	switch v.Kind() {
 	case reflect.Pointer:
 		// a pointer to a struct.
-		val, err := client.Read_single(tag, CIPTypeStruct, 1)
+		val, err := client.ReadSingleWithContext(ctx, tag, CIPTypeStruct, 1)
 		if err != nil {
 			return err
 		}
@@ -350,7 +356,7 @@ func (client *Client) Read(tag string, data any) error {
 	case reflect.Slice:
 		// slice of structs.
 		elements := uint16(v.Len())
-		val, err := client.Read_single(tag, CIPTypeStruct, elements)
+		val, err := client.ReadSingleWithContext(ctx, tag, CIPTypeStruct, elements)
 		if err != nil {
 			return err
 		}
@@ -372,7 +378,12 @@ func (client *Client) Read(tag string, data any) error {
 	return nil
 }
 
-// Read_single reads a single tag with an explicitly specified data type instead of inferring the type from a pointer.
+// Deprecated: use ReadSingle instead.
+func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+	return client.ReadSingle(tag, datatype, elements)
+}
+
+// ReadSingle reads a single tag with an explicitly specified data type instead of inferring the type from a pointer.
 //
 // This function allows you to read tags when the data type is not known at compile time. Use CIPType_Unknown
 // to read a tag of unknown type - the PLC will return the actual data type and value.
@@ -387,18 +398,23 @@ func (client *Client) Read(tag string, data any) error {
 // Examples:
 //
 //	// Read a tag of known type
-//	value, err := client.Read_single("TestInt", CIPType_INT, 1)
+//	value, err := client.ReadSingle("TestInt", CIPType_INT, 1)
 //	intValue := value.(int16)
 //
 //	// Read a tag of unknown type
-//	value, err := client.Read_single("UnknownTag", CIPType_Unknown, 1)
+//	value, err := client.ReadSingle("UnknownTag", CIPType_Unknown, 1)
 //
 //	// Read multiple elements
-//	values, err := client.Read_single("IntArray", CIPType_INT, 5)
+//	values, err := client.ReadSingle("IntArray", CIPType_INT, 5)
 //	intSlice := values.([]interface{})
 //
 // For strongly-typed reading, use the Read function instead. For multiple tags, use ReadMulti or ReadMap.
-func (client *Client) Read_single(tag string, datatype CIPType, elements uint16) (any, error) {
+func (client *Client) ReadSingle(tag string, datatype CIPType, elements uint16) (any, error) {
+	return client.ReadSingleWithContext(context.Background(), tag, datatype, elements)
+}
+
+// ReadSingleWithContext is Read_single with a caller-supplied context.
+func (client *Client) ReadSingleWithContext(ctx context.Context, tag string, datatype CIPType, elements uint16) (any, error) {
 
 	err := client.checkConnection()
 	if err != nil {
@@ -431,7 +447,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +486,7 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 		if hdr2.Type == CIPTypeStruct {
 			return nil, fmt.Errorf("partial transfer read of %s: structured tag types are not yet supported in fragmented reads", tag)
 		}
-		merged, err := client.readFragmented(ioi, elements, items[1].Data[items[1].Pos:])
+		merged, err := client.readFragmented(ctx, ioi, elements, items[1].Data[items[1].Pos:])
 		if err != nil {
 			return nil, fmt.Errorf("partial transfer read of %s: %w", tag, err)
 		}
@@ -557,10 +573,10 @@ func (client *Client) Read_single(tag string, datatype CIPType, elements uint16)
 	}
 }
 
-func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T, error) {
+func readArray[T GoLogixTypes](ctx context.Context, client *Client, tag string, elements uint16) ([]T, error) {
 	t := make([]T, elements)
 	ct, _ := GoVarToCIPType(t[0])
-	val, err := client.Read_single(tag, ct, elements)
+	val, err := client.ReadSingleWithContext(ctx, tag, ct, elements)
 	if err != nil {
 		return t, err
 	}
@@ -602,10 +618,10 @@ func readArray[T GoLogixTypes](client *Client, tag string, elements uint16) ([]T
 
 }
 
-func read[T GoLogixTypes](client *Client, tag string) (T, error) {
+func read[T GoLogixTypes](ctx context.Context, client *Client, tag string) (T, error) {
 	var t T
 	ct, _ := GoVarToCIPType(t)
-	val, err := client.Read_single(tag, ct, 1)
+	val, err := client.ReadSingleWithContext(ctx, tag, ct, 1)
 	if err != nil {
 		return t, err
 	}
@@ -722,9 +738,14 @@ type cipStructHeader struct {
 //	var welderAlarms SubsystemAlarms
 //	err := client.ReadMulti(&machine2, 1, "welder")  // Reads "Machine_1.welder.Alarms"
 func (client *Client) ReadMulti(tag_str any, args ...any) error {
+	return client.ReadMultiWithContext(context.Background(), tag_str, args...)
+}
+
+// ReadMultiWithContext is ReadMulti with a caller-supplied context.
+func (client *Client) ReadMultiWithContext(ctx context.Context, tag_str any, args ...any) error {
 	switch x := tag_str.(type) {
 	case map[string]any:
-		return client.ReadMap(x)
+		return client.ReadMapWithContext(ctx, x)
 	}
 
 	err := client.checkConnection()
@@ -760,7 +781,7 @@ func (client *Client) ReadMulti(tag_str any, args ...any) error {
 		})
 	}
 
-	result_values, err := client.readList(taglist)
+	result_values, err := client.readList(ctx, taglist)
 	if err != nil {
 		return fmt.Errorf("problem in read list: %w", err)
 	}
@@ -794,7 +815,7 @@ type tagDesc struct {
 	Struct   any
 }
 
-func (client *Client) readList(tags []tagDesc) ([]any, error) {
+func (client *Client) readList(ctx context.Context, tags []tagDesc) ([]any, error) {
 
 	// first generate IOIs for each tag
 	qty := len(tags)
@@ -851,11 +872,11 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 			first_part := tags[:i]
 			rest := tags[i:]
 
-			results0, err := client.readList(first_part)
+			results0, err := client.readList(ctx, first_part)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading first part of tags: %w", err)
 			}
-			results1, err := client.readList(rest)
+			results1, err := client.readList(ctx, rest)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading second part of tags: %w", err)
 			}
@@ -877,7 +898,7 @@ func (client *Client) readList(tags []tagDesc) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, err
 	}
@@ -1133,6 +1154,11 @@ type msgMultiReadResult struct {
 // For struct-based reading with field tags, use ReadMulti instead.
 // For reading tags with unknown types, set map values to nil.
 func (client *Client) ReadMap(m map[string]any) error {
+	return client.ReadMapWithContext(context.Background(), m)
+}
+
+// ReadMapWithContext is ReadMap with a caller-supplied context.
+func (client *Client) ReadMapWithContext(ctx context.Context, m map[string]any) error {
 
 	err := client.checkConnection()
 	if err != nil {
@@ -1166,7 +1192,7 @@ func (client *Client) ReadMap(m map[string]any) error {
 		if err != nil {
 			return err
 		}
-		subResults, err := client.readList(tags[n : n+n_new])
+		subResults, err := client.readList(ctx, tags[n:n+n_new])
 		n += n_new
 		if err != nil {
 			return err
@@ -1189,11 +1215,11 @@ func (client *Client) ReadMap(m map[string]any) error {
 // arrived with the first (non-FragRead) response — the returned slice is the
 // full concatenation of every fragment's data section, ready to feed into the
 // existing per-type parsing path.
-func (client *Client) readFragmented(ioi *tagIOI, elements uint16, initialData []byte) ([]byte, error) {
+func (client *Client) readFragmented(ctx context.Context, ioi *tagIOI, elements uint16, initialData []byte) ([]byte, error) {
 	accumulated := bytes.NewBuffer(append([]byte(nil), initialData...))
 	for {
 		offset := uint32(accumulated.Len())
-		fragData, status, err := client.sendFragReadRequest(ioi, elements, offset)
+		fragData, status, err := client.sendFragReadRequest(ctx, ioi, elements, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -1211,7 +1237,7 @@ func (client *Client) readFragmented(ioi *tagIOI, elements uint16, initialData [
 // requested element count, and byte offset. It returns the data portion of the
 // response (everything after the type+unknown header), the general status byte,
 // and any transport-level error.
-func (client *Client) sendFragReadRequest(ioi *tagIOI, elements uint16, offset uint32) ([]byte, byte, error) {
+func (client *Client) sendFragReadRequest(ctx context.Context, ioi *tagIOI, elements uint16, offset uint32) ([]byte, byte, error) {
 	reqItems := make([]CIPItem, 2)
 	reqItems[0] = newItem(cipItem_ConnectionAddress, &client.OTNetworkConnectionID)
 
@@ -1230,7 +1256,7 @@ func (client *Client) sendFragReadRequest(ioi *tagIOI, elements uint16, offset u
 		return nil, 0, fmt.Errorf("problem serializing FragRead items: %w", err)
 	}
 
-	_, data, err := client.send_recv_data(cipCommandSendUnitData, itemData)
+	_, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, 0, fmt.Errorf("transport: %w", err)
 	}

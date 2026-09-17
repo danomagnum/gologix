@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -87,34 +88,35 @@ func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 //   - Structs: user-defined types for UDT tags (struct name must match UDT name)
 //
 // Examples:
-//   // Basic scalar writes
-//   writeMap := map[string]interface{}{
-//       "TestInt":    int16(123),
-//       "TestDint":   int32(456789),  
-//       "TestReal":   float32(123.45),
-//       "TestBool":   true,
-//       "TestString": "Hello PLC",
-//   }
 //
-//   // Array writes (write to specific indices)
-//   writeMap["TestDintArr[0]"] = []int32{1, 2, 3, 4, 5}  // Write 5 elements starting at index 0
-//   writeMap["TestRealArr[10]"] = []float32{1.1, 2.2, 3.3} // Write 3 elements starting at index 10
+//	// Basic scalar writes
+//	writeMap := map[string]interface{}{
+//	    "TestInt":    int16(123),
+//	    "TestDint":   int32(456789),
+//	    "TestReal":   float32(123.45),
+//	    "TestBool":   true,
+//	    "TestString": "Hello PLC",
+//	}
 //
-//   // UDT writes
-//   type MyUDT struct {
-//       Field1 int32
-//       Field2 float32
-//   }
-//   writeMap["MyUDTTag"] = MyUDT{Field1: 100, Field2: 3.14}
+//	// Array writes (write to specific indices)
+//	writeMap["TestDintArr[0]"] = []int32{1, 2, 3, 4, 5}  // Write 5 elements starting at index 0
+//	writeMap["TestRealArr[10]"] = []float32{1.1, 2.2, 3.3} // Write 3 elements starting at index 10
 //
-//   // Individual UDT field writes  
-//   writeMap["MyUDTTag.Field1"] = int32(200)
-//   writeMap["MyUDTTag.Field2"] = float32(6.28)
+//	// UDT writes
+//	type MyUDT struct {
+//	    Field1 int32
+//	    Field2 float32
+//	}
+//	writeMap["MyUDTTag"] = MyUDT{Field1: 100, Field2: 3.14}
 //
-//   err := client.WriteMap(writeMap)
-//   if err != nil {
-//       log.Fatal(err)
-//   }
+//	// Individual UDT field writes
+//	writeMap["MyUDTTag.Field1"] = int32(200)
+//	writeMap["MyUDTTag.Field2"] = float32(6.28)
+//
+//	err := client.WriteMap(writeMap)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 //
 // For struct-based writing with field tags, use WriteMulti instead.
 // For writing a single tag, use Write.
@@ -125,6 +127,11 @@ func udt_to_dict(tag string, data any) (map[string]interface{}, error) {
 // Returns an error if the connection fails, any tag doesn't exist, there are type mismatches,
 // or any tags are read-only.
 func (client *Client) WriteMap(tag_str map[string]interface{}) error {
+	return client.WriteMapWithContext(context.Background(), tag_str)
+}
+
+// WriteMapWithContext is WriteMap with a caller-supplied context.
+func (client *Client) WriteMapWithContext(ctx context.Context, tag_str map[string]interface{}) error {
 
 	// build the tag list from the structure
 	tags := make([]string, 0)
@@ -212,7 +219,7 @@ func (client *Client) WriteMap(tag_str map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -9,37 +10,39 @@ import (
 
 // WriteMulti writes multiple tags efficiently in a single request using a struct with gologix field tags.
 //
-// The value parameter must be a struct where each field has a `gologix:"tagname"` tag 
-// that specifies which PLC tag to write to. Field types must correspond to the correct 
+// The value parameter must be a struct where each field has a `gologix:"tagname"` tag
+// that specifies which PLC tag to write to. Field types must correspond to the correct
 // CIP types as documented in types.go.
 //
 // Example:
-//   type MyWriteTags struct {
-//       IntTag     int16     `gologix:"TestInt"`
-//       RealTag    float32   `gologix:"TestReal"`  
-//       DintTag    int32     `gologix:"TestDint"`
-//       BoolTag    bool      `gologix:"TestBool"`
-//       StringTag  string    `gologix:"TestString"`
-//   }
 //
-//   writeValues := MyWriteTags{
-//       IntTag:    123,
-//       RealTag:   456.78,
-//       DintTag:   999888,
-//       BoolTag:   true,
-//       StringTag: "Hello PLC",
-//   }
-//   
-//   err := client.WriteMulti(writeValues)
+//	type MyWriteTags struct {
+//	    IntTag     int16     `gologix:"TestInt"`
+//	    RealTag    float32   `gologix:"TestReal"`
+//	    DintTag    int32     `gologix:"TestDint"`
+//	    BoolTag    bool      `gologix:"TestBool"`
+//	    StringTag  string    `gologix:"TestString"`
+//	}
+//
+//	writeValues := MyWriteTags{
+//	    IntTag:    123,
+//	    RealTag:   456.78,
+//	    DintTag:   999888,
+//	    BoolTag:   true,
+//	    StringTag: "Hello PLC",
+//	}
+//
+//	err := client.WriteMulti(writeValues)
 //
 // For UDT tags, nest the struct data:
-//   type MyUDT struct {
-//       Field1 int32
-//       Field2 float32  
-//   }
-//   type WriteTags struct {
-//       UDTTag MyUDT `gologix:"MyUDTTag"`
-//   }
+//
+//	type MyUDT struct {
+//	    Field1 int32
+//	    Field2 float32
+//	}
+//	type WriteTags struct {
+//	    UDTTag MyUDT `gologix:"MyUDTTag"`
+//	}
 //
 // For writing using a map instead of a struct, use WriteMap.
 // For writing a single tag, use Write.
@@ -47,6 +50,11 @@ import (
 // WriteMulti automatically handles message splitting for large requests to stay
 // within connection size limits.
 func (client *Client) WriteMulti(value any) error {
+	return client.WriteMultiWithContext(context.Background(), value)
+}
+
+// WriteMultiWithContext is WriteMulti with a caller-supplied context.
+func (client *Client) WriteMultiWithContext(ctx context.Context, value any) error {
 	err := client.checkConnection()
 	if err != nil {
 		return fmt.Errorf("could not start multi write: %w", err)
@@ -57,7 +65,7 @@ func (client *Client) WriteMulti(value any) error {
 		if err != nil {
 			return fmt.Errorf("problem creating keyvalue dict %w", err)
 		}
-		return client.WriteMap(d)
+		return client.WriteMapWithContext(ctx, d)
 	}
 	return fmt.Errorf("value must be a struct with gologix tags")
 }
@@ -72,48 +80,54 @@ func (client *Client) WriteMulti(value any) error {
 // matches the UDT name in the PLC, and field types match the UDT field types.
 //
 // Examples:
-//   // Write scalar values
-//   err := client.Write("TestInt", int16(123))        // Write to INT tag
-//   err := client.Write("TestDint", int32(456789))    // Write to DINT tag  
-//   err := client.Write("TestReal", float32(123.45))  // Write to REAL tag
-//   err := client.Write("TestBool", true)             // Write to BOOL tag
-//   err := client.Write("TestString", "Hello World")  // Write to STRING tag
 //
-//   // Write arrays
-//   intArray := []int32{1, 2, 3, 4, 5}
-//   err := client.Write("TestDintArr[0]", intArray)   // Write 5 elements starting at index 0
+//	// Write scalar values
+//	err := client.Write("TestInt", int16(123))        // Write to INT tag
+//	err := client.Write("TestDint", int32(456789))    // Write to DINT tag
+//	err := client.Write("TestReal", float32(123.45))  // Write to REAL tag
+//	err := client.Write("TestBool", true)             // Write to BOOL tag
+//	err := client.Write("TestString", "Hello World")  // Write to STRING tag
 //
-//   // Write UDT struct (struct name must match UDT name)
-//   type MyUDT struct {
-//       Field1 int32
-//       Field2 float32
-//   }
-//   udtValue := MyUDT{Field1: 100, Field2: 3.14}
-//   err := client.Write("MyUDTTag", udtValue)
+//	// Write arrays
+//	intArray := []int32{1, 2, 3, 4, 5}
+//	err := client.Write("TestDintArr[0]", intArray)   // Write 5 elements starting at index 0
 //
-//   // Write to nested UDT field
-//   err := client.Write("MyUDTTag.Field1", int32(200))
+//	// Write UDT struct (struct name must match UDT name)
+//	type MyUDT struct {
+//	    Field1 int32
+//	    Field2 float32
+//	}
+//	udtValue := MyUDT{Field1: 100, Field2: 3.14}
+//	err := client.Write("MyUDTTag", udtValue)
+//
+//	// Write to nested UDT field
+//	err := client.Write("MyUDTTag.Field1", int32(200))
 //
 // For writing multiple tags efficiently, use WriteMulti or WriteMap instead.
 //
 // Returns an error if the connection fails, the tag doesn't exist, there's a type mismatch,
 // or the tag is read-only.
 func (client *Client) Write(tag string, value any) error {
+	return client.WriteWithContext(context.Background(), tag, value)
+}
+
+// WriteWithContext is Write with a caller-supplied context.
+func (client *Client) WriteWithContext(ctx context.Context, tag string, value any) error {
 	err := client.checkConnection()
 	if err != nil {
 		return fmt.Errorf("could not start write: %w", err)
 	}
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Struct {
-		return client.write_udt(tag, value)
+		return client.write_udt(ctx, tag, value)
 	}
-	return client.write_single(tag, value)
+	return client.write_single(ctx, tag, value)
 }
 
 // write a single UDT struct to a tag.  The UDT *must* be named the same as the struct type and have the same field types.
 // field names don't matter but type names do.  go types will be converted to CIP types as appropriate, but any nested structs
 // must be named the same as the UDT on the plc.
-func (client *Client) write_udt(tag string, value any) error {
+func (client *Client) write_udt(ctx context.Context, tag string, value any) error {
 	//service = 0x4D // cipService_Write
 	datatype := CIPTypeStruct
 	ioi, err := client.newIOI(tag, datatype)
@@ -180,7 +194,7 @@ func (client *Client) write_udt(tag string, value any) error {
 	if err != nil {
 		return err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}
@@ -218,7 +232,7 @@ func (client *Client) write_udt(tag string, value any) error {
 }
 
 // write a single value to a single tag.
-func (client *Client) write_single(tag string, value any) error {
+func (client *Client) write_single(ctx context.Context, tag string, value any) error {
 	//service = 0x4D // cipService_Write
 	datatype, _ := GoVarToCIPType(value)
 	ioi, err := client.newIOI(tag, datatype)
@@ -269,7 +283,7 @@ func (client *Client) write_single(tag string, value any) error {
 	if err != nil {
 		return err
 	}
-	hdr, data, err := client.send_recv_data(cipCommandSendUnitData, itemdata)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemdata)
 	if err != nil {
 		return err
 	}

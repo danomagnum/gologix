@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 )
@@ -25,17 +26,18 @@ import (
 //   - State: Current device operational state
 //
 // Example:
-//   identity, err := client.ListIdentity()
-//   if err != nil {
-//       log.Fatal(err)
-//   }
 //
-//   fmt.Printf("Device: %s\n", identity.ProductName)
-//   fmt.Printf("Vendor: %s\n", identity.Vendor)
-//   fmt.Printf("Product Code: %d\n", identity.ProductCode)
-//   fmt.Printf("Serial Number: 0x%08X\n", identity.SerialNumber)
-//   fmt.Printf("Revision: %d.%d\n", identity.Revision.Major, identity.Revision.Minor)
-//   fmt.Printf("Status: 0x%04X\n", identity.Status)
+//	identity, err := client.ListIdentity()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	fmt.Printf("Device: %s\n", identity.ProductName)
+//	fmt.Printf("Vendor: %s\n", identity.Vendor)
+//	fmt.Printf("Product Code: %d\n", identity.ProductCode)
+//	fmt.Printf("Serial Number: 0x%08X\n", identity.SerialNumber)
+//	fmt.Printf("Revision: %d.%d\n", identity.Revision.Major, identity.Revision.Minor)
+//	fmt.Printf("Status: 0x%04X\n", identity.Status)
 //
 // This function is commonly used for:
 //   - Device discovery and inventory
@@ -45,9 +47,14 @@ import (
 //
 // Note: The device must be connected before calling this function.
 func (client *Client) ListIdentity() (*listIdentityResponeBody, error) {
+	return client.ListIdentityWithContext(context.Background())
+}
+
+// ListIdentityWithContext is ListIdentity with a caller-supplied context.
+func (client *Client) ListIdentityWithContext(ctx context.Context) (*listIdentityResponeBody, error) {
 	client.Logger.Debug("listing identity")
 
-	_, data, err := client.send_recv_data(cipCommandListIdentity)
+	_, data, err := client.send_recv_data(ctx, cipCommandListIdentity)
 	if err != nil {
 		return nil, err
 	}

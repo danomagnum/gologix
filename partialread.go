@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 )
@@ -23,23 +24,24 @@ import (
 // You'll need to type assert the returned values to their expected types.
 //
 // Examples:
-//   // Read scalar tags
-//   tagnames := []string{"TestInt", "TestReal", "TestBool"}
-//   types := []any{int16(0), float32(0), false}
-//   elements := []int{1, 1, 1}
-//   values, err := client.ReadList(tagnames, types, elements)
-//   if err != nil {
-//       log.Fatal(err)
-//   }
-//   intVal := values[0].(int16)
-//   realVal := values[1].(float32)
-//   boolVal := values[2].(bool)
 //
-//   // Read partial arrays with different element counts
-//   tagnames := []string{"DintArray[0]", "RealArray[5]", "StringArray[0]"}
-//   types := []any{[]int32{}, []float32{}, []string{}}
-//   elements := []int{10, 5, 3}  // Read 10 DINTs, 5 REALs, 3 STRINGs
-//   values, err := client.ReadList(tagnames, types, elements)
+//	// Read scalar tags
+//	tagnames := []string{"TestInt", "TestReal", "TestBool"}
+//	types := []any{int16(0), float32(0), false}
+//	elements := []int{1, 1, 1}
+//	values, err := client.ReadList(tagnames, types, elements)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	intVal := values[0].(int16)
+//	realVal := values[1].(float32)
+//	boolVal := values[2].(bool)
+//
+//	// Read partial arrays with different element counts
+//	tagnames := []string{"DintArray[0]", "RealArray[5]", "StringArray[0]"}
+//	types := []any{[]int32{}, []float32{}, []string{}}
+//	elements := []int{10, 5, 3}  // Read 10 DINTs, 5 REALs, 3 STRINGs
+//	values, err := client.ReadList(tagnames, types, elements)
 //
 // For strongly-typed reading with structs, use ReadMulti instead.
 // For map-based reading, use ReadMap.
@@ -47,6 +49,11 @@ import (
 //
 // ReadList automatically handles message splitting for large requests to stay within connection limits.
 func (client *Client) ReadList(tagnames []string, types []any, elements []int) ([]any, error) {
+	return client.ReadListWithContext(context.Background(), tagnames, types, elements)
+}
+
+// ReadListWithContext is ReadList with a caller-supplied context.
+func (client *Client) ReadListWithContext(ctx context.Context, tagnames []string, types []any, elements []int) ([]any, error) {
 	err := client.checkConnection()
 	if err != nil {
 		return nil, fmt.Errorf("could not start list read: %w", err)
@@ -75,7 +82,7 @@ func (client *Client) ReadList(tagnames []string, types []any, elements []int) (
 		if err != nil {
 			return nil, err
 		}
-		subresults, err := client.readList(tags[n : n+n_new])
+		subresults, err := client.readList(ctx, tags[n:n+n_new])
 		n += n_new
 		if err != nil {
 			return nil, err

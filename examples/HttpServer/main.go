@@ -93,7 +93,7 @@ func httpread(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("Problem connecting. %v", err)))
 		return
 	}
-	value, err := conn.Read_single(path, gologix.CIPType(0), 1)
+	value, err := conn.ReadSingle(path, gologix.CIPType(0), 1)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("Problem reading. %v", err)))
 		return

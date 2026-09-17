@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -181,7 +182,7 @@ func (client *Client) registerSession() error {
 		OptionFlag:      0,
 	}
 
-	header, _, err := client.send_recv_data(cipCommandRegisterSession, reg_msg)
+	header, _, err := client.send_recv_data(context.Background(), cipCommandRegisterSession, reg_msg)
 	if err != nil {
 		msg := "cannot get connect response"
 		client.Logger.Error(msg, slog.Any("err", err))
@@ -486,7 +487,7 @@ func (client *Client) forwardOpen(forwardOpenMsg CIPItem) error {
 		return err
 	}
 
-	header, data, err := client.send_recv_data(cipCommandSendRRData, itemData)
+	header, data, err := client.send_recv_data(context.Background(), cipCommandSendRRData, itemData)
 	if err != nil {
 		client.Logger.Error("error sending data", slog.Any("err", err))
 		return err

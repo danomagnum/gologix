@@ -2,6 +2,7 @@ package gologix
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"time"
@@ -46,24 +47,33 @@ func (client *Client) sendMsgBuild(cmd CIPCommand, msgs ...any) ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
+// deadline returns the earlier of now+timeout and ctx's deadline (if any).
+func deadline(ctx context.Context, timeout time.Duration) time.Time {
+	d := time.Now().Add(timeout)
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(d) {
+		return ctxDeadline
+	}
+	return d
+}
+
 // send takes the command followed by all the structures that need
 // concatenated together.
 //
 // It builds the appropriate header for all the data, puts the packet together, and then sends it.
-func (client *Client) sendData(b []byte) error {
+func (client *Client) sendData(ctx context.Context, b []byte) error {
 	// write the packet buffer to the tcp connection
 	written := 0
 	for written < len(b) {
-		if client.SocketTimeout != 0 {
-			err := client.conn.SetWriteDeadline(time.Now().Add(client.SocketTimeout))
-			if err != nil {
-				return fmt.Errorf("problem setting write deadline: %w", err)
-			}
-		} else {
-			err := client.conn.SetWriteDeadline(time.Now().Add(time.Second))
-			if err != nil {
-				return fmt.Errorf("problem setting write deadline: %w", err)
-			}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		timeout := client.SocketTimeout
+		if timeout == 0 {
+			timeout = time.Second
+		}
+		err := client.conn.SetWriteDeadline(deadline(ctx, timeout))
+		if err != nil {
+			return fmt.Errorf("problem setting write deadline: %w", err)
 		}
 		n, err := client.conn.Write(b[written:])
 		if err != nil {
@@ -76,14 +86,17 @@ func (client *Client) sendData(b []byte) error {
 }
 
 // sends one message and gets one response in a mutex-protected way.
-func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *bytes.Buffer, error) {
+func (client *Client) send_recv_data(ctx context.Context, cmd CIPCommand, msgs ...any) (eipHeader, *bytes.Buffer, error) {
+	if err := ctx.Err(); err != nil {
+		return eipHeader{}, nil, err
+	}
 	buffer, err := client.sendMsgBuild(cmd, msgs...)
 	if err != nil {
 		return eipHeader{}, nil, fmt.Errorf("error preparing to send message: %w", err)
 	}
 	client.mutex.Lock()
 
-	err = client.sendData(buffer)
+	err = client.sendData(ctx, buffer)
 	if err != nil {
 		client.mutex.Unlock()
 		err2 := client.Disconnect()
@@ -93,7 +106,7 @@ func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *b
 		return eipHeader{}, nil, fmt.Errorf("error sending data resulting in forced disconnect: %w", err)
 	}
 
-	hdr, buf, err := client.recvData()
+	hdr, buf, err := client.recvData(ctx)
 	client.mutex.Unlock()
 	if err != nil {
 		err2 := client.Disconnect()
@@ -106,35 +119,27 @@ func (client *Client) send_recv_data(cmd CIPCommand, msgs ...any) (eipHeader, *b
 }
 
 // recv_data reads the header and then the number of words it specifies.
-func (client *Client) recvData() (eipHeader, *bytes.Buffer, error) {
+func (client *Client) recvData(ctx context.Context) (eipHeader, *bytes.Buffer, error) {
 
 	hdr := eipHeader{}
-	var err error
-	if client.SocketTimeout != 0 {
-		err = client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
-		if err != nil {
-			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
-		}
-	} else {
-		err = client.conn.SetReadDeadline(time.Now().Add(time.Second))
-		if err != nil {
-			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
-		}
+	if err := ctx.Err(); err != nil {
+		return hdr, nil, err
+	}
+	timeout := client.SocketTimeout
+	if timeout == 0 {
+		timeout = time.Second
+	}
+	err := client.conn.SetReadDeadline(deadline(ctx, timeout))
+	if err != nil {
+		return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
 	}
 	err = binary.Read(client.conn, binary.LittleEndian, &hdr)
 	if err != nil {
 		return hdr, nil, fmt.Errorf("problem reading header from socket: %w", err)
 	}
-	if client.SocketTimeout != 0 {
-		err = client.conn.SetReadDeadline(time.Now().Add(client.SocketTimeout))
-		if err != nil {
-			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
-		}
-	} else {
-		err = client.conn.SetReadDeadline(time.Now().Add(time.Second))
-		if err != nil {
-			return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
-		}
+	err = client.conn.SetReadDeadline(deadline(ctx, timeout))
+	if err != nil {
+		return hdr, nil, fmt.Errorf("problem setting read deadline: %w", err)
 	}
 	data_size := hdr.Length
 	data := make([]byte, data_size)
