@@ -336,10 +336,11 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 		}
 	case CIPTypeSINT:
 		if bitpos >= 0 && bitpos < 8 {
-			x, ok := v.(byte)
+			// readValue decodes a SINT as int8, not byte.
+			x, ok := v.(int8)
 			if ok {
 				mask := byte(1 << bitpos)
-				masked := x & mask
+				masked := byte(x) & mask
 				return masked != 0, nil
 			}
 			err = fmt.Errorf("value was a SINT, but bit %d was requested. must be 0-7 for SINT", bitpos)
@@ -448,5 +449,7 @@ func getBit(t CIPType, v any, bitpos int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return false, err
+	// Every case above either returns or sets err, so reaching here means the
+	// bitpos guard for this type failed.
+	return false, fmt.Errorf("bit %d is out of range for %v", bitpos, t)
 }
