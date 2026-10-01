@@ -260,11 +260,7 @@ func (client *Client) ListMembersWithContext(ctx context.Context, str_instance u
 		return UDTDescriptor{}, fmt.Errorf("couldn't read struct name. %w", err)
 	}
 
-	if strings.Contains(struct_name, ";") {
-		struct_name = strings.Split(struct_name, ";")[0]
-	}
-	struct_name = struct_name[:len(struct_name)-1]
-	descriptor.Name = struct_name
+	descriptor.Name = cleanTemplateName(struct_name)
 
 	for i := 0; i < int(template_info.MemberCount); i++ {
 
@@ -272,7 +268,7 @@ func (client *Client) ListMembersWithContext(ctx context.Context, str_instance u
 		if err != nil && fieldname == "" {
 			return UDTDescriptor{}, fmt.Errorf("couldn't read field name. %w", err)
 		}
-		fieldname = fieldname[:len(fieldname)-1]
+		fieldname = strings.TrimSuffix(fieldname, "\x00")
 
 		descriptor.Members[i].Name = fieldname
 		descriptor.Members[i].Info = memberInfos[i]
@@ -290,6 +286,17 @@ func (client *Client) ListMembersWithContext(ctx context.Context, str_instance u
 
 	client.KnownTypesByID[str_instance] = descriptor
 	return descriptor, nil
+}
+
+// cleanTemplateName strips the null terminator and any ";n..." suffix from a
+// template's struct name. Some templates (e.g. AOIs) carry the suffix and some
+// don't, so the terminator can't be assumed to be the last byte after splitting.
+func cleanTemplateName(name string) string {
+	name = strings.TrimSuffix(name, "\x00")
+	if i := strings.IndexByte(name, ';'); i >= 0 {
+		name = name[:i]
+	}
+	return name
 }
 
 // full descriptor of a struct in the controller.
