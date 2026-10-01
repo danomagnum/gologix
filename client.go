@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -147,15 +148,29 @@ type Client struct {
 //
 // Returns a configured client ready for connection. The IP address parameter
 // should be the IPv4 address of the PLC as a string (e.g., "192.168.1.100").
-func NewClient(ip string) *Client {
+func NewClient(target string) *Client {
 	// default path is back plane -> slot 0
 	path, err := ParsePath("1,0")
 	if err != nil {
 		log.Panicf("this should not have failed since the path is hardcoded.  problem with path. %v", err)
 	}
+	logger := NewLogger()
+	host, portString, err := net.SplitHostPort(target)
+	if err != nil {
+		logger.Warn("failed to extract port", "err", err)
+	}
+	var port uint = portDefault
+	if portString != "" {
+		p, err := strconv.ParseUint(portString, 10, 16)
+		if err != nil {
+			logger.Warn("failed to parse port", "err", err)
+		} else {
+			port = uint(p)
+		}
+	}
 	controller := Controller{
-		IpAddress: ip,
-		Port:      portDefault,
+		IpAddress: host,
+		Port:      port,
 		Path:      path,
 	}
 	return &Client{
@@ -173,7 +188,7 @@ func NewClient(ip string) *Client {
 		KnownTypes:         make(map[string]UDTDescriptor),
 		KnownTypesByID:     make(map[uint32]UDTDescriptor),
 		ioi_cache:          make(map[string]*tagIOI),
-		Logger:             NewLogger(),
+		Logger:             logger,
 	}
 
 }
