@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -59,22 +60,33 @@ func NewServer(r *PathRouter) *Server {
 
 // Start listening on the TCP and UDP ports associated with the Ethernet/IP protocol.
 // these are 44818 and 2222 respectively
-// as far as I can tell there is never an option to change this on any devices so it is hard coded here.
-func (srv *Server) Serve() error {
-	srv.ConnMgr.Init(srv.Logger)
-
-	var err error
-	srv.TCPListener, err = net.Listen("tcp", "0.0.0.0:44818")
-	srv.Logger.Info("Listening on TCP port 44818")
+// to use a non-standard port, use Serve() instead
+func (srv *Server) ListenAndServe() error {
+	TCPListener, err := net.Listen("tcp", "0.0.0.0:44818")
 	if err != nil {
 		return fmt.Errorf("couldn't open tcp listener. %w", err)
 	}
 
-	srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
-	srv.Logger.Info("Listening on UDP port 2222")
+	UDPListener, err := net.ListenPacket("udp", "0.0.0.0:2222")
 	if err != nil {
+		TCPListener.Close()
 		return fmt.Errorf("couldn't open udp listener. %v", err)
 	}
+	return srv.Serve(TCPListener, UDPListener)
+}
+
+// Serve starts the server using the provided TCP and UDP listeners.
+// use this instead of ListenAndServe() to use non-standard ports
+// Note that for now, the server takes ownership of the provided listeners and will close them when Serve() returns.
+func (srv *Server) Serve(tcpListener net.Listener, udpListener net.PacketConn) error {
+	srv.ConnMgr.Init(srv.Logger)
+
+	var err error
+	srv.TCPListener = tcpListener
+	srv.Logger.Info("Listening on TCP", "address", tcpListener.Addr().String())
+
+	srv.UDPListener = udpListener
+	srv.Logger.Info("Listening on UDP", "address", udpListener.LocalAddr().String())
 
 	// we'll start two server goroutines and then wait for either of them to error out on the error channel.
 
@@ -117,6 +129,9 @@ func (srv *Server) serveTCP() error {
 	for {
 		conn, err := srv.TCPListener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return err
+			}
 			srv.Logger.Error("problem with tcp accept", "error", err)
 			continue
 		}
@@ -145,16 +160,19 @@ func (srv *Server) serveUDP() error {
 		b := make([]byte, 4096)
 		buf := bytes.NewBuffer(b)
 		n, addr, err := srv.UDPListener.ReadFrom(b)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return err
+			}
+			srv.Logger.Debug("problem with udp accept", "error", err)
+			continue
+		}
 		if n == 0 {
 			srv.Logger.Debug("Read 0 bytes on udp listener.")
 			continue
 		}
 		if n == bufSize {
 			srv.Logger.Debug("udp buffer size not big enough!")
-			continue
-		}
-		if err != nil {
-			srv.Logger.Debug("problem with udp accept", "error", err)
 			continue
 		}
 		_ = addr // don't need this yet.

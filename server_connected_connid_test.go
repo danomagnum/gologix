@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
 // TestConnectedReplyUsesTOConnID is a wire-level regression guard against the
@@ -24,10 +23,15 @@ import (
 // it back with the correct value — proving the connection layer routes
 // the reply to the originator's inbound listener.
 func TestConnectedReplyUsesTOConnID(t *testing.T) {
-	if probe, err := net.Listen("tcp", "0.0.0.0:44818"); err != nil {
-		t.Skipf("port 44818 unavailable: %v", err)
-	} else {
-		probe.Close()
+	// use ephemeral ports (":0") so this test doesn't conflict with other
+	// server tests or real EIP devices sharing the port 44818 default.
+	tcpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen tcp: %v", err)
+	}
+	udpListener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen udp: %v", err)
 	}
 
 	router := PathRouter{}
@@ -44,27 +48,13 @@ func TestConnectedReplyUsesTOConnID(t *testing.T) {
 	}
 
 	srv := NewServer(&router)
-	go func() { _ = srv.Serve() }()
+	go func() { _ = srv.Serve(tcpListener, udpListener) }()
 	defer func() {
-		if srv.TCPListener != nil {
-			srv.TCPListener.Close()
-		}
-		if srv.UDPListener != nil {
-			srv.UDPListener.Close()
-		}
+		tcpListener.Close()
+		udpListener.Close()
 	}()
 
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		c, err := net.DialTimeout("tcp", "127.0.0.1:44818", 100*time.Millisecond)
-		if err == nil {
-			c.Close()
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	client := NewClient("127.0.0.1")
+	client := NewClient(tcpListener.Addr().String())
 	if err := client.Connect(); err != nil {
 		t.Fatalf("client connect: %v", err)
 	}

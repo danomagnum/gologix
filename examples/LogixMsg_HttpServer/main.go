@@ -29,7 +29,7 @@ func main() {
 
 	// create the ethernet/ip class 3 message server
 	s := gologix.NewServer(&r)
-	go s.Serve()
+	go s.ListenAndServe()
 
 	// this is the function that will handle the web requests
 	// we'll get a lock on the tag provider, marshal the data into json, and then return that
