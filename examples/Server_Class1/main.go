@@ -66,7 +66,7 @@ func main() {
 	r.Handle(path3.Bytes(), &p3)
 
 	s := gologix.NewServer(&r)
-	go s.Serve()
+	go s.ListenAndServe()
 
 	t := time.NewTicker(time.Second)
 	data_chan := p3.GetOutputDataChannel()

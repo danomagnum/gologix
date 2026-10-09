@@ -18,8 +18,8 @@ func TestParseWriteValuesString(t *testing.T) {
 	const want = "pylogix-round-trip-check"
 
 	var buf bytes.Buffer
-	buf.WriteByte(0xA0)                            // typ = CIPTypeStruct
-	buf.WriteByte(0x02)                            // type_info_length = 2 bytes
+	buf.WriteByte(0xA0) // typ = CIPTypeStruct
+	buf.WriteByte(0x02) // type_info_length = 2 bytes
 	_ = binary.Write(&buf, binary.LittleEndian, cipStringStructCRC)
 	_ = binary.Write(&buf, binary.LittleEndian, uint16(1)) // qty
 	_ = binary.Write(&buf, binary.LittleEndian, uint32(len(want)))
@@ -78,8 +78,8 @@ func TestParseWriteValuesAtomic(t *testing.T) {
 // the historic silent-success.
 func TestParseWriteValuesUnknownStruct(t *testing.T) {
 	var buf bytes.Buffer
-	buf.WriteByte(0xA0)                                       // typ = CIPTypeStruct
-	buf.WriteByte(0x02)                                       // type_info_length = 2 bytes
+	buf.WriteByte(0xA0) // typ = CIPTypeStruct
+	buf.WriteByte(0x02) // type_info_length = 2 bytes
 	_ = binary.Write(&buf, binary.LittleEndian, uint16(0xBEEF))
 	_ = binary.Write(&buf, binary.LittleEndian, uint16(1))
 
@@ -196,7 +196,7 @@ func TestServerStringReadRoundTrip(t *testing.T) {
 	}
 
 	srv := NewServer(&router)
-	go func() { _ = srv.Serve() }()
+	go func() { _ = srv.ListenAndServe() }()
 	defer func() {
 		if srv.TCPListener != nil {
 			srv.TCPListener.Close()

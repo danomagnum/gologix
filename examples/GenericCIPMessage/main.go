@@ -10,7 +10,7 @@ import (
 func main() {
 	var err error
 
-	// setup the client.  If you need a different path you'll have to set that.
+	// setup the client.  If you need a different path you'll have to set that.  You can also set a non-standard port like 192.168.2.241:44818 for example.
 	client := gologix.NewClient("192.168.2.241")
 
 	// for example, to have a controller on slot 1 instead of 0 you could do this

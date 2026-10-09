@@ -77,7 +77,7 @@ func main() {
 	r.Handle(path2.Bytes(), &p2)
 
 	s := gologix.NewServer(&r)
-	go s.Serve()
+	go s.ListenAndServe()
 
 	t := time.NewTicker(time.Second * 5)
 	for {

@@ -125,7 +125,7 @@ func TestSendListIdentityReplyEndToEnd(t *testing.T) {
 	srv := NewServer(&PathRouter{})
 	srv.Attributes[6] = uint32(0xDEADBEEF)
 	srv.Attributes[7] = "gologix-listidentity-test"
-	go func() { _ = srv.Serve() }()
+	go func() { _ = srv.ListenAndServe() }()
 	defer func() {
 		if srv.TCPListener != nil {
 			srv.TCPListener.Close()

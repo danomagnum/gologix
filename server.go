@@ -59,19 +59,31 @@ func NewServer(r *PathRouter) *Server {
 
 // Start listening on the TCP and UDP ports associated with the Ethernet/IP protocol.
 // these are 44818 and 2222 respectively
-// as far as I can tell there is never an option to change this on any devices so it is hard coded here.
-func (srv *Server) Serve() error {
-	srv.ConnMgr.Init(srv.Logger)
-
-	var err error
-	srv.TCPListener, err = net.Listen("tcp", "0.0.0.0:44818")
-	srv.Logger.Info("Listening on TCP port 44818")
+// to use a non-standard port, use Serve() instead
+func (srv *Server) ListenAndServe() error {
+	TCPListener, err := net.Listen("tcp", "0.0.0.0:44818")
 	if err != nil {
 		return fmt.Errorf("couldn't open tcp listener. %w", err)
 	}
 
-	srv.UDPListener, err = net.ListenPacket("udp", "0.0.0.0:2222")
-	srv.Logger.Info("Listening on UDP port 2222")
+	UDPListener, err := net.ListenPacket("udp", "0.0.0.0:2222")
+	if err != nil {
+		return fmt.Errorf("couldn't open udp listener. %v", err)
+	}
+	return srv.Serve(TCPListener, UDPListener)
+}
+
+// Serve starts the server using the provided TCP and UDP listeners.
+// use this instead of ListenAndServe() to use non-standard ports
+func (srv *Server) Serve(tcpListener net.Listener, udpListener net.PacketConn) error {
+	srv.ConnMgr.Init(srv.Logger)
+
+	var err error
+	srv.TCPListener = tcpListener
+	srv.Logger.Info("Listening on TCP", "address", tcpListener.Addr().String())
+
+	srv.UDPListener = udpListener
+	srv.Logger.Info("Listening on UDP", "address", udpListener.LocalAddr().String())
 	if err != nil {
 		return fmt.Errorf("couldn't open udp listener. %v", err)
 	}

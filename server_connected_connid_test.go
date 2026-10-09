@@ -44,7 +44,7 @@ func TestConnectedReplyUsesTOConnID(t *testing.T) {
 	}
 
 	srv := NewServer(&router)
-	go func() { _ = srv.Serve() }()
+	go func() { _ = srv.ListenAndServe() }()
 	defer func() {
 		if srv.TCPListener != nil {
 			srv.TCPListener.Close()

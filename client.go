@@ -157,7 +157,8 @@ func NewClient(target string) *Client {
 	logger := NewLogger()
 	host, portString, err := net.SplitHostPort(target)
 	if err != nil {
-		logger.Warn("failed to extract port", "err", err)
+		logger.Info("failed to extract port. Using default port (44818)", "err", err)
+		host = target
 	}
 	var port uint = portDefault
 	if portString != "" {
