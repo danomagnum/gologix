@@ -147,7 +147,8 @@ type Client struct {
 //	err = client.Read("TestInt", &value)
 //
 // Returns a configured client ready for connection. The IP address parameter
-// should be the IPv4 address of the PLC as a string (e.g., "192.168.1.100").
+// should be the IPv4 address of the PLC as a string (e.g., "192.168.1.100") or
+// a string with the port included (e.g., "192.168.1.100:44818").
 func NewClient(target string) *Client {
 	// default path is back plane -> slot 0
 	path, err := ParsePath("1,0")

@@ -69,6 +69,7 @@ func (srv *Server) ListenAndServe() error {
 
 	UDPListener, err := net.ListenPacket("udp", "0.0.0.0:2222")
 	if err != nil {
+		TCPListener.Close()
 		return fmt.Errorf("couldn't open udp listener. %v", err)
 	}
 	return srv.Serve(TCPListener, UDPListener)
@@ -76,6 +77,7 @@ func (srv *Server) ListenAndServe() error {
 
 // Serve starts the server using the provided TCP and UDP listeners.
 // use this instead of ListenAndServe() to use non-standard ports
+// Note that for now, the server takes ownership of the provided listeners and will close them when Serve() returns.
 func (srv *Server) Serve(tcpListener net.Listener, udpListener net.PacketConn) error {
 	srv.ConnMgr.Init(srv.Logger)
 
@@ -85,9 +87,6 @@ func (srv *Server) Serve(tcpListener net.Listener, udpListener net.PacketConn) e
 
 	srv.UDPListener = udpListener
 	srv.Logger.Info("Listening on UDP", "address", udpListener.LocalAddr().String())
-	if err != nil {
-		return fmt.Errorf("couldn't open udp listener. %v", err)
-	}
 
 	// we'll start two server goroutines and then wait for either of them to error out on the error channel.
 
