@@ -3,6 +3,7 @@ package gologix
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -129,6 +130,9 @@ func (srv *Server) serveTCP() error {
 	for {
 		conn, err := srv.TCPListener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return err
+			}
 			srv.Logger.Error("problem with tcp accept", "error", err)
 			continue
 		}
@@ -157,16 +161,19 @@ func (srv *Server) serveUDP() error {
 		b := make([]byte, 4096)
 		buf := bytes.NewBuffer(b)
 		n, addr, err := srv.UDPListener.ReadFrom(b)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return err
+			}
+			srv.Logger.Debug("problem with udp accept", "error", err)
+			continue
+		}
 		if n == 0 {
 			srv.Logger.Debug("Read 0 bytes on udp listener.")
 			continue
 		}
 		if n == bufSize {
 			srv.Logger.Debug("udp buffer size not big enough!")
-			continue
-		}
-		if err != nil {
-			srv.Logger.Debug("problem with udp accept", "error", err)
 			continue
 		}
 		_ = addr // don't need this yet.

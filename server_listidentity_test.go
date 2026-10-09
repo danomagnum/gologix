@@ -113,38 +113,29 @@ func TestFrameListIdentityResponse(t *testing.T) {
 
 // TestSendListIdentityReplyEndToEnd boots a real gologix server in-process
 // and drives a List Identity request through the TCP listener exactly like
-// pycomm3 does. The test fails when port 44818 is busy so it stays out of
-// the way of other hardware tests sharing the same bind.
+// pycomm3 does. Uses an ephemeral port via Serve() so it doesn't conflict
+// with other hardware tests sharing the same bind.
 func TestSendListIdentityReplyEndToEnd(t *testing.T) {
-	if probe, err := net.Listen("tcp", "0.0.0.0:44818"); err != nil {
-		t.Skipf("port 44818 unavailable: %v", err)
-	} else {
-		probe.Close()
+	tcpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen tcp: %v", err)
 	}
+	udpListener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen udp: %v", err)
+	}
+	wantPort := uint16(tcpListener.Addr().(*net.TCPAddr).Port)
 
 	srv := NewServer(&PathRouter{})
 	srv.Attributes[6] = uint32(0xDEADBEEF)
 	srv.Attributes[7] = "gologix-listidentity-test"
-	go func() { _ = srv.ListenAndServe() }()
+	go func() { _ = srv.Serve(tcpListener, udpListener) }()
 	defer func() {
-		if srv.TCPListener != nil {
-			srv.TCPListener.Close()
-		}
-		if srv.UDPListener != nil {
-			srv.UDPListener.Close()
-		}
+		tcpListener.Close()
+		udpListener.Close()
 	}()
 
-	deadline := time.Now().Add(2 * time.Second)
-	var conn net.Conn
-	var err error
-	for time.Now().Before(deadline) {
-		conn, err = net.DialTimeout("tcp", "127.0.0.1:44818", 100*time.Millisecond)
-		if err == nil {
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
+	conn, err := net.Dial("tcp", tcpListener.Addr().String())
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
@@ -203,7 +194,7 @@ func TestSendListIdentityReplyEndToEnd(t *testing.T) {
 	if got := binary.BigEndian.Uint16(body[2:4]); got != 2 {
 		t.Errorf("sin_family = %d; want 2 (AF_INET, big-endian)", got)
 	}
-	if got := binary.BigEndian.Uint16(body[4:6]); got != 44818 {
-		t.Errorf("sin_port = %d; want 44818 (big-endian)", got)
+	if got := binary.BigEndian.Uint16(body[4:6]); got != wantPort {
+		t.Errorf("sin_port = %d; want %d (big-endian)", got, wantPort)
 	}
 }

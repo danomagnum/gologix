@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"net"
 	"testing"
-	"time"
 )
 
 // TestParseWriteValuesString crafts the exact byte sequence a Logix STRING
@@ -172,13 +171,16 @@ func TestCipStringPackerOverlongDoesNotLeakBytes(t *testing.T) {
 }
 
 // TestServerStringReadRoundTrip verifies a CIP client can read a STRING tag
-// from a gologix server in the same process. Uses the hardcoded EIP port
-// 44818 so the test skips when another process is bound there.
+// from a gologix server in the same process. Uses an ephemeral port via
+// Serve() to avoid conflicts with other tests or real EIP devices.
 func TestServerStringReadRoundTrip(t *testing.T) {
-	if probe, err := net.Listen("tcp", "0.0.0.0:44818"); err != nil {
-		t.Skipf("port 44818 unavailable: %v", err)
-	} else {
-		probe.Close()
+	tcpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen tcp: %v", err)
+	}
+	udpListener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen udp: %v", err)
 	}
 
 	router := PathRouter{}
@@ -196,28 +198,13 @@ func TestServerStringReadRoundTrip(t *testing.T) {
 	}
 
 	srv := NewServer(&router)
-	go func() { _ = srv.ListenAndServe() }()
+	go func() { _ = srv.Serve(tcpListener, udpListener) }()
 	defer func() {
-		if srv.TCPListener != nil {
-			srv.TCPListener.Close()
-		}
-		if srv.UDPListener != nil {
-			srv.UDPListener.Close()
-		}
+		tcpListener.Close()
+		udpListener.Close()
 	}()
 
-	// Wait briefly for the listener to come up.
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", "127.0.0.1:44818", 100*time.Millisecond)
-		if err == nil {
-			conn.Close()
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	client := NewClient("127.0.0.1")
+	client := NewClient(tcpListener.Addr().String())
 	if err := client.Connect(); err != nil {
 		t.Fatalf("client connect: %v", err)
 	}
