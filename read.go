@@ -870,6 +870,11 @@ func (client *Client) readList(ctx context.Context, tags []tagDesc) ([]any, erro
 		// TODO: We also need to calculate the response size we expect from the PLC and split
 		//       into multiple messages on that also.
 		if totalMsgSize > int(client.ConnectionSize) {
+			if i == 0 {
+				// nothing to split off; the request itself can never fit in one packet.
+				return nil, fmt.Errorf("read request for tag %s is %d bytes which exceeds the connection size of %d",
+					tags[i].TagName, totalMsgSize, client.ConnectionSize)
+			}
 			first_part := tags[:i]
 			rest := tags[i:]
 
