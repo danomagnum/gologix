@@ -270,7 +270,7 @@ func (client *Client) firmware() int {
 	if err != nil {
 		return 0
 	}
-	client.Logger.Debug("controller firmware major version: %d", "major", major)
+	client.Logger.Debug("controller firmware major version", "major", major)
 	client.knownFirmware = int(major)
 	return client.knownFirmware
 

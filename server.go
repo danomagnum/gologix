@@ -140,7 +140,7 @@ func (srv *Server) serveTCP() error {
 		go func() {
 			err := h.serve(srv)
 			if err != nil {
-				srv.Logger.Warn("Error on connection %v. %v", h.conn.RemoteAddr().String(), err)
+				srv.Logger.Warn("Error on connection", "address", h.conn.RemoteAddr().String(), "err", err)
 			}
 		}()
 	}
