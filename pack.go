@@ -102,7 +102,7 @@ func Pack(w io.Writer, data any) (int, error) {
 	case Serializable:
 		n, err := w.Write(d.Bytes())
 		if err != nil {
-			return 0, nil
+			return 0, fmt.Errorf("failed to serialize: %w", err)
 		}
 		return n, nil
 	}
