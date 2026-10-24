@@ -331,6 +331,7 @@ func (client *Client) ReadWithContext(ctx context.Context, tag string, data any)
 		if err != nil {
 			return fmt.Errorf("couldn't parse str data. %w", err)
 		}
+		return nil
 	}
 	// Fallback to reflect-based decoding.
 	v := reflect.ValueOf(data)
