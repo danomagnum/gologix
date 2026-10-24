@@ -216,6 +216,9 @@ func (item *CIPItem) Serialize(strs ...any) error {
 		switch x := str.(type) {
 		case string:
 			strLen := uint32(len(x))
+			if strLen > 84 {
+				strLen = 84
+			}
 			err := binary.Write(item, binary.LittleEndian, strLen)
 			if err != nil {
 				return fmt.Errorf("problem writing string header: %v", err)

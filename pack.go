@@ -60,6 +60,9 @@ func Serialize(strs ...any) (*bytes.Buffer, error) {
 		switch serializable_str := str.(type) {
 		case string:
 			strlen := uint32(len(serializable_str))
+			if strlen > 84 {
+				strlen = 84
+			}
 			err := binary.Write(b, binary.LittleEndian, strlen)
 			if err != nil {
 				return nil, fmt.Errorf("problem writing string header: %w", err)
