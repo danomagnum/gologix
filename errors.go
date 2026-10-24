@@ -108,5 +108,8 @@ func (e multiError) Unwrap() error {
 }
 
 func (e multiError) Is(target error) bool {
+	if len(e.errs) == 0 {
+		return false
+	}
 	return errors.Is(e.errs[0], target)
 }
