@@ -576,7 +576,7 @@ func (buf *DataTableBuffer) ReadAll() (map[string]any, error) {
 func setGoVar(dest any, value any) error {
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() != reflect.Ptr {
-		return fmt.Errorf("Var field must be a pointer to set value, got %T", dest)
+		return fmt.Errorf("var field must be a pointer to set value, got %T", dest)
 	}
 	if !destVal.Elem().CanSet() {
 		return fmt.Errorf("cannot set value on Var field of type %T", dest)
