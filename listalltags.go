@@ -193,8 +193,9 @@ func (client *Client) ListAllTagsWithContext(ctx context.Context, start_instance
 	if err != nil {
 		return err
 	}
-	_ = hdr
-	_ = data
+	if err := hdr.statusError(); err != nil {
+		return err
+	}
 	//data_hdr := ListInstanceHeader{}
 	//binary.Read(data, binary.LittleEndian, &data_hdr)
 

@@ -12,9 +12,63 @@ type eipHeader struct {
 	Command       CIPCommand
 	Length        uint16
 	SessionHandle uint32
-	Status        uint32
+	Status        EIPStatus
 	Context       uint64 // 8 bytes you can do whatever you want with. They'll be echoed back.
 	Options       uint32
+}
+
+// EIPStatus is the encapsulation-layer status returned in every EtherNet/IP header.
+// It is distinct from CIPStatus, which is carried inside the encapsulated CIP message.
+type EIPStatus uint32
+
+const (
+	EIPStatus_Success            EIPStatus = 0x0000
+	EIPStatus_InvalidCommand     EIPStatus = 0x0001
+	EIPStatus_InsufficientMemory EIPStatus = 0x0002
+	EIPStatus_IncorrectData      EIPStatus = 0x0003
+	EIPStatus_InvalidSession     EIPStatus = 0x0064
+	EIPStatus_InvalidLength      EIPStatus = 0x0065
+	EIPStatus_UnsupportedRev     EIPStatus = 0x0069
+)
+
+func (s EIPStatus) String() string {
+	switch s {
+	case EIPStatus_Success:
+		return "success"
+	case EIPStatus_InvalidCommand:
+		return "invalid or unsupported encapsulation command"
+	case EIPStatus_InsufficientMemory:
+		return "insufficient memory resources in the receiver"
+	case EIPStatus_IncorrectData:
+		return "poorly formed or incorrect data in the data portion"
+	case EIPStatus_InvalidSession:
+		return "invalid session handle"
+	case EIPStatus_InvalidLength:
+		return "invalid length"
+	case EIPStatus_UnsupportedRev:
+		return "unsupported encapsulation protocol revision"
+	default:
+		return fmt.Sprintf("unknown EIP status 0x%04X", uint32(s))
+	}
+}
+
+// EIPStatusError is returned when a response carries a non-zero encapsulation status.
+type EIPStatusError struct {
+	Command CIPCommand
+	Status  EIPStatus
+}
+
+func (e EIPStatusError) Error() string {
+	return fmt.Sprintf("EIP command 0x%04X returned status 0x%04X: %v", uint16(e.Command), uint32(e.Status), e.Status)
+}
+
+// statusError returns an EIPStatusError if the header reports a non-zero
+// encapsulation status, or nil if the status is success.
+func (hdr eipHeader) statusError() error {
+	if hdr.Status == EIPStatus_Success {
+		return nil
+	}
+	return EIPStatusError{Command: hdr.Command, Status: EIPStatus(hdr.Status)}
 }
 
 // prepares a bytes buffer for sending a message

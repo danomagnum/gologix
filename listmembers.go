@@ -109,8 +109,9 @@ func (client *Client) GetTemplateInstanceAttrWithContext(ctx context.Context, st
 	if err != nil {
 		return msgGetTemplateAttrListResponse{}, err
 	}
-	_ = hdr
-	_ = data
+	if err := hdr.statusError(); err != nil {
+		return msgGetTemplateAttrListResponse{}, err
+	}
 	//data_hdr := ListInstanceHeader{}
 	//binary.Read(data, binary.LittleEndian, &data_hdr)
 
@@ -218,8 +219,9 @@ func (client *Client) ListMembersWithContext(ctx context.Context, str_instance u
 	if err != nil {
 		return UDTDescriptor{}, err
 	}
-	_ = hdr
-	_ = data
+	if err := hdr.statusError(); err != nil {
+		return UDTDescriptor{}, err
+	}
 	//data_hdr := ListInstanceHeader{}
 	//binary.Read(data, binary.LittleEndian, &data_hdr)
 

@@ -223,7 +223,9 @@ func (client *Client) WriteMapWithContext(ctx context.Context, tag_str map[strin
 	if err != nil {
 		return err
 	}
-	_ = hdr
+	if err := hdr.statusError(); err != nil {
+		return err
+	}
 	_ = data
 	//TODO: do something with the result here!
 

@@ -484,8 +484,8 @@ func (client *Client) checkConnection() error {
 }
 
 func (client *Client) parseResponse(header *eipHeader, data *bytes.Buffer) ([]CIPItem, error) {
-	if header.Status != 0 {
-		return nil, fmt.Errorf("forward open failed. status: %v", header.Status)
+	if err := header.statusError(); err != nil {
+		return nil, err
 	}
 
 	preItem := msgPreItemData{}

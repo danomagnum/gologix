@@ -198,8 +198,8 @@ func (client *Client) write_udt(ctx context.Context, tag string, value any) erro
 	if err != nil {
 		return err
 	}
-	if hdr.Status != 0 {
-		return fmt.Errorf("got non-success status %d when writing", hdr.Status)
+	if err := hdr.statusError(); err != nil {
+		return fmt.Errorf("write of %s: %w", tag, err)
 	}
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
@@ -287,8 +287,8 @@ func (client *Client) write_single(ctx context.Context, tag string, value any) e
 	if err != nil {
 		return err
 	}
-	if hdr.Status != 0 {
-		return fmt.Errorf("got non-success status %d when writing", hdr.Status)
+	if err := hdr.statusError(); err != nil {
+		return fmt.Errorf("write of %s: %w", tag, err)
 	}
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)

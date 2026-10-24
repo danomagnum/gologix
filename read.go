@@ -452,7 +452,9 @@ func (client *Client) ReadSingleWithContext(ctx context.Context, tag string, dat
 	if err != nil {
 		return nil, err
 	}
-	_ = hdr
+	if err := hdr.statusError(); err != nil {
+		return nil, fmt.Errorf("read of %s: %w", tag, err)
+	}
 
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
@@ -908,10 +910,8 @@ func (client *Client) readList(ctx context.Context, tags []tagDesc) ([]any, erro
 	if err != nil {
 		return nil, err
 	}
-	_ = hdr
-
-	if hdr.Status != 0 {
-		return nil, fmt.Errorf("problem reading tags. Status %v", CIPStatus(hdr.Status))
+	if err := hdr.statusError(); err != nil {
+		return nil, fmt.Errorf("problem reading tags: %w", err)
 	}
 
 	read_result_header := msgCIPResultHeader{}
@@ -1262,9 +1262,12 @@ func (client *Client) sendFragReadRequest(ctx context.Context, ioi *tagIOI, elem
 		return nil, 0, fmt.Errorf("problem serializing FragRead items: %w", err)
 	}
 
-	_, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
+	hdr, data, err := client.send_recv_data(ctx, cipCommandSendUnitData, itemData)
 	if err != nil {
 		return nil, 0, fmt.Errorf("transport: %w", err)
+	}
+	if err := hdr.statusError(); err != nil {
+		return nil, 0, err
 	}
 
 	var resultHdr msgCIPResultHeader

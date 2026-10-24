@@ -68,8 +68,9 @@ func (client *Client) ListSubTagsWithContext(ctx context.Context, Program *Known
 	if err != nil {
 		return new_kts, err
 	}
-	_ = hdr
-	_ = data
+	if err := hdr.statusError(); err != nil {
+		return new_kts, err
+	}
 
 	// first six bytes are zero.
 	padding := make([]byte, 6)

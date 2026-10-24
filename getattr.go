@@ -140,7 +140,9 @@ func (client *Client) GetAttrSingle(class CIPClass, instance CIPInstance, attr C
 	if err != nil {
 		return nil, err
 	}
-	_ = hdr
+	if err := hdr.statusError(); err != nil {
+		return nil, err
+	}
 
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
@@ -284,7 +286,9 @@ func (client *Client) GetAttrList(class CIPClass, instance CIPInstance, attrs ..
 	if err != nil {
 		return nil, err
 	}
-	_ = hdr
+	if err := hdr.statusError(); err != nil {
+		return nil, err
+	}
 
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
@@ -455,7 +459,9 @@ func (client *Client) GenericCIPMessageWithContext(ctx context.Context, service 
 	if err != nil {
 		return nil, err
 	}
-	_ = hdr
+	if err := hdr.statusError(); err != nil {
+		return nil, err
+	}
 
 	read_result_header := msgCIPResultHeader{}
 	err = binary.Read(data, binary.LittleEndian, &read_result_header)
