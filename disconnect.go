@@ -66,9 +66,7 @@ func (client *Client) Disconnect() error {
 		client.mutex.Unlock()
 	}()
 
-	if client.keepAliveRunning {
-		close(client.cancel_keepalive)
-	}
+	client.stopKeepAlive()
 
 	items := make([]CIPItem, 2)
 	items[0] = CIPItem{} // null item
@@ -139,16 +137,6 @@ func (client *Client) Disconnect() error {
 	}
 
 	client.Logger.Info("successfully disconnected from controller")
-	return nil
-}
-
-// Cancels keepalive if KeepAliveAutoStart is false. Use force to cancel keepalive regardless.
-// If forced, the keepalive will not resume unless the client is reconnected or KeepAlive is triggered
-func (client *Client) KeepAliveCancel(force bool) error {
-	if client.KeepAliveAutoStart && !force {
-		return fmt.Errorf("unable to cancel keepalive due to AutoKeepAlive == true")
-	}
-	close(client.cancel_keepalive)
 	return nil
 }
 

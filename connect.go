@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
-	"slices"
 	"time"
 )
 
@@ -82,11 +80,6 @@ func (client *Client) Connect() error {
 			if socketOpen {
 				client.conn.Close()
 			}
-			client.mutex.Unlock()
-		}
-		if success {
-			client.mutex.Lock()
-			client.connStatus = connectionStatusConnected
 			client.mutex.Unlock()
 		}
 	}()
@@ -169,8 +162,13 @@ func (client *Client) Connect() error {
 	}
 
 	success = true
+	client.mutex.Lock()
+	client.connStatus = connectionStatusConnected
+	client.mutex.Unlock()
+
+	// status must be published before the keepalive's first request goes through checkConnection()
 	if client.KeepAliveAutoStart {
-		go client.KeepAlive()
+		client.startKeepAlive()
 	}
 	return nil
 }
@@ -196,85 +194,6 @@ func (client *Client) registerSession() error {
 	client.SessionHandle = header.SessionHandle
 	client.Logger.Info("Session connected", slog.Any("sessionHandle", client.SessionHandle))
 	return nil
-}
-
-func (client *Client) KeepAlive() {
-	if !client.KeepAliveAutoStart || client.SocketTimeout == 0 {
-		return
-	}
-	if client.keepAliveRunning {
-		err := errors.New("keepalive already running")
-		client.Logger.Warn(err.Error())
-	}
-	client.Logger.Debug("starting keep alive")
-	client.cancel_keepalive = make(chan struct{})
-	client.keepAliveRunning = true
-	defer func() { client.keepAliveRunning = false }()
-
-	originalProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
-	if err != nil {
-		client.Logger.Error(
-			"initial keep alive property get failed",
-			slog.Any("client.KeepAliveProps", client.KeepAliveProps),
-			slog.Any("err", err),
-		)
-		return
-	}
-
-	if client.KeepAlivePollTags {
-		err = client.ListAllTags(0)
-		if err != nil {
-			client.Logger.Error("keepalive list tags failed", slog.Any("err", err))
-			return
-		}
-	}
-
-	t := time.NewTicker(client.KeepAliveFrequency)
-	defer t.Stop()
-	for {
-		select {
-		case <-t.C:
-			if !client.Connected() {
-				client.Logger.Warn("keepalive failed. not connected")
-				return
-			}
-
-			newProps, err := client.GetAttrList(CipObject_ControllerInfo, 1, client.KeepAliveProps...)
-			if err != nil {
-				client.Logger.Error("keepalive failed", slog.Any("err", err))
-				err = client.Disconnect()
-				if err != nil {
-					client.Logger.Warn("keepalive disconnect failed", slog.Any("err", err))
-				}
-				return
-			}
-			if !slices.Equal(newProps.Rest(), originalProps.Rest()) {
-				if client.KeepAlivePollTags {
-					client.Logger.Debug(
-						"controller change detected. re-analyzing types",
-						slog.Any("originalProps", originalProps.Rest()),
-						slog.Any("newProps", newProps.Rest()),
-					)
-					err := client.ListAllTags(0)
-					if err != nil {
-						client.Logger.Warn("keepalive list tags failed.", "error", err)
-						return
-					}
-				} else {
-					client.Logger.Debug(
-						"controller change detected.",
-						slog.Any("originalProps", originalProps.Rest()),
-						slog.Any("newProps", newProps.Rest()),
-					)
-				}
-				originalProps = newProps
-			}
-
-		case <-client.cancel_keepalive:
-			client.KeepAliveAutoStart = false
-			return
-		}
-	}
 }
 
 type msgPreItemData struct {

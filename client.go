@@ -67,11 +67,16 @@ type Client struct {
 	// Set to true to allow auto-connects on reads and writes without having to call Connect() yourself.
 	AutoConnect bool
 
-	KeepAliveAutoStart bool           // if the state is changed the keepalive will continue to run unless cancelled
+	KeepAliveAutoStart bool           // start the keepalive goroutine on every successful Connect(). Never modified by the library.
 	KeepAliveProps     []CIPAttribute // properties monitored during keep alive
 	KeepAliveFrequency time.Duration
-	keepAliveRunning   bool
 	KeepAlivePollTags  bool
+
+	// keepalive runtime state. kaStop is non-nil while a keepalive loop is running;
+	// kaSuppressed is set by KeepAliveCancel(true) and cleared by KeepAlive().
+	kaMu         sync.Mutex
+	kaStop       chan struct{}
+	kaSuppressed bool
 
 	RPI time.Duration // Request Packet Interval
 
@@ -100,8 +105,6 @@ type Client struct {
 	ConnectionSerialNumber uint16
 	Context                uint64 // fun fact - rockwell PLCs don't mind being rick rolled.
 	sequenceNumber         atomic.Uint32
-
-	cancel_keepalive chan struct{}
 
 	// this just lets us not have to re-process tag strings.
 	ioi_cache      map[string]*tagIOI
