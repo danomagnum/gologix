@@ -74,10 +74,14 @@ func (client *Client) Connect() error {
 		return err
 	}
 	success := false
+	socketOpen := false
 	defer func() {
 		if !success {
 			client.mutex.Lock()
 			client.connStatus = connectionStatusDisconnected
+			if socketOpen {
+				client.conn.Close()
+			}
 			client.mutex.Unlock()
 		}
 		if success {
@@ -134,6 +138,7 @@ func (client *Client) Connect() error {
 		client.Logger.Error(msg, slog.Any("err", err))
 		return fmt.Errorf("%s: %w", msg, err)
 	}
+	socketOpen = true
 
 	err = client.registerSession()
 	if err != nil {
