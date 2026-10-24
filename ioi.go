@@ -162,7 +162,7 @@ func (client *Client) newIOI(tagpath string, datatype CIPType) (ioi *tagIOI, err
 
 			t, err := parse_tag_name(tag_part)
 			if err != nil {
-				client.Logger.Warn("problem parsing path", "error", err)
+				return nil, fmt.Errorf("problem parsing path: %w", err)
 			}
 
 			for _, order_size := range t.Array_Order {
@@ -286,6 +286,9 @@ morepath:
 		switch tag_path_type {
 		case 0x28:
 			// one byte index
+			if len(tag_str) == 0 {
+				return "", fmt.Errorf("array index without preceding tag")
+			}
 			var array_index byte
 			err = item.DeSerialize(&array_index)
 			if err != nil {
@@ -298,6 +301,9 @@ morepath:
 			}
 		case 0x29:
 			// two byte index
+			if len(tag_str) == 0 {
+				return "", fmt.Errorf("array index without preceding tag")
+			}
 			var pad byte
 			err = item.DeSerialize(&pad)
 			if err != nil {
